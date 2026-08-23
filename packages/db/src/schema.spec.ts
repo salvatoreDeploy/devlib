@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { getTableColumns } from "drizzle-orm";
-import { users, refreshTokens, categories, tags } from "./schema";
+import {
+  users,
+  refreshTokens,
+  categories,
+  tags,
+  projects,
+  libraries,
+} from "./schema";
 
 describe("users", () => {
   it("tem as colunas esperadas", () => {
@@ -93,5 +100,66 @@ describe("tags", () => {
 
     expect(columns.name.notNull).toBe(true);
     expect(columns.name.isUnique).toBe(true);
+  });
+});
+
+describe("projects", () => {
+  it("tem as colunas esperadas", () => {
+    const columns = getTableColumns(projects);
+
+    expect(Object.keys(columns)).toEqual(
+      expect.arrayContaining([
+        "id",
+        "userId",
+        "name",
+        "description",
+        "createdAt",
+        "updatedAt",
+      ]),
+    );
+  });
+
+  it("userId e name são obrigatórios", () => {
+    const columns = getTableColumns(projects);
+
+    expect(columns.userId.notNull).toBe(true);
+    expect(columns.name.notNull).toBe(true);
+  });
+
+  it("description é opcional", () => {
+    const columns = getTableColumns(projects);
+
+    expect(columns.description.notNull).toBe(false);
+  });
+});
+
+describe("libraries", () => {
+  it("tem as colunas esperadas", () => {
+    const columns = getTableColumns(libraries);
+
+    expect(Object.keys(columns)).toEqual(
+      expect.arrayContaining([
+        "id",
+        "name",
+        "categoryId",
+        "notes",
+        "createdAt",
+        "updatedAt",
+      ]),
+    );
+  });
+
+  it("name é obrigatório e único", () => {
+    const columns = getTableColumns(libraries);
+
+    expect(columns.name.notNull).toBe(true);
+    expect(columns.name.isUnique).toBe(true);
+  });
+
+  it("categoryId e notes são opcionais", () => {
+    const columns = getTableColumns(libraries);
+
+    expect(columns.categoryId.notNull).toBe(false);
+    expect(columns.notes.notNull).toBe(false);
   });
 });

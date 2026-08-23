@@ -46,7 +46,7 @@ Fica para depois do MVP (v1.1+):
   - [x] `packages/db`: setup do pacote (package.json, config do Drizzle, conexão)
   - [x] `packages/db`: schema de users + refresh_tokens
   - [x] `packages/db`: schema de categories + tags
-  - [ ] `packages/db`: schema de libraries + projects
+  - [x] `packages/db`: schema de libraries + projects
   - [ ] `packages/db`: schema das tabelas de associação (project_libraries, library_tags)
 - [ ] Migration inicial rodando contra Postgres local
   - [ ] Validar/rodar as migrations já geradas (uma por subtask de schema) contra o Postgres do docker-compose
