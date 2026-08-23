@@ -44,12 +44,12 @@ Fica para depois do MVP (v1.1+):
 - [x] `Dockerfile` de desenvolvimento em `apps/api` e `apps/web`, funcionando via `docker compose up -d --build`
 - [ ] `packages/db`: schema Drizzle inicial (users, projects, libraries, categories, tags, project_libraries, library_tags)
   - [x] `packages/db`: setup do pacote (package.json, config do Drizzle, conexão)
-  - [ ] `packages/db`: schema de users + refresh_tokens
+  - [x] `packages/db`: schema de users + refresh_tokens
   - [ ] `packages/db`: schema de categories + tags
   - [ ] `packages/db`: schema de libraries + projects
   - [ ] `packages/db`: schema das tabelas de associação (project_libraries, library_tags)
 - [ ] Migration inicial rodando contra Postgres local
-  - [ ] Gerar e rodar a migration inicial contra o Postgres do docker-compose
+  - [ ] Validar/rodar as migrations já geradas (uma por subtask de schema) contra o Postgres do docker-compose
   - [ ] Seed de categorias predefinidas (valida o schema com dados reais; adianta parte do item de Sprint 3 "Categorias predefinidas no seed do banco")
 - [ ] Pipeline GitHub Actions básico: build + lint + test em cada PR
   - [ ] Validar que ci-api.yml e ci-web.yml passam de verdade agora que existe package.json real em packages/db — corrigir o que falhar

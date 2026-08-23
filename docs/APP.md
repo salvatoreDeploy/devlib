@@ -10,7 +10,7 @@ MVP em desenvolvimento. Ver `BACKLOG.md` para o plano completo de sprints.
 
 _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. Uma linha por funcionalidade, não por PR._
 
-- Scaffold do monorepo (Turborepo + pnpm workspaces), com `apps/api`, `apps/web`, `packages/shared-types` e `packages/config` reconhecidos como workspaces
+- Scaffold do monorepo (Turborepo + npm workspaces), com `apps/api`, `apps/web`, `packages/shared-types` e `packages/config` reconhecidos como workspaces
 - API sobe com Fastify e expõe health check
 - Web sobe com Next.js (App Router), página inicial ainda em branco
 - Stack completa (Postgres + API + Web) validada rodando via `docker compose up -d --build`
