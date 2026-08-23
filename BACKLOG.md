@@ -49,7 +49,7 @@ Fica para depois do MVP (v1.1+):
   - [x] `packages/db`: schema de libraries + projects
   - [x] `packages/db`: schema das tabelas de associação (project_libraries, library_tags)
 - [ ] Migration inicial rodando contra Postgres local
-  - [ ] Validar/rodar as migrations já geradas (uma por subtask de schema) contra o Postgres do docker-compose
+  - [x] Validar/rodar as migrations já geradas (uma por subtask de schema) contra o Postgres do docker-compose
   - [ ] Seed de categorias predefinidas (valida o schema com dados reais; adianta parte do item de Sprint 3 "Categorias predefinidas no seed do banco")
 - [ ] Pipeline GitHub Actions básico: build + lint + test em cada PR
   - [ ] Validar que ci-api.yml e ci-web.yml passam de verdade agora que existe package.json real em packages/db — corrigir o que falhar
