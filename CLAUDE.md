@@ -8,7 +8,7 @@ DevLib é um catálogo pessoal de bibliotecas, frameworks e ferramentas usadas e
 
 ## Stack
 
-- **Monorepo**: Turborepo + pnpm workspaces
+- **Monorepo**: Turborepo + npm workspaces
 - **Frontend** (`apps/web`): Next.js
 - **Backend** (`apps/api`): Node.js + Fastify (API REST desacoplada)
 - **ORM**: Drizzle ORM
@@ -32,7 +32,7 @@ packages/
 - `cp .env.example .env` — variáveis de ambiente necessárias, ver o arquivo para a lista completa
 - `docker compose up -d --build` — sobe Postgres, API e Web juntos, localmente (ver `docker-compose.yml`)
 - `docker compose logs -f api` — acompanhar logs de um serviço específico
-- `pnpm install` — instala dependências do monorepo (necessário mesmo usando Docker, para lint/type-check no editor)
+- `npm install` — instala dependências do monorepo (necessário mesmo usando Docker, para lint/type-check no editor)
 - `turbo run dev` — sobe web + api em paralelo
 - `turbo run build --filter=api` — builda só o backend
 - `turbo run test --filter=api...` — testa só o que foi afetado por mudanças na api
@@ -69,4 +69,3 @@ Atualizar `docs/DECISIONS.md` e `docs/APP.md` faz parte do passo 5.5 da skill `n
 - `/revisar-pr` — use antes de sugerir abrir um PR, faz a autoavaliação contra o checklist
 - `/propor-skill` — use ao perceber um padrão repetido; propõe nova skill/hook/subagente, nunca cria sem aprovação
 - Subagente `revisor-arquitetura` (somente leitura) — audita conformidade com a arquitetura acima; use antes de um PR ou quando pedir uma checagem de conformidade
-

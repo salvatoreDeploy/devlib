@@ -65,3 +65,17 @@ Isso existe porque um PR mesclado guarda o "o quê", mas geralmente perde o "por
 **Decisão**: `apps/api` voltou a ser CommonJS (sem `"type": "module"` no `package.json`; `tsconfig.json` não sobrescreve mais `module`/`moduleResolution`, herdando o `NodeNext` da raiz — que sob CommonJS resolve como CJS normal). Imports relativos voltaram a ser sem extensão (`./server`, não `./server.js`).
 **Alternativas consideradas**: manter ESM com `.js` nos imports — descartado por ser menos familiar no time e não trazer benefício real neste estágio (sem top-level await, sem necessidade de ESM-only deps); usar `moduleResolution: "Node10"` explícito — descartado por já estar marcado como deprecated pelo próprio TypeScript (remoção prevista na v7).
 **Consequências**: se algum pacote futuro só existir em ESM puro (`exports`-only, sem build CJS), `apps/api` vai precisar revisitar essa decisão — até lá, CommonJS é o padrão do app.
+
+### 2026-08-23 Driver Postgres em `packages/db`: `pg` (node-postgres), não `postgres` (postgres.js)
+
+**Contexto**: `packages/db` precisa de um driver Postgres para o Drizzle ORM se conectar ao banco. A proposta inicial era `postgres` (postgres.js), citado como opção leve na documentação do Drizzle.
+**Decisão**: `pg` (node-postgres), via `drizzle-orm/node-postgres`, também documentado oficialmente pelo Drizzle como driver suportado.
+**Alternativas consideradas**: `postgres` (postgres.js) — mais leve e com tipos TS nativos, mas descartado em favor de `pg` por ser o driver mais estabelecido do ecossistema Node.
+**Consequências**: `packages/db` precisa de `@types/pg` como devDependency (diferente de `postgres`, que já vem tipado); `src/client.ts` usa `Pool` de `pg` + `drizzle(pool)` de `drizzle-orm/node-postgres`.
+
+### 2026-08-23 npm workspaces em vez de pnpm workspaces
+
+**Contexto**: ao instalar as dependências novas de `packages/db` (`drizzle-orm`, `pg`, `drizzle-kit`), o `pnpm install` apresentou timeouts de rede repetidos e não-determinísticos (`ERR_SOCKET_TIMEOUT` em pacotes específicos, minutos de espera), mesmo após reduzir `network-concurrency` e `fetch-timeout`. `npm install` rodado manualmente pelo usuário no mesmo ambiente funcionou sem esse problema.
+**Decisão**: monorepo passa a usar `npm workspaces` em vez de `pnpm workspaces`. Removidos `pnpm-workspace.yaml` e `pnpm-lock.yaml`; `package.json` da raiz ganhou o campo `workspaces`; CI (`ci-api.yml`, `ci-web.yml`) e os `Dockerfile`s de `apps/api`/`apps/web` trocaram `pnpm install --frozen-lockfile`/`pnpm --filter X run Y` por `npm ci`/`npm run Y -w X`.
+**Alternativas consideradas**: investigar a causa raiz do timeout do pnpm neste ambiente (proxy, DNS, limite de conexões) — descartado por consumir tempo sem garantia de solução, quando `npm` já resolveu o problema na prática.
+**Consequências**: `pnpm-lock.yaml` não existe mais; `package-lock.json` passa a ser o lockfile commitado. Nenhum `package.json` de `apps/*`/`packages/*` precisou mudar, pois nenhum ainda usava o protocolo `workspace:*` do pnpm.
