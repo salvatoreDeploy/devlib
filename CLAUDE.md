@@ -14,8 +14,10 @@ DevLib é um catálogo pessoal de bibliotecas, frameworks e ferramentas usadas e
 - **ORM**: Drizzle ORM
 - **Banco**: PostgreSQL
 - **Auth**: JWT próprio (access token curto + refresh token), hash de senha com argon2
+- **Testes**: Vitest, arquivos `.spec.ts` co-localizados (ao lado do arquivo testado, não em pasta `tests/` separada)
+- **Deploy**: adiado até a finalização do projeto. Por enquanto, tudo roda localmente via `docker-compose.yml` (Postgres + API + Web). Ver `docs/DECISIONS.md` para o motivo.
 - **Pacotes compartilhados**: `packages/shared-types` (tipos/DTOs), `packages/config` (eslint/tsconfig), `packages/db` (schema Drizzle)
-- **CI/CD**: Harness (`harness/pipeline-web.yaml`, `harness/pipeline-api.yaml`)
+- **CI/CD**: GitHub Actions (`.github/workflows/ci-web.yml`, `.github/workflows/ci-api.yml`)
 
 ## Estrutura de pastas
 
@@ -27,7 +29,10 @@ packages/
 
 ## Comandos essenciais
 
-- `pnpm install` — instala dependências do monorepo
+- `cp .env.example .env` — variáveis de ambiente necessárias, ver o arquivo para a lista completa
+- `docker compose up -d --build` — sobe Postgres, API e Web juntos, localmente (ver `docker-compose.yml`)
+- `docker compose logs -f api` — acompanhar logs de um serviço específico
+- `pnpm install` — instala dependências do monorepo (necessário mesmo usando Docker, para lint/type-check no editor)
 - `turbo run dev` — sobe web + api em paralelo
 - `turbo run build --filter=api` — builda só o backend
 - `turbo run test --filter=api...` — testa só o que foi afetado por mudanças na api
@@ -41,8 +46,27 @@ packages/
 - Mudança em `packages/db/schema.ts` sempre vem acompanhada de uma migration Drizzle no mesmo PR.
 - Nunca commitar segredos (`JWT_SECRET`, `DATABASE_URL`). Usar `.env` (gitignored) localmente e variáveis do Harness em CI/CD.
 - Senhas sempre com hash argon2, nunca texto puro nem outro algoritmo.
+- Todo arquivo novo em `apps/api/src/routes`, `apps/api/src/services` e `apps/api/src/providers` (e o equivalente em `apps/web`) tem um arquivo `.spec.ts` correspondente, co-localizado: `library.service.ts` → `library.service.spec.ts` na mesma pasta. Nunca deixar o teste para "depois" — ele nasce junto com o arquivo.
 - Branch por feature a partir de `develop`, seguindo git flow (`feature/*`, `release/*`, `hotfix/*`). Nunca commitar direto em `main`.
 
 ## Definition of done de um PR
 
 Ver `CONTRIBUTING.md` para o checklist completo antes de abrir um PR para revisão humana.
+
+## Documentação viva
+
+Três documentos com papéis diferentes — não duplicar conteúdo entre eles:
+
+- `CLAUDE.md` (este arquivo) — como o agente deve trabalhar
+- `docs/DECISIONS.md` — por que uma escolha técnica foi feita (evita que uma sessão futura "corrija" algo proposital)
+- `docs/APP.md` — o que a aplicação faz hoje (funcionalidades, rotas, telas)
+
+Atualizar `docs/DECISIONS.md` e `docs/APP.md` faz parte do passo 5.5 da skill `nova-feature` — não é opcional nem posterior.
+
+## Skills e subagentes disponíveis
+
+- `/nova-feature` — use ao implementar qualquer item do `BACKLOG.md`, do planejamento ao PR
+- `/revisar-pr` — use antes de sugerir abrir um PR, faz a autoavaliação contra o checklist
+- `/propor-skill` — use ao perceber um padrão repetido; propõe nova skill/hook/subagente, nunca cria sem aprovação
+- Subagente `revisor-arquitetura` (somente leitura) — audita conformidade com a arquitetura acima; use antes de um PR ou quando pedir uma checagem de conformidade
+

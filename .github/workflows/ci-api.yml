@@ -1,0 +1,65 @@
+name: CI - API
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "apps/api/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - "turbo.json"
+
+jobs:
+  build-lint-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: devlib
+          POSTGRES_PASSWORD: devlib
+          POSTGRES_DB: devlib_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U devlib"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://devlib:devlib@localhost:5432/devlib_test
+      JWT_SECRET: ci-test-secret
+      JWT_REFRESH_SECRET: ci-test-refresh-secret
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm turbo run lint --filter=api...
+
+      - name: Build
+        run: pnpm turbo run build --filter=api...
+
+      - name: Rodar migrations no banco de teste
+        run: pnpm --filter api run db:migrate
+
+      - name: Testes
+        run: pnpm turbo run test --filter=api...
