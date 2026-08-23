@@ -87,12 +87,12 @@ Isso existe porque um PR mesclado guarda o "o quê", mas geralmente perde o "por
 **Alternativas consideradas**: criar um script `db:migrate` provisório que não faz nada, só para o CI passar — descartado por ser código morto/enganoso (finge validar migration sem validar nada); deixar o passo falhando até a subtask de migration — descartado porque bloquearia o CI de toda PR futura que tocasse `apps/api` ou `packages/**` até lá, não só desta.
 **Consequências**: até a subtask de migration ser feita, `ci-api.yml` não valida migrations contra o Postgres de teste — só lint/build/test. Se esta ausência "parecer" um esquecimento numa sessão futura, não é — reintroduzir o passo faz parte do escopo dessa subtask.
 
-### 2026-08-23 `packages/db/schema.ts`: PK serial (não UUID) e `refresh_tokens.token_hash` guarda hash, não o token
+### 2026-08-23 `packages/db/schema.ts`: PK `uuid` e `refresh_tokens.token_hash` guarda hash, não o token
 
 **Contexto**: primeira subtask a definir tabelas de verdade em `packages/db/schema.ts` (`users`, `refresh_tokens`), preparando o terreno pro Sprint 2 (auth JWT).
-**Decisão**: chave primária `serial` (inteiro autoincrement) em vez de UUID; `refresh_tokens.token_hash` guarda o hash do refresh token, não o valor em texto puro.
-**Alternativas consideradas**: UUID como PK — mais comum pra evitar IDs sequenciais previsíveis em APIs públicas, descartado por ser complexidade desnecessária num catálogo pessoal de usuário único; guardar o refresh token em texto puro — mais simples de comparar no login, descartado porque um vazamento do banco exporia sessões ativas diretamente (mesmo raciocínio do hash de senha com argon2, aplicado ao token).
-**Consequências**: rotas de auth do Sprint 2 (login/refresh) precisam hashear o token antes de gravar/comparar em `refresh_tokens`, não comparar o valor recebido direto com a coluna.
+**Decisão**: chave primária `uuid` (`defaultRandom()`, gerada via `gen_random_uuid()` nativo do Postgres 16+, sem precisar da extensão `pgcrypto`) em todas as tabelas; `refresh_tokens.token_hash` guarda o hash do refresh token, não o valor em texto puro.
+**Alternativas consideradas**: `serial` (inteiro autoincrement) — mais simples, chegou a ser a escolha inicial nesta mesma subtask, revertida a pedido do usuário em favor de UUID; guardar o refresh token em texto puro — mais simples de comparar no login, descartado porque um vazamento do banco exporia sessões ativas diretamente (mesmo raciocínio do hash de senha com argon2, aplicado ao token).
+**Consequências**: `refresh_tokens.user_id` também é `uuid` (acompanha a PK de `users`). Rotas de auth do Sprint 2 (login/refresh) precisam hashear o token antes de gravar/comparar em `refresh_tokens`, não comparar o valor recebido direto com a coluna.
 
 ### 2026-08-23 `drizzle-orm` também como devDependency da raiz (não só de `packages/db`)
 
