@@ -7,6 +7,8 @@ import {
   tags,
   projects,
   libraries,
+  projectLibraries,
+  libraryTags,
 } from "./schema";
 
 describe("users", () => {
@@ -161,5 +163,52 @@ describe("libraries", () => {
 
     expect(columns.categoryId.notNull).toBe(false);
     expect(columns.notes.notNull).toBe(false);
+  });
+});
+
+describe("projectLibraries", () => {
+  it("tem as colunas esperadas", () => {
+    const columns = getTableColumns(projectLibraries);
+
+    expect(Object.keys(columns)).toEqual(
+      expect.arrayContaining([
+        "id",
+        "projectId",
+        "libraryId",
+        "version",
+        "createdAt",
+      ]),
+    );
+  });
+
+  it("projectId e libraryId são obrigatórios", () => {
+    const columns = getTableColumns(projectLibraries);
+
+    expect(columns.projectId.notNull).toBe(true);
+    expect(columns.libraryId.notNull).toBe(true);
+  });
+
+  it("version é opcional", () => {
+    const columns = getTableColumns(projectLibraries);
+
+    expect(columns.version.notNull).toBe(false);
+  });
+});
+
+describe("libraryTags", () => {
+  it("tem as colunas esperadas (chave composta, sem id próprio)", () => {
+    const columns = getTableColumns(libraryTags);
+
+    expect(Object.keys(columns)).toEqual(
+      expect.arrayContaining(["libraryId", "tagId"]),
+    );
+    expect(columns.id).toBeUndefined();
+  });
+
+  it("libraryId e tagId são obrigatórios", () => {
+    const columns = getTableColumns(libraryTags);
+
+    expect(columns.libraryId.notNull).toBe(true);
+    expect(columns.tagId.notNull).toBe(true);
   });
 });

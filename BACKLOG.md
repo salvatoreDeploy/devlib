@@ -42,12 +42,12 @@ Fica para depois do MVP (v1.1+):
 - [x] `apps/api`: Fastify rodando com rota de health check
 - [x] `apps/web`: Next.js rodando, página em branco
 - [x] `Dockerfile` de desenvolvimento em `apps/api` e `apps/web`, funcionando via `docker compose up -d --build`
-- [ ] `packages/db`: schema Drizzle inicial (users, projects, libraries, categories, tags, project_libraries, library_tags)
+- [x] `packages/db`: schema Drizzle inicial (users, projects, libraries, categories, tags, project_libraries, library_tags)
   - [x] `packages/db`: setup do pacote (package.json, config do Drizzle, conexão)
   - [x] `packages/db`: schema de users + refresh_tokens
   - [x] `packages/db`: schema de categories + tags
   - [x] `packages/db`: schema de libraries + projects
-  - [ ] `packages/db`: schema das tabelas de associação (project_libraries, library_tags)
+  - [x] `packages/db`: schema das tabelas de associação (project_libraries, library_tags)
 - [ ] Migration inicial rodando contra Postgres local
   - [ ] Validar/rodar as migrations já geradas (uma por subtask de schema) contra o Postgres do docker-compose
   - [ ] Seed de categorias predefinidas (valida o schema com dados reais; adianta parte do item de Sprint 3 "Categorias predefinidas no seed do banco")
