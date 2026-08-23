@@ -25,6 +25,12 @@ describe("getDatabaseUrl", () => {
 
     expect(() => getDatabaseUrl()).toThrow(/DATABASE_URL/);
   });
+
+  it("lança erro claro quando DATABASE_URL não é uma URL válida", () => {
+    process.env.DATABASE_URL = "isso-nao-e-uma-url";
+
+    expect(() => getDatabaseUrl()).toThrow(/DATABASE_URL/);
+  });
 });
 
 describe("createDb", () => {
