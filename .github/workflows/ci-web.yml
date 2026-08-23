@@ -6,7 +6,7 @@ on:
     paths:
       - "apps/web/**"
       - "packages/**"
-      - "pnpm-lock.yaml"
+      - "package-lock.json"
       - "turbo.json"
 
 jobs:

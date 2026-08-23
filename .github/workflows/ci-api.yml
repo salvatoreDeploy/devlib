@@ -6,7 +6,7 @@ on:
     paths:
       - "apps/api/**"
       - "packages/**"
-      - "pnpm-lock.yaml"
+      - "package-lock.json"
       - "turbo.json"
 
 jobs:
@@ -52,9 +52,6 @@ jobs:
 
       - name: Build
         run: npm run build -- --filter=api...
-
-      - name: Rodar migrations no banco de teste
-        run: npm run db:migrate -w api
 
       - name: Testes
         run: npm run test -- --filter=api...
