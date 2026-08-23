@@ -19,6 +19,7 @@ Cada subtask vira um PR pequeno e revisável, não um PR gigante no final. Marca
 ## Escopo do MVP
 
 Entra no MVP (v1):
+
 - Login/registro com JWT
 - CRUD de projetos
 - CRUD de bibliotecas (cadastro manual)
@@ -27,6 +28,7 @@ Entra no MVP (v1):
 - Notas por biblioteca
 
 Fica para depois do MVP (v1.1+):
+
 - Integração automática com npm/PyPI (busca e autopreenchimento)
 - Snippets de instalação/configuração
 - Dashboard de métricas
@@ -36,10 +38,10 @@ Fica para depois do MVP (v1.1+):
 
 ## Sprint 1 — Fundação
 
-- [ ] Scaffold do monorepo (turborepo + pnpm workspaces)
-- [ ] `apps/api`: Fastify rodando com rota de health check
-- [ ] `apps/web`: Next.js rodando, página em branco
-- [ ] `Dockerfile` de desenvolvimento em `apps/api` e `apps/web`, funcionando via `docker compose up -d --build`
+- [x] Scaffold do monorepo (turborepo + pnpm workspaces)
+- [x] `apps/api`: Fastify rodando com rota de health check
+- [x] `apps/web`: Next.js rodando, página em branco
+- [x] `Dockerfile` de desenvolvimento em `apps/api` e `apps/web`, funcionando via `docker compose up -d --build`
 - [ ] `packages/db`: schema Drizzle inicial (users, projects, libraries, categories, tags, project_libraries, library_tags)
 - [ ] Migration inicial rodando contra Postgres local
 - [ ] Pipeline GitHub Actions básico: build + lint + test em cada PR
