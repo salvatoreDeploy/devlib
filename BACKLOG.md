@@ -38,12 +38,12 @@ Fica para depois do MVP (v1.1+):
 
 ## Sprint 1 — Fundação
 
-- [x] Scaffold do monorepo (turborepo + pnpm workspaces)
+- [x] Scaffold do monorepo (turborepo + npm workspaces)
 - [x] `apps/api`: Fastify rodando com rota de health check
 - [x] `apps/web`: Next.js rodando, página em branco
 - [x] `Dockerfile` de desenvolvimento em `apps/api` e `apps/web`, funcionando via `docker compose up -d --build`
 - [ ] `packages/db`: schema Drizzle inicial (users, projects, libraries, categories, tags, project_libraries, library_tags)
-  - [ ] `packages/db`: setup do pacote (package.json, config do Drizzle, conexão)
+  - [x] `packages/db`: setup do pacote (package.json, config do Drizzle, conexão)
   - [ ] `packages/db`: schema de users + refresh_tokens
   - [ ] `packages/db`: schema de categories + tags
   - [ ] `packages/db`: schema de libraries + projects
