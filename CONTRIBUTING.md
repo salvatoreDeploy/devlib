@@ -12,13 +12,13 @@ Este repositório é desenvolvido com apoio de agentes de IA (Claude Code), com 
 
 ## Antes de abrir o PR
 
-- [ ] Rodei `turbo run lint` e `turbo run build` localmente (ou confio no Harness pra isso)
+- [ ] Rodei `turbo run lint` e `turbo run build` localmente (ou confio no GitHub Actions pra isso)
 - [ ] Adicionei/atualizei testes para a mudança
 - [ ] Se mudei `packages/db/schema.ts`, gerei a migration correspondente
 
 ## Checklist de aprovação (revisão humana)
 
-**Automático — Harness bloqueia o merge se falhar**
+**Automático — GitHub Actions bloqueia o merge se falhar**
 - [ ] Build passa (`turbo run build --filter=...`)
 - [ ] Lint sem erros
 - [ ] Testes automatizados passam

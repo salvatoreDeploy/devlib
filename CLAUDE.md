@@ -15,7 +15,7 @@ DevLib é um catálogo pessoal de bibliotecas, frameworks e ferramentas usadas e
 - **Banco**: PostgreSQL
 - **Auth**: JWT próprio (access token curto + refresh token), hash de senha com argon2
 - **Pacotes compartilhados**: `packages/shared-types` (tipos/DTOs), `packages/config` (eslint/tsconfig), `packages/db` (schema Drizzle)
-- **CI/CD**: Harness (`harness/pipeline-web.yaml`, `harness/pipeline-api.yaml`)
+- **CI/CD**: GitHub Actions (`.github/workflows/ci-web.yml`, `.github/workflows/ci-api.yml`)
 
 ## Estrutura de pastas
 

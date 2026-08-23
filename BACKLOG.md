@@ -27,7 +27,7 @@ Fica para depois do MVP (v1.1+):
 - [ ] `apps/web`: Next.js rodando, página em branco
 - [ ] `packages/db`: schema Drizzle inicial (users, projects, libraries, categories, tags, project_libraries, library_tags)
 - [ ] Migration inicial rodando contra Postgres local
-- [ ] Pipeline Harness básico: build + lint + test em cada PR
+- [ ] Pipeline GitHub Actions básico: build + lint + test em cada PR
 
 ## Sprint 2 — Autenticação
 
@@ -75,7 +75,7 @@ Fica para depois do MVP (v1.1+):
 3. Criar a branch (`feature/api-...` ou `feature/web-...`)
 4. Deixar o agente (Claude Code) implementar o item
 5. Rodar o checklist de `CONTRIBUTING.md` antes de aprovar o PR
-6. Aprovar e mesclar em `develop` — Harness builda, testa e faz deploy em staging automaticamente
+6. Aprovar e mesclar em `develop` — o GitHub Actions builda e testa automaticamente
 7. Marcar o checkbox correspondente neste arquivo
 8. Se sobrar tempo, repetir a partir do passo 2 — nunca abrir uma segunda branch em paralelo sem terminar a primeira
 
