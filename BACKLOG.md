@@ -45,7 +45,7 @@ Fica para depois do MVP (v1.1+):
 - [ ] `packages/db`: schema Drizzle inicial (users, projects, libraries, categories, tags, project_libraries, library_tags)
   - [x] `packages/db`: setup do pacote (package.json, config do Drizzle, conexão)
   - [x] `packages/db`: schema de users + refresh_tokens
-  - [ ] `packages/db`: schema de categories + tags
+  - [x] `packages/db`: schema de categories + tags
   - [ ] `packages/db`: schema de libraries + projects
   - [ ] `packages/db`: schema das tabelas de associação (project_libraries, library_tags)
 - [ ] Migration inicial rodando contra Postgres local

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getTableColumns } from "drizzle-orm";
-import { users, refreshTokens } from "./schema";
+import { users, refreshTokens, categories, tags } from "./schema";
 
 describe("users", () => {
   it("tem as colunas esperadas", () => {
@@ -59,5 +59,39 @@ describe("refreshTokens", () => {
     const columns = getTableColumns(refreshTokens);
 
     expect(columns.revokedAt.notNull).toBe(false);
+  });
+});
+
+describe("categories", () => {
+  it("tem as colunas esperadas", () => {
+    const columns = getTableColumns(categories);
+
+    expect(Object.keys(columns)).toEqual(
+      expect.arrayContaining(["id", "name", "createdAt"]),
+    );
+  });
+
+  it("name é obrigatório e único", () => {
+    const columns = getTableColumns(categories);
+
+    expect(columns.name.notNull).toBe(true);
+    expect(columns.name.isUnique).toBe(true);
+  });
+});
+
+describe("tags", () => {
+  it("tem as colunas esperadas", () => {
+    const columns = getTableColumns(tags);
+
+    expect(Object.keys(columns)).toEqual(
+      expect.arrayContaining(["id", "name", "createdAt"]),
+    );
+  });
+
+  it("name é obrigatório e único", () => {
+    const columns = getTableColumns(tags);
+
+    expect(columns.name.notNull).toBe(true);
+    expect(columns.name.isUnique).toBe(true);
   });
 });
