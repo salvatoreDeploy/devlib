@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "F=$(jq -r '.tool_input.file_path // empty'); case \"$F\" in *.env|*.env.*) echo 'Bloqueado: acesso a arquivo de segredo (.env) nao e permitido' >&2; exit 2;; esac",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "F=$(jq -r '.tool_input.file_path // empty'); if [ -n \"$F\" ] && [ -f \"$F\" ]; then npx prettier --write \"$F\" >/dev/null 2>&1 || true; fi",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

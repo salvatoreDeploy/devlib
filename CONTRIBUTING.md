@@ -13,7 +13,7 @@ Este repositório é desenvolvido com apoio de agentes de IA (Claude Code), com 
 ## Antes de abrir o PR
 
 - [ ] Rodei `turbo run lint` e `turbo run build` localmente (ou confio no GitHub Actions pra isso)
-- [ ] Adicionei/atualizei testes para a mudança
+- [ ] Adicionei/atualizei o `.spec.ts` co-localizado para cada arquivo novo ou modificado em routes/services/providers
 - [ ] Se mudei `packages/db/schema.ts`, gerei a migration correspondente
 
 ## Checklist de aprovação (revisão humana)
@@ -28,6 +28,7 @@ Este repositório é desenvolvido com apoio de agentes de IA (Claude Code), com 
 - [ ] O PR está restrito ao escopo do nome da branch (ex: `feature/api-*` só mexe em `apps/api`)
 - [ ] Segue a estrutura de pastas descrita em `CLAUDE.md`
 - [ ] Rotas novas têm validação de entrada (zod) e tratamento de erro
+- [ ] Todo arquivo novo em routes/services/providers tem seu `.spec.ts` co-localizado
 - [ ] Nenhum segredo ou chave commitado
 - [ ] Mudança de schema vem com migration incluída
 - [ ] Descrição do PR explica o quê e por quê, não só o quê
