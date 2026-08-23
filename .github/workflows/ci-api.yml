@@ -6,7 +6,7 @@ on:
     paths:
       - "apps/api/**"
       - "packages/**"
-      - "pnpm-lock.yaml"
+      - "package-lock.json"
       - "turbo.json"
 
 jobs:
@@ -38,26 +38,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
-          cache: "pnpm"
+          cache: "npm"
 
       - name: Instalar dependências
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Lint
-        run: pnpm turbo run lint --filter=api...
+        run: npm run lint -- --filter=api...
 
       - name: Build
-        run: pnpm turbo run build --filter=api...
-
-      - name: Rodar migrations no banco de teste
-        run: pnpm --filter api run db:migrate
+        run: npm run build -- --filter=api...
 
       - name: Testes
-        run: pnpm turbo run test --filter=api...
+        run: npm run test -- --filter=api...

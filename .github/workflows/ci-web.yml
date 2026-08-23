@@ -6,7 +6,7 @@ on:
     paths:
       - "apps/web/**"
       - "packages/**"
-      - "pnpm-lock.yaml"
+      - "package-lock.json"
       - "turbo.json"
 
 jobs:
@@ -16,23 +16,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
-          cache: "pnpm"
+          cache: "npm"
 
       - name: Instalar dependências
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Lint
-        run: pnpm turbo run lint --filter=web...
+        run: npm run lint -- --filter=web...
 
       - name: Build
-        run: pnpm turbo run build --filter=web...
+        run: npm run build -- --filter=web...
 
       - name: Testes
-        run: pnpm turbo run test --filter=web...
+        run: npm run test -- --filter=web...

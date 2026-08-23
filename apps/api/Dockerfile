@@ -6,14 +6,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN corepack enable
-
-# Copia o monorepo inteiro — necessário porque pnpm workspaces resolve
+# Copia o monorepo inteiro — necessário porque npm workspaces resolve
 # dependências entre apps/api e packages/* a partir da raiz.
 COPY . .
 
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
 EXPOSE 3333
 
-CMD ["pnpm", "--filter", "api", "run", "dev"]
+CMD ["npm", "run", "dev", "-w", "api"]
