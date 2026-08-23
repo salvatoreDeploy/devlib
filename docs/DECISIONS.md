@@ -37,3 +37,31 @@ Isso existe porque um PR mesclado guarda o "o quê", mas geralmente perde o "por
 **Decisão**: `docker-compose.yml` agora sobe a stack inteira (Postgres, API, Web) localmente, com `Dockerfile`s de desenvolvimento em `apps/api` e `apps/web` (hot reload, sem build de produção). O workflow `cd-api.yml` foi removido — nenhum deploy automático existe neste momento.
 **Alternativas consideradas**: manter o `cd-api.yml` desativado (comentado) em vez de remover — descartado por poluir o repo com um workflow inerte que pode confundir uma sessão futura.
 **Consequências**: quando o projeto estiver pronto para produção, será necessário: (1) recriar o workflow de CD, (2) escrever `Dockerfile`s de produção multi-stage (mais otimizados que os de dev atuais), e (3) fazer o setup manual do VPS (Node, pnpm, PM2 ou Docker). Até lá, `ci-api.yml`/`ci-web.yml` continuam validando cada PR normalmente — CI (validação) e CD (deploy) são decisões independentes.
+
+### 2026-08-23 Rota de health check sem validação zod
+
+**Contexto**: `CLAUDE.md` exige validação zod em toda rota nova de `apps/api/src/routes`.
+**Decisão**: `GET /health` não implementa schema zod porque não recebe nenhum input (sem query, params ou body) — não há o que validar.
+**Alternativas consideradas**: schema zod vazio só para manter uniformidade — descartado por ser código morto sem propósito.
+**Consequências**: rotas futuras sem input podem seguir o mesmo raciocínio; qualquer rota que receba query/params/body continua exigindo zod normalmente. Se isso "parecer" uma violação numa sessão futura, não é — é intencional.
+
+### 2026-08-23 `packages/config` fica vazio nesta subtask
+
+**Contexto**: o Sprint 1 pede `packages/config` "pronto para uso futuro", mas ainda não existe um segundo consumidor real de configuração compartilhada (só `apps/api` e `apps/web`, cada um com necessidades próprias de eslint/tsconfig).
+**Decisão**: `packages/config` contém só um `package.json` placeholder; `apps/api` e `apps/web` mantêm `eslint.config.js`/`tsconfig.json` próprios por enquanto.
+**Alternativas consideradas**: já extrair um eslint/tsconfig compartilhado agora — descartado por ser abstração prematura com apenas dois consumidores e regras diferentes (Next.js vs Node puro).
+**Consequências**: quando uma segunda app/package precisar de config idêntica a uma já existente, migrar a config duplicada para `packages/config` nesse momento — não antes.
+
+### 2026-08-23 Porta do Next.js fixada via CLI, não via `.env` compartilhado
+
+**Contexto**: `docker-compose.yml` usa o mesmo `.env` (com uma única variável `PORT=3333`, destinada à API) como `env_file` para os serviços `api` e `web`. O Next.js lê `PORT` do ambiente automaticamente, então o `web` tentava subir na porta 3333 e colidia com a API — descoberto ao validar `docker compose up -d --build` nesta subtask.
+**Decisão**: `apps/web/package.json` fixa a porta via CLI (`next dev -p 3000` / `next start -p 3000`), independente do valor de `PORT` no `.env` compartilhado.
+**Alternativas consideradas**: separar em `API_PORT`/`WEB_PORT` no `.env.example` — mais explícito, mas exige mexer em `.env.example` (e no `.env` local de quem já tiver criado o próprio) fora do escopo desta subtask; ficou para quando alguém revisitar as variáveis de ambiente.
+**Consequências**: se `.env.example` ganhar variáveis de porta separadas no futuro, essa flag fixa no script do `web` deve ser revisitada para usar a variável nova em vez do valor fixo `3000`.
+
+### 2026-08-23 `apps/api` usa CommonJS, não ESM
+
+**Contexto**: a primeira versão do scaffold configurou `apps/api` como ESM puro (`"type": "module"` + `module`/`moduleResolution: "NodeNext"`), o que exige escrever a extensão `.js` nos imports relativos mesmo em arquivos `.ts` (ex: `import { buildServer } from "./server.js"`) — é o comportamento correto do TypeScript nesse modo, mas gerou estranheza na revisão por parecer um erro.
+**Decisão**: `apps/api` voltou a ser CommonJS (sem `"type": "module"` no `package.json`; `tsconfig.json` não sobrescreve mais `module`/`moduleResolution`, herdando o `NodeNext` da raiz — que sob CommonJS resolve como CJS normal). Imports relativos voltaram a ser sem extensão (`./server`, não `./server.js`).
+**Alternativas consideradas**: manter ESM com `.js` nos imports — descartado por ser menos familiar no time e não trazer benefício real neste estágio (sem top-level await, sem necessidade de ESM-only deps); usar `moduleResolution: "Node10"` explícito — descartado por já estar marcado como deprecated pelo próprio TypeScript (remoção prevista na v7).
+**Consequências**: se algum pacote futuro só existir em ESM puro (`exports`-only, sem build CJS), `apps/api` vai precisar revisitar essa decisão — até lá, CommonJS é o padrão do app.
