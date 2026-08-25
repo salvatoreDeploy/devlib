@@ -51,8 +51,8 @@ Fica para depois do MVP (v1.1+):
 - [x] Migration inicial rodando contra Postgres local
   - [x] Validar/rodar as migrations já geradas (uma por subtask de schema) contra o Postgres do docker-compose
   - [x] Seed de categorias predefinidas (valida o schema com dados reais; adianta parte do item de Sprint 3 "Categorias predefinidas no seed do banco")
-- [ ] Pipeline GitHub Actions básico: build + lint + test em cada PR
-  - [ ] Validar que ci-api.yml e ci-web.yml passam de verdade agora que existe package.json real em packages/db — corrigir o que falhar
+- [x] Pipeline GitHub Actions básico: build + lint + test em cada PR
+  - [x] Validar que ci-api.yml e ci-web.yml passam de verdade agora que existe package.json real em packages/db — corrigir o que falhar
 
 ## Sprint 2 — Autenticação
 
