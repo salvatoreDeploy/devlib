@@ -14,6 +14,7 @@ _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. 
 - API sobe com Fastify e expõe health check
 - Web sobe com Next.js (App Router), página inicial ainda em branco
 - Stack completa (Postgres + API + Web) validada rodando via `docker compose up -d --build`
+- Migrations do `packages/db` validadas contra o Postgres local (8 tabelas, FKs e constraints conferidas); 10 categorias predefinidas semeadas via `npm run db:seed -w @devlib/db` (idempotente)
 
 ## Rotas da API
 
