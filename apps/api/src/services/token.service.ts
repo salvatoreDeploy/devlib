@@ -31,6 +31,13 @@ export function signRefreshToken(
   return { token, expiresAt: new Date(decoded.exp * 1000) };
 }
 
+export function verifyAccessToken(
+  token: string,
+  secret: string,
+): AccessTokenPayload {
+  return jwt.verify(token, secret) as AccessTokenPayload;
+}
+
 export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
