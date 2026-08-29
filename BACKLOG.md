@@ -56,7 +56,7 @@ Fica para depois do MVP (v1.1+):
 
 ## Sprint 2 — Autenticação
 
-- [ ] Rota de registro (hash argon2)
+- [x] Rota de registro (hash argon2)
 - [ ] Rota de login (emite access + refresh token)
 - [ ] Middleware de autenticação no Fastify
 - [ ] Rota de refresh token
