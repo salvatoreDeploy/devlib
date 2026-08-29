@@ -1,9 +1,18 @@
 import * as argon2 from "argon2";
+import { signAccessToken, signRefreshToken, hashToken } from "./token.service";
+import type { AuthConfig } from "../config/env";
 
 export class EmailAlreadyInUseError extends Error {
   constructor(email: string) {
     super(`Email já está em uso: ${email}`);
     this.name = "EmailAlreadyInUseError";
+  }
+}
+
+export class InvalidCredentialsError extends Error {
+  constructor() {
+    super("Credenciais inválidas");
+    this.name = "InvalidCredentialsError";
   }
 }
 
@@ -43,4 +52,65 @@ export async function registerUser(
   });
 
   return { id: user.id, email: user.email, createdAt: user.createdAt };
+}
+
+export type LoginInput = {
+  email: string;
+  password: string;
+};
+
+export type LoginTokens = {
+  accessToken: string;
+  refreshToken: string;
+};
+
+export type LoginRepository = {
+  findUserByEmail(
+    email: string,
+  ): Promise<{ id: string; email: string; passwordHash: string } | undefined>;
+  insertRefreshToken(data: {
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+  }): Promise<void>;
+};
+
+export async function loginUser(
+  repository: LoginRepository,
+  config: AuthConfig,
+  input: LoginInput,
+): Promise<LoginTokens> {
+  const user = await repository.findUserByEmail(input.email);
+
+  if (!user) {
+    throw new InvalidCredentialsError();
+  }
+
+  const passwordMatches = await argon2.verify(
+    user.passwordHash,
+    input.password,
+  );
+
+  if (!passwordMatches) {
+    throw new InvalidCredentialsError();
+  }
+
+  const accessToken = signAccessToken(
+    { sub: user.id, email: user.email },
+    config.jwtSecret,
+    config.accessExpiresIn,
+  );
+  const { token: refreshToken, expiresAt } = signRefreshToken(
+    { sub: user.id },
+    config.jwtRefreshSecret,
+    config.refreshExpiresIn,
+  );
+
+  await repository.insertRefreshToken({
+    userId: user.id,
+    tokenHash: hashToken(refreshToken),
+    expiresAt,
+  });
+
+  return { accessToken, refreshToken };
 }

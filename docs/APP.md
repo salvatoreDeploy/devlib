@@ -16,6 +16,7 @@ _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. 
 - Stack completa (Postgres + API + Web) validada rodando via `docker compose up -d --build`
 - Migrations do `packages/db` validadas contra o Postgres local (8 tabelas, FKs e constraints conferidas); 10 categorias predefinidas semeadas via `npm run db:seed -w @devlib/db` (idempotente)
 - Registro de usuário via `POST /auth/register`, com hash argon2 da senha e checagem de email duplicado
+- Login via `POST /auth/login`, com verificação de senha (argon2) e emissão de access token + refresh token (JWT)
 
 ## Rotas da API
 
@@ -25,6 +26,7 @@ _Atualizar com cada rota nova criada em `apps/api/src/routes`._
 | ------ | ---------------- | ----- | -------------------------------------------------------------------- |
 | GET    | `/health`        | Não   | Health check — retorna `{ status: "ok" }`                            |
 | POST   | `/auth/register` | Não   | Cadastra usuário (email + senha); retorna `{ id, email, createdAt }` |
+| POST   | `/auth/login`    | Não   | Login (email + senha); retorna `{ accessToken, refreshToken }`       |
 
 ## Telas do frontend
 
