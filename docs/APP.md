@@ -17,6 +17,7 @@ _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. 
 - Migrations do `packages/db` validadas contra o Postgres local (8 tabelas, FKs e constraints conferidas); 10 categorias predefinidas semeadas via `npm run db:seed -w @devlib/db` (idempotente)
 - Registro de usuário via `POST /auth/register`, com hash argon2 da senha e checagem de email duplicado
 - Login via `POST /auth/login`, com verificação de senha (argon2) e emissão de access token + refresh token (JWT)
+- Documentação interativa da API (Swagger UI) em `/docs`, gerada a partir dos schemas zod das rotas (`/docs/json` expõe o spec OpenAPI cru). Só `/health` tem schema completo até agora — registro e login entram nas próximas subtasks
 
 ## Rotas da API
 
