@@ -63,7 +63,7 @@ Fica para depois do MVP (v1.1+):
 - [x] Middleware de autenticação no Fastify
 - [ ] Implementação de API com Swagger/OpenAPI, utilizando a biblioteca "Swagger" link da biblioteca `https://swagger.io/`
   - [x] Setup Swagger/OpenAPI + type provider (zod)
-  - [ ] Migrar POST /auth/register para schema nativo (zod)
+  - [x] Migrar POST /auth/register para schema nativo (zod)
   - [ ] Migrar POST /auth/login para schema nativo (zod)
 - [ ] Rota de refresh token
 - [ ] Tela de login funcional (web)

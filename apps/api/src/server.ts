@@ -1,7 +1,8 @@
-import Fastify from "fastify";
+import Fastify, { type FastifyError } from "fastify";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import {
+  hasZodFastifySchemaValidationErrors,
   jsonSchemaTransform,
   serializerCompiler,
   validatorCompiler,
@@ -34,6 +35,17 @@ export function buildServer(deps: BuildServerDeps = {}) {
     transform: jsonSchemaTransform,
   });
   app.register(swaggerUi, { routePrefix: "/docs" });
+
+  app.setErrorHandler((error: FastifyError, _request, reply) => {
+    if (hasZodFastifySchemaValidationErrors(error)) {
+      const [firstIssue] = error.validation;
+      return reply
+        .status(400)
+        .send({ error: firstIssue?.message ?? "Erro de validação" });
+    }
+
+    return reply.status(error.statusCode ?? 500).send({ error: error.message });
+  });
 
   app.register(healthRoute);
   app.register(registerRoute, deps);
