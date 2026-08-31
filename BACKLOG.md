@@ -66,6 +66,8 @@ Fica para depois do MVP (v1.1+):
   - [x] Migrar POST /auth/register para schema nativo (zod)
   - [x] Migrar POST /auth/login para schema nativo (zod)
 - [ ] Rota de refresh token
+  - [x] Extensões de token service + repositório de refresh tokens (verifyRefreshToken, findRefreshTokenByHash, revokeRefreshToken)
+  - [ ] Rota de refresh token (POST /auth/refresh)
 - [ ] Tela de login funcional (web)
 
 ## Sprint 3 — Núcleo: projetos e bibliotecas

@@ -8,6 +8,7 @@ export type AccessTokenPayload = {
 
 export type RefreshTokenPayload = {
   sub: string;
+  email: string;
 };
 
 export function signAccessToken(
@@ -36,6 +37,13 @@ export function verifyAccessToken(
   secret: string,
 ): AccessTokenPayload {
   return jwt.verify(token, secret) as AccessTokenPayload;
+}
+
+export function verifyRefreshToken(
+  token: string,
+  secret: string,
+): RefreshTokenPayload {
+  return jwt.verify(token, secret) as RefreshTokenPayload;
 }
 
 export function hashToken(token: string): string {
