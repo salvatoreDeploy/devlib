@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { createDb, getDatabaseUrl } from "@devlib/db";
 import {
@@ -15,15 +15,22 @@ const loginBodySchema = z.object({
   password: z.string().min(1),
 });
 
+const loginResponseSchema = z.object({
+  accessToken: z.string(),
+  refreshToken: z.string(),
+});
+
+const errorResponseSchema = z.object({ error: z.string() });
+
 export type LoginRouteOptions = {
   loginRepository?: LoginRepository;
   authConfig?: AuthConfig;
 };
 
-export async function loginRoute(
-  app: FastifyInstance,
-  opts: LoginRouteOptions,
-) {
+export const loginRoute: FastifyPluginAsyncZod<LoginRouteOptions> = async (
+  app,
+  opts,
+) => {
   let loginRepository = opts.loginRepository;
   let authConfig = opts.authConfig;
 
@@ -45,25 +52,28 @@ export async function loginRoute(
     return authConfig;
   }
 
-  app.post("/auth/login", async (request, reply) => {
-    const parsed = loginBodySchema.safeParse(request.body);
-
-    if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.issues[0].message });
-    }
-
-    try {
-      const tokens = await loginUser(
-        getLoginRepository(),
-        getConfig(),
-        parsed.data,
-      );
-      return reply.status(200).send(tokens);
-    } catch (error) {
-      if (error instanceof InvalidCredentialsError) {
-        return reply.status(401).send({ error: error.message });
+  app.post(
+    "/auth/login",
+    {
+      schema: {
+        body: loginBodySchema,
+        response: { 200: loginResponseSchema, 401: errorResponseSchema },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const tokens = await loginUser(
+          getLoginRepository(),
+          getConfig(),
+          request.body,
+        );
+        return reply.status(200).send(tokens);
+      } catch (error) {
+        if (error instanceof InvalidCredentialsError) {
+          return reply.status(401).send({ error: error.message });
+        }
+        throw error;
       }
-      throw error;
-    }
-  });
-}
+    },
+  );
+};
