@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { buildServer } from "./server";
 
 describe("Swagger/OpenAPI", () => {
@@ -19,5 +21,29 @@ describe("Swagger/OpenAPI", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.headers["content-type"]).toContain("text/html");
+  });
+});
+
+describe("error handler global (validação zod)", () => {
+  it("retorna { error: mensagem } quando uma rota com schema nativo recebe input inválido", async () => {
+    const app = buildServer();
+    app
+      .withTypeProvider<ZodTypeProvider>()
+      .get(
+        "/__test-validation__",
+        { schema: { querystring: z.object({ name: z.string().min(4) }) } },
+        async () => ({ ok: true }),
+      );
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/__test-validation__?name=ab",
+    });
+
+    expect(response.statusCode).toBe(400);
+    const body = response.json();
+    expect(body).toHaveProperty("error");
+    expect(typeof body.error).toBe("string");
+    expect(body.error).not.toBe("Bad Request");
   });
 });
