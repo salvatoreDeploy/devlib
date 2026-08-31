@@ -101,7 +101,7 @@ export async function loginUser(
     config.accessExpiresIn,
   );
   const { token: refreshToken, expiresAt } = signRefreshToken(
-    { sub: user.id },
+    { sub: user.id, email: user.email },
     config.jwtRefreshSecret,
     config.refreshExpiresIn,
   );

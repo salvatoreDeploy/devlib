@@ -147,8 +147,9 @@ describe("loginUser", () => {
     const decodedRefresh = jwt.verify(
       result.refreshToken,
       fakeAuthConfig.jwtRefreshSecret,
-    ) as { sub: string; exp: number };
+    ) as { sub: string; email: string; exp: number };
     expect(decodedRefresh.sub).toBe("user-1");
+    expect(decodedRefresh.email).toBe("ana@example.com");
 
     expect(repository.insertRefreshToken).toHaveBeenCalledWith({
       userId: "user-1",

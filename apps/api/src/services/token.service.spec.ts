@@ -6,6 +6,7 @@ import {
   signAccessToken,
   signRefreshToken,
   verifyAccessToken,
+  verifyRefreshToken,
 } from "./token.service";
 
 describe("signAccessToken", () => {
@@ -36,20 +37,24 @@ describe("signAccessToken", () => {
 });
 
 describe("signRefreshToken", () => {
-  it("gera um JWT verificável com o secret de refresh e contém o payload", () => {
+  it("gera um JWT verificável com o secret de refresh e contém sub + email", () => {
     const { token } = signRefreshToken(
-      { sub: "user-1" },
+      { sub: "user-1", email: "ana@example.com" },
       "refresh-secret",
       "7d",
     );
 
-    const decoded = jwt.verify(token, "refresh-secret") as { sub: string };
+    const decoded = jwt.verify(token, "refresh-secret") as {
+      sub: string;
+      email: string;
+    };
     expect(decoded.sub).toBe("user-1");
+    expect(decoded.email).toBe("ana@example.com");
   });
 
   it("retorna expiresAt correspondente ao exp do próprio token", () => {
     const { token, expiresAt } = signRefreshToken(
-      { sub: "user-1" },
+      { sub: "user-1", email: "ana@example.com" },
       "refresh-secret",
       "7d",
     );
@@ -57,6 +62,41 @@ describe("signRefreshToken", () => {
     const decoded = jwt.decode(token) as { exp: number };
     expect(expiresAt).toEqual(new Date(decoded.exp * 1000));
     expect(expiresAt.getTime()).toBeGreaterThan(Date.now());
+  });
+});
+
+describe("verifyRefreshToken", () => {
+  it("retorna o payload (sub + email) quando o token é válido", () => {
+    const { token } = signRefreshToken(
+      { sub: "user-1", email: "ana@example.com" },
+      "refresh-secret",
+      "7d",
+    );
+
+    const payload = verifyRefreshToken(token, "refresh-secret");
+
+    expect(payload.sub).toBe("user-1");
+    expect(payload.email).toBe("ana@example.com");
+  });
+
+  it("lança erro quando o secret está errado", () => {
+    const { token } = signRefreshToken(
+      { sub: "user-1", email: "ana@example.com" },
+      "refresh-secret",
+      "7d",
+    );
+
+    expect(() => verifyRefreshToken(token, "secret-errado")).toThrow();
+  });
+
+  it("lança erro quando o token está expirado", () => {
+    const token = jwt.sign(
+      { sub: "user-1", email: "ana@example.com" },
+      "refresh-secret",
+      { expiresIn: -10 },
+    );
+
+    expect(() => verifyRefreshToken(token, "refresh-secret")).toThrow();
   });
 });
 
