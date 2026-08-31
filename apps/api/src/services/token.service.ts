@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import jwt, { type SignOptions } from "jsonwebtoken";
 
 export type AccessTokenPayload = {
@@ -26,7 +26,12 @@ export function signRefreshToken(
   secret: string,
   expiresIn: string,
 ): { token: string; expiresAt: Date } {
-  const token = jwt.sign(payload, secret, { expiresIn } as SignOptions);
+  // jti garante um token único por emissão: sem ele, dois refresh tokens
+  // assinados no mesmo segundo com o mesmo payload são byte-a-byte
+  // idênticos (JWT/HS256 é determinístico), o que quebraria a rotação.
+  const token = jwt.sign({ ...payload, jti: randomUUID() }, secret, {
+    expiresIn,
+  } as SignOptions);
   const decoded = jwt.decode(token) as { exp: number };
 
   return { token, expiresAt: new Date(decoded.exp * 1000) };

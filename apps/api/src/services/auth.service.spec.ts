@@ -6,10 +6,13 @@ import {
   EmailAlreadyInUseError,
   loginUser,
   InvalidCredentialsError,
+  refreshSession,
+  InvalidRefreshTokenError,
   type AuthRepository,
   type LoginRepository,
+  type RefreshRepository,
 } from "./auth.service";
-import { hashToken } from "./token.service";
+import { hashToken, signRefreshToken } from "./token.service";
 import type { AuthConfig } from "../config/env";
 
 function fakeRepository(
@@ -150,6 +153,131 @@ describe("loginUser", () => {
     ) as { sub: string; email: string; exp: number };
     expect(decodedRefresh.sub).toBe("user-1");
     expect(decodedRefresh.email).toBe("ana@example.com");
+
+    expect(repository.insertRefreshToken).toHaveBeenCalledWith({
+      userId: "user-1",
+      tokenHash: hashToken(result.refreshToken),
+      expiresAt: new Date(decodedRefresh.exp * 1000),
+    });
+  });
+});
+
+function fakeRefreshRepository(
+  overrides: Partial<RefreshRepository> = {},
+): RefreshRepository {
+  return {
+    findRefreshTokenByHash: vi.fn().mockResolvedValue(undefined),
+    revokeRefreshToken: vi.fn().mockResolvedValue(undefined),
+    insertRefreshToken: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
+}
+
+describe("refreshSession", () => {
+  it("lança InvalidRefreshTokenError quando o token tem assinatura inválida", async () => {
+    const repository = fakeRefreshRepository();
+
+    await expect(
+      refreshSession(repository, fakeAuthConfig, {
+        refreshToken: "token-invalido",
+      }),
+    ).rejects.toThrow(InvalidRefreshTokenError);
+    expect(repository.findRefreshTokenByHash).not.toHaveBeenCalled();
+    expect(repository.revokeRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it("lança InvalidRefreshTokenError quando o token não está registrado no banco", async () => {
+    const { token } = signRefreshToken(
+      { sub: "user-1", email: "ana@example.com" },
+      fakeAuthConfig.jwtRefreshSecret,
+      "7d",
+    );
+    const repository = fakeRefreshRepository({
+      findRefreshTokenByHash: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(
+      refreshSession(repository, fakeAuthConfig, { refreshToken: token }),
+    ).rejects.toThrow(InvalidRefreshTokenError);
+    expect(repository.revokeRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it("lança InvalidRefreshTokenError quando o token já foi revogado", async () => {
+    const { token } = signRefreshToken(
+      { sub: "user-1", email: "ana@example.com" },
+      fakeAuthConfig.jwtRefreshSecret,
+      "7d",
+    );
+    const repository = fakeRefreshRepository({
+      findRefreshTokenByHash: vi.fn().mockResolvedValue({
+        id: "token-row-1",
+        userId: "user-1",
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+        revokedAt: new Date("2026-08-01T00:00:00Z"),
+      }),
+    });
+
+    await expect(
+      refreshSession(repository, fakeAuthConfig, { refreshToken: token }),
+    ).rejects.toThrow(InvalidRefreshTokenError);
+    expect(repository.revokeRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it("lança InvalidRefreshTokenError quando o registro no banco já expirou", async () => {
+    const { token } = signRefreshToken(
+      { sub: "user-1", email: "ana@example.com" },
+      fakeAuthConfig.jwtRefreshSecret,
+      "7d",
+    );
+    const repository = fakeRefreshRepository({
+      findRefreshTokenByHash: vi.fn().mockResolvedValue({
+        id: "token-row-1",
+        userId: "user-1",
+        expiresAt: new Date(Date.now() - 1000),
+        revokedAt: null,
+      }),
+    });
+
+    await expect(
+      refreshSession(repository, fakeAuthConfig, { refreshToken: token }),
+    ).rejects.toThrow(InvalidRefreshTokenError);
+  });
+
+  it("revoga o token usado e retorna um novo par de tokens válidos", async () => {
+    const { token } = signRefreshToken(
+      { sub: "user-1", email: "ana@example.com" },
+      fakeAuthConfig.jwtRefreshSecret,
+      "7d",
+    );
+    const repository = fakeRefreshRepository({
+      findRefreshTokenByHash: vi.fn().mockResolvedValue({
+        id: "token-row-1",
+        userId: "user-1",
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+        revokedAt: null,
+      }),
+    });
+
+    const result = await refreshSession(repository, fakeAuthConfig, {
+      refreshToken: token,
+    });
+
+    expect(repository.revokeRefreshToken).toHaveBeenCalledWith("token-row-1");
+
+    const decodedAccess = jwt.verify(
+      result.accessToken,
+      fakeAuthConfig.jwtSecret,
+    ) as { sub: string; email: string };
+    expect(decodedAccess.sub).toBe("user-1");
+    expect(decodedAccess.email).toBe("ana@example.com");
+
+    const decodedRefresh = jwt.verify(
+      result.refreshToken,
+      fakeAuthConfig.jwtRefreshSecret,
+    ) as { sub: string; email: string; exp: number };
+    expect(decodedRefresh.sub).toBe("user-1");
+    expect(decodedRefresh.email).toBe("ana@example.com");
+    expect(result.refreshToken).not.toBe(token);
 
     expect(repository.insertRefreshToken).toHaveBeenCalledWith({
       userId: "user-1",
