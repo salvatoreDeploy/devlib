@@ -68,9 +68,9 @@ Fica para depois do MVP (v1.1+):
 - [x] Rota de refresh token
   - [x] Extensões de token service + repositório de refresh tokens (verifyRefreshToken, findRefreshTokenByHash, revokeRefreshToken)
   - [x] Rota de refresh token (POST /auth/refresh)
-- [ ] Tela de login funcional (web)
+- [x] Tela de login funcional (web)
   - [x] Infra do frontend (Tailwind, TanStack Query, cliente de API, storage de tokens)
-  - [ ] Tela de login (formulário + rota /login)
+  - [x] Tela de login (formulário + rota /login)
 
 ## Sprint 3 — Núcleo: projetos e bibliotecas
 
