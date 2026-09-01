@@ -20,6 +20,7 @@ _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. 
 - Renovação de sessão via `POST /auth/refresh`: valida o refresh token, revoga o usado e emite um par novo (access + refresh) — rotação a cada uso, não reaproveita o token antigo
 - Documentação interativa da API (Swagger UI) em `/docs`, gerada a partir dos schemas zod das rotas (`/docs/json` expõe o spec OpenAPI cru). As 4 rotas (`/health`, `/auth/register`, `/auth/login`, `/auth/refresh`) já têm schema completo (request + response)
 - Erros de validação (e qualquer erro não tratado) respondem no formato padrão `{ error: string }` via error handler global em `apps/api`
+- Tela de login funcional em `apps/web` (`/login`): formulário com validação client-side (react-hook-form + zod), chama `POST /auth/login`, salva os tokens em `localStorage` e redireciona para `/` no sucesso
 
 ## Rotas da API
 
@@ -36,9 +37,10 @@ _Atualizar com cada rota nova criada em `apps/api/src/routes`._
 
 _Atualizar com cada tela nova implementada em `apps/web`._
 
-| Tela | Rota | Descrição                                          |
-| ---- | ---- | -------------------------------------------------- |
-| Home | `/`  | Página em branco (placeholder do scaffold inicial) |
+| Tela  | Rota     | Descrição                                                            |
+| ----- | -------- | -------------------------------------------------------------------- |
+| Home  | `/`      | Página em branco (placeholder do scaffold inicial)                   |
+| Login | `/login` | Formulário de login (email + senha), redireciona para `/` no sucesso |
 
 ## Modelo de dados
 
