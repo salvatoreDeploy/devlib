@@ -75,12 +75,27 @@ Fica para depois do MVP (v1.1+):
 ## Sprint 3 — Núcleo: projetos e bibliotecas
 
 - [ ] CRUD de projetos (api + web)
+  - [ ] API: repositório + service de projetos (create, list, getById, update, delete)
+  - [ ] API: rotas REST de projetos com validação zod (POST/GET/GET:id/PATCH/DELETE /projects)
+  - [ ] Web: formulário de criação de projeto
+  - [ ] Web: formulário de edição de projeto
 - [ ] CRUD de bibliotecas — cadastro manual, sem integração externa ainda (api + web)
-- [ ] Categorias predefinidas no seed do banco
+  - [ ] API: repositório + service de bibliotecas (create, list, getById, update, delete)
+  - [ ] API: rotas REST de bibliotecas com validação zod (inclui categoryId)
+  - [ ] Web: formulário de criação de biblioteca (com seleção de categoria)
+  - [ ] Web: formulário de edição de biblioteca
+- [x] Categorias predefinidas no seed do banco
 - [ ] Tags livres (criar/associar)
+  - [ ] API: rota/service de criação de tag + associação tag↔biblioteca
+  - [ ] Web: componente de input de tags (criar on-the-fly) integrado ao form de biblioteca
 - [ ] Dashboard de projetos (lista)
+  - [ ] Web: tela /projects (listagem via GET /projects, ação de excluir, links pra criar/detalhe)
 - [ ] Tela de detalhe do projeto (tabela de bibliotecas)
+  - [ ] API: rota GET /projects/:id/libraries
+  - [ ] Web: tela /projects/[id] com dados do projeto + tabela de bibliotecas associadas
 - [ ] Tela de detalhe da biblioteca (notas, usado em)
+  - [ ] API: rota GET /libraries/:id/projects
+  - [ ] Web: tela /libraries/[id] com notas, categoria, tags e projetos onde é usada
 
 ## Sprint 4 — Associação cruzada
 
