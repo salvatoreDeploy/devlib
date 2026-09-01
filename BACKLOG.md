@@ -75,7 +75,7 @@ Fica para depois do MVP (v1.1+):
 ## Sprint 3 — Núcleo: projetos e bibliotecas
 
 - [ ] CRUD de projetos (api + web)
-  - [ ] API: repositório + service de projetos (create, list, getById, update, delete)
+  - [x] API: repositório + service de projetos (create, list, getById, update, delete)
   - [ ] API: rotas REST de projetos com validação zod (POST/GET/GET:id/PATCH/DELETE /projects)
   - [ ] Web: formulário de criação de projeto
   - [ ] Web: formulário de edição de projeto

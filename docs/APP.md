@@ -21,17 +21,23 @@ _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. 
 - Documentação interativa da API (Swagger UI) em `/docs`, gerada a partir dos schemas zod das rotas (`/docs/json` expõe o spec OpenAPI cru). As 4 rotas (`/health`, `/auth/register`, `/auth/login`, `/auth/refresh`) já têm schema completo (request + response)
 - Erros de validação (e qualquer erro não tratado) respondem no formato padrão `{ error: string }` via error handler global em `apps/api`
 - Tela de login funcional em `apps/web` (`/login`): formulário com validação client-side (react-hook-form + zod), chama `POST /auth/login`, salva os tokens em `localStorage` e redireciona para `/` no sucesso
+- CRUD de projetos via API (`/projects`), protegido por autenticação (primeiro uso real do middleware `authenticate`): cada projeto pertence a um usuário; acessar/editar/excluir um projeto de outro usuário responde 404 (não revela que o ID existe); nome de projeto duplicado para o mesmo usuário é bloqueado (409). Ainda sem tela no `apps/web`.
 
 ## Rotas da API
 
 _Atualizar com cada rota nova criada em `apps/api/src/routes`._
 
-| Método | Rota             | Auth? | Descrição                                                                          |
-| ------ | ---------------- | ----- | ---------------------------------------------------------------------------------- |
-| GET    | `/health`        | Não   | Health check — retorna `{ status: "ok" }`                                          |
-| POST   | `/auth/register` | Não   | Cadastra usuário (email + senha); retorna `{ id, email, createdAt }`               |
-| POST   | `/auth/login`    | Não   | Login (email + senha); retorna `{ accessToken, refreshToken }`                     |
-| POST   | `/auth/refresh`  | Não   | Renova a sessão (`{ refreshToken }`); retorna novo `{ accessToken, refreshToken }` |
+| Método | Rota             | Auth? | Descrição                                                                                                       |
+| ------ | ---------------- | ----- | --------------------------------------------------------------------------------------------------------------- |
+| GET    | `/health`        | Não   | Health check — retorna `{ status: "ok" }`                                                                       |
+| POST   | `/auth/register` | Não   | Cadastra usuário (email + senha); retorna `{ id, email, createdAt }`                                            |
+| POST   | `/auth/login`    | Não   | Login (email + senha); retorna `{ accessToken, refreshToken }`                                                  |
+| POST   | `/auth/refresh`  | Não   | Renova a sessão (`{ refreshToken }`); retorna novo `{ accessToken, refreshToken }`                              |
+| POST   | `/projects`      | Sim   | Cria um projeto (`{ name, description? }`) para o usuário autenticado; 409 se o nome já existe pra esse usuário |
+| GET    | `/projects`      | Sim   | Lista os projetos do usuário autenticado                                                                        |
+| GET    | `/projects/:id`  | Sim   | Detalha um projeto; 404 se não existe ou é de outro usuário                                                     |
+| PATCH  | `/projects/:id`  | Sim   | Atualiza `{ name?, description? }`; 404 se não é do usuário, 409 se o novo nome já existe                       |
+| DELETE | `/projects/:id`  | Sim   | Exclui o projeto; 404 se não é do usuário                                                                       |
 
 ## Telas do frontend
 

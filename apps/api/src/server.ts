@@ -15,10 +15,35 @@ import {
 } from "./routes/register.route";
 import { loginRoute, type LoginRouteOptions } from "./routes/login.route";
 import { refreshRoute, type RefreshRouteOptions } from "./routes/refresh.route";
+import {
+  projectsCreateRoute,
+  type ProjectsCreateRouteOptions,
+} from "./routes/projects-create.route";
+import {
+  projectsListRoute,
+  type ProjectsListRouteOptions,
+} from "./routes/projects-list.route";
+import {
+  projectsGetRoute,
+  type ProjectsGetRouteOptions,
+} from "./routes/projects-get.route";
+import {
+  projectsUpdateRoute,
+  type ProjectsUpdateRouteOptions,
+} from "./routes/projects-update.route";
+import {
+  projectsDeleteRoute,
+  type ProjectsDeleteRouteOptions,
+} from "./routes/projects-delete.route";
 
 export type BuildServerDeps = RegisterRouteOptions &
   LoginRouteOptions &
-  RefreshRouteOptions;
+  RefreshRouteOptions &
+  ProjectsCreateRouteOptions &
+  ProjectsListRouteOptions &
+  ProjectsGetRouteOptions &
+  ProjectsUpdateRouteOptions &
+  ProjectsDeleteRouteOptions;
 
 export function buildServer(deps: BuildServerDeps = {}) {
   const app = Fastify().withTypeProvider<ZodTypeProvider>();
@@ -33,6 +58,25 @@ export function buildServer(deps: BuildServerDeps = {}) {
         description:
           "Catálogo pessoal de bibliotecas, frameworks e ferramentas.",
         version: "0.0.0",
+      },
+      tags: [
+        { name: "Auth", description: "Registro, login e sessão (JWT)" },
+        {
+          name: "Projects",
+          description:
+            "CRUD de projetos do usuário autenticado. Todo projeto pertence a um único usuário (dono) — tentar ler, editar ou excluir um projeto de outro usuário responde 404, nunca 403 (evita confirmar a existência do ID a quem não é dono).",
+        },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+            description:
+              "Access token JWT retornado por POST /auth/login ou POST /auth/refresh, enviado como `Authorization: Bearer <token>`.",
+          },
+        },
       },
     },
     transform: jsonSchemaTransform,
@@ -54,6 +98,11 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(registerRoute, deps);
   app.register(loginRoute, deps);
   app.register(refreshRoute, deps);
+  app.register(projectsCreateRoute, deps);
+  app.register(projectsListRoute, deps);
+  app.register(projectsGetRoute, deps);
+  app.register(projectsUpdateRoute, deps);
+  app.register(projectsDeleteRoute, deps);
 
   return app;
 }
