@@ -31,6 +31,7 @@ Pergunte explicitamente se pode seguir. **Não escreva nenhum arquivo antes da a
 
 - Implemente o necessário pra fazer as specs passarem, seguindo as convenções de `CLAUDE.md` (estrutura de pastas, validação zod em rotas, providers isolados, nunca acessar banco do frontend).
 - Se durante a implementação surgir uma decisão não coberta no plano do passo 1, pare e pergunte — não decida silenciosamente e siga em frente.
+- Se a tarefa envolver uma tela ou componente novo em apps/web, consultar docs/FRONTEND.md antes de estilizar — os padrões visuais (densidade, cores de badge, formato de tabela/lista) já foram decididos, não redesenhar do zero.
 
 ## 4. Fluxo de testes completo
 

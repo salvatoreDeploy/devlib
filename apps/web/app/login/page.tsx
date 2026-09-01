@@ -5,6 +5,9 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { login, LoginError } from "../../lib/api/auth";
 import { saveTokens } from "../../lib/auth-storage";
 
@@ -32,61 +35,67 @@ export default function LoginPage() {
   });
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <main className="flex min-h-screen items-center justify-center bg-muted px-4">
       <form
-        className="w-full max-w-sm rounded-lg bg-white p-8 shadow"
+        className="w-full max-w-xs rounded-lg border border-border bg-card p-6"
         noValidate
         onSubmit={handleSubmit((data) => mutation.mutate(data))}
       >
-        <h1 className="mb-6 text-xl font-semibold text-gray-900">Entrar</h1>
+        <h1 className="mb-4 text-base font-semibold">Entrar</h1>
 
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          className="mt-1 mb-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-          {...register("email")}
-        />
-        {errors.email && (
-          <p className="mb-3 text-sm text-red-600">{errors.email.message}</p>
-        )}
+        <div className="mb-3">
+          <Label
+            htmlFor="email"
+            className="mb-1 block text-[11px] font-normal text-muted-foreground"
+          >
+            Email
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            className="h-8 text-xs"
+            aria-invalid={errors.email ? true : undefined}
+            {...register("email")}
+          />
+          {errors.email && (
+            <p className="mt-1 text-xs text-destructive">
+              {errors.email.message}
+            </p>
+          )}
+        </div>
 
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Senha
-        </label>
-        <input
-          id="password"
-          type="password"
-          className="mt-1 mb-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-          {...register("password")}
-        />
-        {errors.password && (
-          <p className="mb-3 text-sm text-red-600">{errors.password.message}</p>
-        )}
+        <div className="mb-4">
+          <Label
+            htmlFor="password"
+            className="mb-1 block text-[11px] font-normal text-muted-foreground"
+          >
+            Senha
+          </Label>
+          <Input
+            id="password"
+            type="password"
+            className="h-8 text-xs"
+            aria-invalid={errors.password ? true : undefined}
+            {...register("password")}
+          />
+          {errors.password && (
+            <p className="mt-1 text-xs text-destructive">
+              {errors.password.message}
+            </p>
+          )}
+        </div>
 
         {mutation.isError && (
-          <p className="mb-3 text-sm text-red-600">
+          <p className="mb-3 text-xs text-destructive">
             {mutation.error instanceof LoginError
               ? mutation.error.message
               : "Não foi possível entrar. Tente novamente."}
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={mutation.isPending}
-          className="w-full rounded-md bg-blue-600 py-2 text-white disabled:opacity-50"
-        >
+        <Button type="submit" disabled={mutation.isPending} className="w-full">
           {mutation.isPending ? "Entrando..." : "Entrar"}
-        </button>
+        </Button>
       </form>
     </main>
   );

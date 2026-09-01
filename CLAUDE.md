@@ -41,6 +41,7 @@ packages/
 ## Convenções — sempre seguir
 
 - Nunca acessar o banco diretamente de `apps/web`. Toda leitura/escrita passa pela API em `apps/api`.
+- Toda tela nova ou alterada em `apps/web` segue os padrões visuais de `docs/FRONTEND.md` (estilo denso, shadcn/ui, densidade de listas/tabelas, paleta de badges, etc.) — não inventar um estilo próprio quando o documento já cobre o caso.
 - Toda rota nova em `apps/api/src/routes` precisa de validação de entrada com zod.
 - Integrações com gerenciadores de pacotes externos (npm, PyPI) ficam isoladas em `apps/api/src/providers/*` — nunca chamar a API externa direto de dentro de uma rota ou service.
 - Mudança em `packages/db/schema.ts` sempre vem acompanhada de uma migration Drizzle no mesmo PR.
@@ -55,11 +56,12 @@ Ver `CONTRIBUTING.md` para o checklist completo antes de abrir um PR para revis�
 
 ## Documentação viva
 
-Três documentos com papéis diferentes — não duplicar conteúdo entre eles:
+Quatro documentos com papéis diferentes — não duplicar conteúdo entre eles:
 
 - `CLAUDE.md` (este arquivo) — como o agente deve trabalhar
 - `docs/DECISIONS.md` — por que uma escolha técnica foi feita (evita que uma sessão futura "corrija" algo proposital)
 - `docs/APP.md` — o que a aplicação faz hoje (funcionalidades, rotas, telas)
+- `docs/FRONTEND.md` — padrões visuais e de componentes de apps/web, definidos durante o protótipo de UI (densidade, cores de badge, padrão de tabela/lista/formulário). Consultar antes de implementar qualquer tela nova — não redesenhar do zero o que já foi decidido.
 
 Atualizar `docs/DECISIONS.md` e `docs/APP.md` faz parte do passo 5.5 da skill `nova-feature` — não é opcional nem posterior.
 
