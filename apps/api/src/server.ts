@@ -14,8 +14,11 @@ import {
   type RegisterRouteOptions,
 } from "./routes/register.route";
 import { loginRoute, type LoginRouteOptions } from "./routes/login.route";
+import { refreshRoute, type RefreshRouteOptions } from "./routes/refresh.route";
 
-export type BuildServerDeps = RegisterRouteOptions & LoginRouteOptions;
+export type BuildServerDeps = RegisterRouteOptions &
+  LoginRouteOptions &
+  RefreshRouteOptions;
 
 export function buildServer(deps: BuildServerDeps = {}) {
   const app = Fastify().withTypeProvider<ZodTypeProvider>();
@@ -50,6 +53,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(healthRoute);
   app.register(registerRoute, deps);
   app.register(loginRoute, deps);
+  app.register(refreshRoute, deps);
 
   return app;
 }

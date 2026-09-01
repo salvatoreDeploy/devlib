@@ -1,5 +1,10 @@
 import * as argon2 from "argon2";
-import { signAccessToken, signRefreshToken, hashToken } from "./token.service";
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+  hashToken,
+} from "./token.service";
 import type { AuthConfig } from "../config/env";
 
 export class EmailAlreadyInUseError extends Error {
@@ -13,6 +18,13 @@ export class InvalidCredentialsError extends Error {
   constructor() {
     super("Credenciais inválidas");
     this.name = "InvalidCredentialsError";
+  }
+}
+
+export class InvalidRefreshTokenError extends Error {
+  constructor() {
+    super("Refresh token inválido");
+    this.name = "InvalidRefreshTokenError";
   }
 }
 
@@ -108,6 +120,70 @@ export async function loginUser(
 
   await repository.insertRefreshToken({
     userId: user.id,
+    tokenHash: hashToken(refreshToken),
+    expiresAt,
+  });
+
+  return { accessToken, refreshToken };
+}
+
+export type RefreshInput = {
+  refreshToken: string;
+};
+
+export type RefreshRepository = {
+  findRefreshTokenByHash(tokenHash: string): Promise<
+    | {
+        id: string;
+        userId: string;
+        expiresAt: Date;
+        revokedAt: Date | null;
+      }
+    | undefined
+  >;
+  revokeRefreshToken(id: string): Promise<void>;
+  insertRefreshToken(data: {
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+  }): Promise<void>;
+};
+
+export async function refreshSession(
+  repository: RefreshRepository,
+  config: AuthConfig,
+  input: RefreshInput,
+): Promise<LoginTokens> {
+  let payload: { sub: string; email: string };
+  try {
+    payload = verifyRefreshToken(input.refreshToken, config.jwtRefreshSecret);
+  } catch {
+    throw new InvalidRefreshTokenError();
+  }
+
+  const stored = await repository.findRefreshTokenByHash(
+    hashToken(input.refreshToken),
+  );
+
+  if (!stored || stored.revokedAt || stored.expiresAt.getTime() < Date.now()) {
+    throw new InvalidRefreshTokenError();
+  }
+
+  await repository.revokeRefreshToken(stored.id);
+
+  const accessToken = signAccessToken(
+    { sub: stored.userId, email: payload.email },
+    config.jwtSecret,
+    config.accessExpiresIn,
+  );
+  const { token: refreshToken, expiresAt } = signRefreshToken(
+    { sub: stored.userId, email: payload.email },
+    config.jwtRefreshSecret,
+    config.refreshExpiresIn,
+  );
+
+  await repository.insertRefreshToken({
+    userId: stored.userId,
     tokenHash: hashToken(refreshToken),
     expiresAt,
   });
