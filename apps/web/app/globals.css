@@ -1,41 +1,10 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
-
 :root {
+  /* Escuro é o único tema do MVP (ver docs/FRONTEND.md) — os valores abaixo
+     eram os do bloco .dark do setup padrão do shadcn/ui; viraram o :root
+     direto porque não existe toggle de tema aqui. */
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-
-  /* Tokens de docs/FRONTEND.md — aliases sobre a paleta shadcn/neutral acima,
-     já que o documento não define valores hex concretos, só nomeia os tokens. */
-  --surface-1: var(--card);
-  --surface-2: var(--muted);
-  --fill-primary: var(--primary);
-  --on-primary: var(--primary-foreground);
-  --text-secondary: var(--muted-foreground);
-  --font-mono:
-    ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas,
-    monospace;
-}
-
-.dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -54,6 +23,21 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+
+  /* Cor de link/acento (violeta-azulado) — distinta da ação primária
+     monocromática (branco/preto). Valor provisório, ver docs/FRONTEND.md. */
+  --link: oklch(0.75 0.12 275);
+
+  /* Tokens de docs/FRONTEND.md — aliases sobre a paleta acima, já que o
+     documento não define valores hex concretos, só nomeia os tokens. */
+  --surface-1: var(--card);
+  --surface-2: var(--muted);
+  --fill-primary: var(--primary);
+  --on-primary: var(--primary-foreground);
+  --text-secondary: var(--muted-foreground);
+  --font-mono:
+    ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas,
+    monospace;
 }
 
 @theme inline {
@@ -75,6 +59,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-link: var(--link);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -35,13 +36,16 @@ export default function LoginPage() {
   });
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted px-4">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <form
-        className="w-full max-w-xs rounded-lg border border-border bg-card p-6"
+        className="w-full max-w-xs rounded-lg bg-card p-6"
         noValidate
         onSubmit={handleSubmit((data) => mutation.mutate(data))}
       >
-        <h1 className="mb-4 text-base font-semibold">Entrar</h1>
+        <h1 className="text-base font-semibold">Entrar</h1>
+        <p className="mt-1 mb-5 text-xs text-muted-foreground">
+          Acesse seu catálogo de bibliotecas
+        </p>
 
         <div className="mb-3">
           <Label
@@ -53,6 +57,7 @@ export default function LoginPage() {
           <Input
             id="email"
             type="email"
+            placeholder="nome@empresa.com"
             className="h-8 text-xs"
             aria-invalid={errors.email ? true : undefined}
             {...register("email")}
@@ -64,7 +69,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        <div className="mb-4">
+        <div className="mb-1">
           <Label
             htmlFor="password"
             className="mb-1 block text-[11px] font-normal text-muted-foreground"
@@ -85,6 +90,15 @@ export default function LoginPage() {
           )}
         </div>
 
+        <div className="mb-4 text-right">
+          <Link
+            href="#"
+            className="text-xs text-link underline-offset-2 hover:underline"
+          >
+            esqueci minha senha
+          </Link>
+        </div>
+
         {mutation.isError && (
           <p className="mb-3 text-xs text-destructive">
             {mutation.error instanceof LoginError
@@ -94,8 +108,18 @@ export default function LoginPage() {
         )}
 
         <Button type="submit" disabled={mutation.isPending} className="w-full">
-          {mutation.isPending ? "Entrando..." : "Entrar"}
+          {mutation.isPending ? "Entrando..." : "Entrar ↗"}
         </Button>
+
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          ainda não tem conta?{" "}
+          <Link
+            href="#"
+            className="text-link underline-offset-2 hover:underline"
+          >
+            criar conta
+          </Link>
+        </p>
       </form>
     </main>
   );
