@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -108,7 +109,14 @@ export default function LoginPage() {
         )}
 
         <Button type="submit" disabled={mutation.isPending} className="w-full">
-          {mutation.isPending ? "Entrando..." : "Entrar ↗"}
+          {mutation.isPending ? (
+            "Entrando..."
+          ) : (
+            <>
+              Entrar
+              <ArrowUpRight />
+            </>
+          )}
         </Button>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
