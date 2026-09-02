@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { ArrowUpRight } from "lucide-react";
+import { Check } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,68 +44,75 @@ export default function NewProjectPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4">
+    <main className="flex min-h-screen items-center justify-center bg-background px-10">
       <form
-        className="w-full max-w-xs rounded-lg border border-border bg-card p-6"
+        className="flex w-[432px] flex-col gap-[18px] rounded-xl border border-border bg-card p-[26px_28px]"
         noValidate
         onSubmit={handleSubmit((data) => mutation.mutate(data))}
       >
-        <h1 className="mb-4 text-base font-semibold">Novo projeto</h1>
+        <div>
+          <h1 className="mb-1.5 text-[19px] font-bold tracking-[-0.015em] text-foreground">
+            Criar projeto
+          </h1>
+          <p className="text-[13px] leading-[1.6] text-muted-foreground">
+            Cada projeto tem seu próprio catálogo de bibliotecas e versões.
+          </p>
+        </div>
 
-        <div className="mb-3">
+        <div className="flex flex-col gap-[7px]">
           <Label
             htmlFor="name"
-            className="mb-1 block text-[11px] font-normal text-muted-foreground"
+            className="text-[12.5px] font-medium text-secondary-foreground"
           >
-            Nome
+            Nome do projeto
           </Label>
           <Input
             id="name"
             type="text"
-            className="h-8 text-xs"
+            placeholder="DevLib App"
+            className="h-10 rounded-lg border-input bg-surface-input px-3 text-[13.5px] text-foreground"
             aria-invalid={errors.name ? true : undefined}
             {...register("name")}
           />
           {errors.name && (
-            <p className="mt-1 text-xs text-destructive">
-              {errors.name.message}
-            </p>
+            <p className="text-xs text-destructive">{errors.name.message}</p>
           )}
         </div>
 
-        <div className="mb-4">
+        <div className="flex flex-col gap-[7px]">
           <Label
             htmlFor="description"
-            className="mb-1 block text-[11px] font-normal text-muted-foreground"
+            className="text-[12.5px] font-medium text-secondary-foreground"
           >
             Descrição
           </Label>
           <Input
             id="description"
             type="text"
-            className="h-8 text-xs"
+            placeholder="pra que serve esse projeto"
+            className="h-10 rounded-lg border-input bg-surface-input px-3 text-[13.5px] text-foreground"
             {...register("description")}
           />
         </div>
 
         {mutation.isError && (
-          <p className="mb-3 text-xs text-destructive">
+          <p className="text-xs text-destructive">
             {mutation.error instanceof CreateProjectError
               ? mutation.error.message
               : "Não foi possível criar o projeto. Tente novamente."}
           </p>
         )}
 
-        <Button type="submit" disabled={mutation.isPending} className="w-full">
-          {mutation.isPending ? (
-            "criando..."
-          ) : (
-            <>
-              criar projeto
-              <ArrowUpRight />
-            </>
-          )}
-        </Button>
+        <div className="flex justify-end gap-2.5">
+          <Button
+            type="submit"
+            disabled={mutation.isPending}
+            className="h-auto rounded-lg px-[15px] py-2.5 text-[13px] font-semibold"
+          >
+            <Check />
+            {mutation.isPending ? "criando..." : "Salvar"}
+          </Button>
+        </div>
       </form>
     </main>
   );

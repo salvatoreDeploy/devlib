@@ -22,38 +22,63 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
-
-  /* Tokens de docs/FRONTEND.md — aliases sobre a paleta shadcn/neutral acima,
-     já que o documento não define valores hex concretos, só nomeia os tokens. */
-  --surface-1: var(--card);
-  --surface-2: var(--muted);
-  --fill-primary: var(--primary);
-  --on-primary: var(--primary-foreground);
-  --text-secondary: var(--muted-foreground);
   --font-mono:
     ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas,
     monospace;
 }
 
+/*
+ * Paleta única do app (docs/FRONTEND.md) — DevLib roda em tema escuro
+ * sempre (sem alternância pra claro), <html> ganha a classe `dark` de
+ * forma incondicional em apps/web/app/layout.tsx. Valores hex exatos do
+ * pacote de design hi-fi (2026-09-02), não os grays genéricos do shadcn.
+ */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --background: #09090b; /* bg */
+  --foreground: #f4f4f5; /* text */
+  --card: #0d0d10; /* surface */
+  --card-foreground: #f4f4f5; /* text */
+  --popover: #0b0b0d; /* surface-drawer */
+  --popover-foreground: #f4f4f5; /* text */
+  --primary: #2de3be; /* accent (brand) */
+  --primary-foreground: #04231e; /* accent-ink */
+  --secondary: #15151a; /* chip */
+  --secondary-foreground: #d4d4d8; /* text-secondary */
+  --muted: #0e0e11; /* surface-input */
+  --muted-foreground: #71717a; /* text-faint */
+  --accent: #101014; /* surface-raised — hover neutro, NÃO a cor de marca */
+  --accent-foreground: #f4f4f5; /* text */
+  --destructive: #f2777a; /* danger */
+  --border: #1e1e22; /* border */
+  --input: #26262b; /* border-strong */
+  --ring: #2de3be; /* accent (brand) */
+
+  /* Extensões além do conjunto padrão do shadcn — nomes batem com
+     docs/FRONTEND.md, expostas como classes Tailwind via @theme abaixo. */
+  --surface-input: #0e0e11;
+  --surface-subtle: #0a0a0c;
+  --chip-alt: #17171a;
+  --border-soft: #1a1a1e;
+  --border-row: #141417;
+  --border-faint: #17171a;
+  --checkbox-border: #2e2e33;
+  --text-dim: #8b8b93;
+  --text-faint: #71717a;
+  --text-fainter: #52525b;
+  --text-ghost: #4e4e55;
+  --brand-hover: #5cebcd; /* accent-hover */
+  --brand-dim: #22a88f; /* accent-dim */
+  --brand-dimmer: #1a7a68; /* accent-dimmer */
+  --brand-bg: #0b302a; /* accent-bg */
+  --warn: #f5c451;
+  --warn-bg: #33270b;
+  --danger-bg: #341617;
+  --purple: #a98bff;
+  --purple-bg: #241c3d;
+  --neutral-bar: #3f3f46;
+  --track: #1c1c20;
+  --track-dark: #141417;
+  --overlay: rgba(4, 4, 6, 0.62);
 }
 
 @theme inline {
@@ -79,6 +104,31 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  --color-surface-input: var(--surface-input);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-chip-alt: var(--chip-alt);
+  --color-border-soft: var(--border-soft);
+  --color-border-row: var(--border-row);
+  --color-border-faint: var(--border-faint);
+  --color-checkbox-border: var(--checkbox-border);
+  --color-text-dim: var(--text-dim);
+  --color-text-faint: var(--text-faint);
+  --color-text-fainter: var(--text-fainter);
+  --color-text-ghost: var(--text-ghost);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-dim: var(--brand-dim);
+  --color-brand-dimmer: var(--brand-dimmer);
+  --color-brand-bg: var(--brand-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-danger-bg: var(--danger-bg);
+  --color-purple: var(--purple);
+  --color-purple-bg: var(--purple-bg);
+  --color-neutral-bar: var(--neutral-bar);
+  --color-track: var(--track);
+  --color-track-dark: var(--track-dark);
+  --color-overlay: var(--overlay);
 }
 
 @layer base {
