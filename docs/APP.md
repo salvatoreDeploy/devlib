@@ -20,8 +20,11 @@ _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. 
 - Renovação de sessão via `POST /auth/refresh`: valida o refresh token, revoga o usado e emite um par novo (access + refresh) — rotação a cada uso, não reaproveita o token antigo
 - Documentação interativa da API (Swagger UI) em `/docs`, gerada a partir dos schemas zod das rotas (`/docs/json` expõe o spec OpenAPI cru). As 4 rotas (`/health`, `/auth/register`, `/auth/login`, `/auth/refresh`) já têm schema completo (request + response)
 - Erros de validação (e qualquer erro não tratado) respondem no formato padrão `{ error: string }` via error handler global em `apps/api`
-- Tela de login funcional em `apps/web` (`/login`): formulário com validação client-side (react-hook-form + zod), chama `POST /auth/login`, salva os tokens em `localStorage` e redireciona para `/` no sucesso
-- CRUD de projetos via API (`/projects`), protegido por autenticação (primeiro uso real do middleware `authenticate`): cada projeto pertence a um usuário; acessar/editar/excluir um projeto de outro usuário responde 404 (não revela que o ID existe); nome de projeto duplicado para o mesmo usuário é bloqueado (409). Ainda sem tela no `apps/web`.
+- Tela de login funcional em `apps/web` (`/login`): formulário com validação client-side (react-hook-form + zod), chama `POST /auth/login`, salva os tokens em `localStorage` e redireciona para `/` no sucesso. Links "esqueci minha senha" (`/forgot-password`) e "criar conta" (`/register`) presentes visualmente (fiéis ao protótipo), mas levam a 404 — as telas de destino ainda não existem
+- CRUD de projetos via API (`/projects`), protegido por autenticação (primeiro uso real do middleware `authenticate`): cada projeto pertence a um usuário; acessar/editar/excluir um projeto de outro usuário responde 404 (não revela que o ID existe); nome de projeto duplicado para o mesmo usuário é bloqueado (409).
+- Criação de projeto em `apps/web` (`/projects/new`): primeira tela protegida do frontend — sem access token válido em `localStorage`, redireciona para `/login` (hook reutilizável `useRequireAuth`). Formulário nome/descrição, chama `POST /projects` com o token e redireciona para `/` no sucesso.
+- `apps/api` libera CORS só para a origem configurada em `WEB_URL` (`@fastify/cors`, padrão `http://localhost:3000`) e aplica rate limit global (`@fastify/rate-limit`, 100 requisições/minuto por IP) em todas as rotas.
+- `apps/web` roda em tema escuro fixo (sem alternância pra claro), seguindo o protótipo de UI aprovado (`docs/FRONTEND.md`).
 
 ## Rotas da API
 
@@ -43,10 +46,11 @@ _Atualizar com cada rota nova criada em `apps/api/src/routes`._
 
 _Atualizar com cada tela nova implementada em `apps/web`._
 
-| Tela  | Rota     | Descrição                                                            |
-| ----- | -------- | -------------------------------------------------------------------- |
-| Home  | `/`      | Página em branco (placeholder do scaffold inicial)                   |
-| Login | `/login` | Formulário de login (email + senha), redireciona para `/` no sucesso |
+| Tela         | Rota            | Descrição                                                                                                                              |
+| ------------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Home         | `/`             | Página em branco (placeholder do scaffold inicial)                                                                                     |
+| Login        | `/login`        | Formulário de login (email + senha), redireciona para `/` no sucesso                                                                   |
+| Novo projeto | `/projects/new` | Formulário de criação de projeto (nome + descrição), protegida (redireciona para `/login` sem sessão), redireciona para `/` no sucesso |
 
 ## Modelo de dados
 

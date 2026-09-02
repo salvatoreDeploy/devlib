@@ -76,7 +76,7 @@ Fica para depois do MVP (v1.1+):
 
 - [ ] CRUD de projetos (api + web)
   - [x] API: repositório + service de projetos (create, list, getById, update, delete)
-  - [ ] API: rotas REST de projetos com validação zod (POST/GET/GET:id/PATCH/DELETE /projects)
+  - [x] API: rotas REST de projetos com validação zod (POST/GET/GET:id/PATCH/DELETE /projects)
   - [ ] Web: formulário de criação de projeto
   - [ ] Web: formulário de edição de projeto
 - [ ] CRUD de bibliotecas — cadastro manual, sem integração externa ainda (api + web)

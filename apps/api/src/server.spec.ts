@@ -24,6 +24,60 @@ describe("Swagger/OpenAPI", () => {
   });
 });
 
+describe("CORS", () => {
+  it("permite requisições da origem configurada (Access-Control-Allow-Origin)", async () => {
+    const app = buildServer({
+      corsConfig: { webUrl: "http://localhost:3000" },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/health",
+      headers: { origin: "http://localhost:3000" },
+    });
+
+    expect(response.headers["access-control-allow-origin"]).toBe(
+      "http://localhost:3000",
+    );
+  });
+
+  it("não libera Access-Control-Allow-Origin pra uma origem diferente da configurada", async () => {
+    const app = buildServer({
+      corsConfig: { webUrl: "http://localhost:3000" },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/health",
+      headers: { origin: "http://origem-nao-autorizada.example.com" },
+    });
+
+    expect(response.headers["access-control-allow-origin"]).toBeUndefined();
+  });
+});
+
+describe("Rate limit", () => {
+  it("inclui os headers de rate limit na resposta", async () => {
+    const app = buildServer();
+
+    const response = await app.inject({ method: "GET", url: "/health" });
+
+    expect(response.headers["x-ratelimit-limit"]).toBe("100");
+    expect(response.headers).toHaveProperty("x-ratelimit-remaining");
+  });
+
+  it("retorna 429 depois de exceder o limite na janela de tempo", async () => {
+    const app = buildServer();
+
+    let lastResponse;
+    for (let i = 0; i < 101; i++) {
+      lastResponse = await app.inject({ method: "GET", url: "/health" });
+    }
+
+    expect(lastResponse?.statusCode).toBe(429);
+  });
+});
+
 describe("error handler global (validação zod)", () => {
   it("retorna { error: mensagem } quando uma rota com schema nativo recebe input inválido", async () => {
     const app = buildServer();

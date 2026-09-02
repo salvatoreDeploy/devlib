@@ -4,6 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,13 +37,16 @@ export default function LoginPage() {
   });
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted px-4">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <form
         className="w-full max-w-xs rounded-lg border border-border bg-card p-6"
         noValidate
         onSubmit={handleSubmit((data) => mutation.mutate(data))}
       >
-        <h1 className="mb-4 text-base font-semibold">Entrar</h1>
+        <h1 className="text-2xl font-bold">Entrar</h1>
+        <p className="mb-4 mt-1 text-xs text-muted-foreground">
+          Acesse seu catálogo de bibliotecas
+        </p>
 
         <div className="mb-3">
           <Label
@@ -83,6 +88,14 @@ export default function LoginPage() {
               {errors.password.message}
             </p>
           )}
+          <div className="mt-1 text-right">
+            <Link
+              href="/forgot-password"
+              className="text-xs text-indigo-400 underline-offset-4 hover:underline"
+            >
+              esqueci minha senha
+            </Link>
+          </div>
         </div>
 
         {mutation.isError && (
@@ -94,8 +107,25 @@ export default function LoginPage() {
         )}
 
         <Button type="submit" disabled={mutation.isPending} className="w-full">
-          {mutation.isPending ? "Entrando..." : "Entrar"}
+          {mutation.isPending ? (
+            "entrando..."
+          ) : (
+            <>
+              entrar
+              <ArrowUpRight />
+            </>
+          )}
         </Button>
+
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          ainda não tem conta?{" "}
+          <Link
+            href="/register"
+            className="text-indigo-400 underline-offset-4 hover:underline"
+          >
+            criar conta
+          </Link>
+        </p>
       </form>
     </main>
   );
