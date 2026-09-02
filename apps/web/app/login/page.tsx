@@ -4,12 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { ArrowUpRight } from "lucide-react";
+import { Check } from "lucide-react";
 import Link from "next/link";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { login, LoginError } from "../../lib/api/auth";
 import { saveTokens } from "../../lib/auth-storage";
 
@@ -37,95 +36,95 @@ export default function LoginPage() {
   });
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4">
+    <main className="flex min-h-screen items-center justify-center bg-background px-10">
       <form
-        className="w-full max-w-xs rounded-lg border border-border bg-card p-6"
+        className="flex w-100 flex-col gap-6"
         noValidate
         onSubmit={handleSubmit((data) => mutation.mutate(data))}
       >
-        <h1 className="text-2xl font-bold">Entrar</h1>
-        <p className="mb-4 mt-1 text-xs text-muted-foreground">
-          Acesse seu catálogo de bibliotecas
+        <div className="flex items-center gap-2.5">
+          <div className="flex size-6.5 items-center justify-center rounded-[7px] border-[1.5px] border-primary text-[13px] font-bold text-primary">
+            D
+          </div>
+          <span className="text-[15px] font-medium text-foreground">
+            devlib.dev
+          </span>
+        </div>
+
+        <h1 className="text-[26px] font-bold leading-tight tracking-[-0.02em] text-foreground">
+          Seu catálogo de bibliotecas
+        </h1>
+
+        <p className="text-[15px] leading-[1.65] text-muted-foreground text-pretty">
+          O DevLib guarda toda biblioteca que você usa — versão, categoria,
+          comando de instalação e a nota do porquê você escolheu ela.{" "}
+          <span className="text-foreground">Um lugar só</span>, por projeto.
         </p>
 
-        <div className="mb-3">
-          <Label
-            htmlFor="email"
-            className="mb-1 block text-[11px] font-normal text-muted-foreground"
-          >
+        <div className="flex flex-col gap-2.5">
+          <label htmlFor="email" className="sr-only">
             Email
-          </Label>
+          </label>
           <Input
             id="email"
             type="email"
-            className="h-8 text-xs"
+            placeholder="seu e-mail"
+            className="h-11 rounded-[9px] border-input bg-surface-input px-3.5 text-sm text-foreground"
             aria-invalid={errors.email ? true : undefined}
             {...register("email")}
           />
           {errors.email && (
-            <p className="mt-1 text-xs text-destructive">
-              {errors.email.message}
-            </p>
+            <p className="text-xs text-destructive">{errors.email.message}</p>
           )}
-        </div>
 
-        <div className="mb-4">
-          <Label
-            htmlFor="password"
-            className="mb-1 block text-[11px] font-normal text-muted-foreground"
-          >
+          <label htmlFor="password" className="sr-only">
             Senha
-          </Label>
+          </label>
           <Input
             id="password"
             type="password"
-            className="h-8 text-xs"
+            placeholder="sua senha"
+            className="h-11 rounded-[9px] border-input bg-surface-input px-3.5 text-sm text-foreground"
             aria-invalid={errors.password ? true : undefined}
             {...register("password")}
           />
           {errors.password && (
-            <p className="mt-1 text-xs text-destructive">
+            <p className="text-xs text-destructive">
               {errors.password.message}
             </p>
           )}
-          <div className="mt-1 text-right">
-            <Link
-              href="/forgot-password"
-              className="text-xs text-indigo-400 underline-offset-4 hover:underline"
-            >
-              esqueci minha senha
-            </Link>
-          </div>
         </div>
 
         {mutation.isError && (
-          <p className="mb-3 text-xs text-destructive">
+          <p className="text-xs text-destructive">
             {mutation.error instanceof LoginError
               ? mutation.error.message
               : "Não foi possível entrar. Tente novamente."}
           </p>
         )}
 
-        <Button type="submit" disabled={mutation.isPending} className="w-full">
-          {mutation.isPending ? (
-            "entrando..."
-          ) : (
-            <>
-              entrar
-              <ArrowUpRight />
-            </>
-          )}
-        </Button>
-
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          ainda não tem conta?{" "}
-          <Link
-            href="/register"
-            className="text-indigo-400 underline-offset-4 hover:underline"
+        <div className="flex items-center justify-between">
+          <Link href="/forgot-password" className="text-[13px] text-text-faint">
+            esqueci minha senha
+          </Link>
+          <Button
+            type="submit"
+            disabled={mutation.isPending}
+            className="h-auto rounded-[9px] px-4 py-2.5 text-sm font-semibold"
           >
+            <Check />
+            {mutation.isPending ? "entrando..." : "entrar"}
+          </Button>
+        </div>
+
+        <div className="mt-2 h-px bg-border-faint" />
+
+        <span className="text-[13px] text-text-faint">
+          ainda não tem conta?{" "}
+          <Link href="/register" className="text-primary">
             criar conta
           </Link>
-        </p>
+        </span>
       </form>
     </main>
   );

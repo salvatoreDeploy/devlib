@@ -46,12 +46,10 @@ describe("LoginPage", () => {
     expect(screen.getByLabelText(/senha/i)).not.toBeNull();
   });
 
-  it("renderiza subtítulo e links de esqueci minha senha / criar conta", () => {
+  it("renderiza título e links de esqueci minha senha / criar conta", () => {
     renderLoginPage();
 
-    expect(
-      screen.getByText("Acesse seu catálogo de bibliotecas"),
-    ).not.toBeNull();
+    expect(screen.getByText("Seu catálogo de bibliotecas")).not.toBeNull();
 
     const forgotPasswordLink = screen.getByRole("link", {
       name: /esqueci minha senha/i,

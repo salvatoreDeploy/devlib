@@ -57,7 +57,7 @@ describe("NewProjectPage", () => {
     renderNewProjectPage();
     await waitFor(() => expect(screen.getByLabelText(/nome/i)).not.toBeNull());
 
-    fireEvent.click(screen.getByRole("button", { name: /criar projeto/i }));
+    fireEvent.click(screen.getByRole("button", { name: /salvar/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/nome é obrigatório/i)).not.toBeNull();
@@ -83,7 +83,7 @@ describe("NewProjectPage", () => {
     fireEvent.change(screen.getByLabelText(/descrição/i), {
       target: { value: "Catálogo pessoal" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /criar projeto/i }));
+    fireEvent.click(screen.getByRole("button", { name: /salvar/i }));
 
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith("/");
@@ -104,7 +104,7 @@ describe("NewProjectPage", () => {
     fireEvent.change(screen.getByLabelText(/nome/i), {
       target: { value: "DevLib" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /criar projeto/i }));
+    fireEvent.click(screen.getByRole("button", { name: /salvar/i }));
 
     await waitFor(() => {
       expect(
