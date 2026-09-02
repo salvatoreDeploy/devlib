@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getTableColumns } from "drizzle-orm";
+import { getTableConfig } from "drizzle-orm/pg-core";
 import {
   users,
   refreshTokens,
@@ -76,15 +77,41 @@ describe("categories", () => {
     const columns = getTableColumns(categories);
 
     expect(Object.keys(columns)).toEqual(
-      expect.arrayContaining(["id", "name", "createdAt"]),
+      expect.arrayContaining(["id", "projectId", "name", "createdAt"]),
     );
   });
 
-  it("name é obrigatório e único", () => {
+  it("name é obrigatório; projectId é opcional (null = categoria predefinida/global)", () => {
     const columns = getTableColumns(categories);
 
     expect(columns.name.notNull).toBe(true);
-    expect(columns.name.isUnique).toBe(true);
+    expect(columns.projectId.notNull).toBe(false);
+  });
+
+  it("nome é único dentro do mesmo projeto (constraint composta project_id+name)", () => {
+    const { uniqueConstraints } = getTableConfig(categories);
+
+    const composite = uniqueConstraints.find(
+      (constraint) =>
+        constraint.columns
+          .map((column) => column.name)
+          .sort()
+          .join(",") === "name,project_id",
+    );
+    expect(composite).toBeDefined();
+  });
+
+  it("nome é único entre as categorias globais (índice único parcial project_id IS NULL)", () => {
+    const { indexes } = getTableConfig(categories);
+
+    const globalNameIndex = indexes.find(
+      (index) => index.config.name === "categories_global_name_unique",
+    );
+    expect(globalNameIndex).toBeDefined();
+    expect(globalNameIndex?.config.unique).toBe(true);
+    expect(globalNameIndex?.config.columns.map((c) => c.name)).toEqual([
+      "name",
+    ]);
   });
 });
 

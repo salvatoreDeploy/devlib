@@ -12,7 +12,7 @@ describe("seedCategories", () => {
 
     expect(insert).toHaveBeenCalledWith(categories);
     expect(values).toHaveBeenCalledWith(
-      PREDEFINED_CATEGORIES.map((name) => ({ name })),
+      PREDEFINED_CATEGORIES.map((name) => ({ name, projectId: null })),
     );
   });
 
