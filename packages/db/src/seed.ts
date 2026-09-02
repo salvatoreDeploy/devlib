@@ -18,7 +18,7 @@ export const PREDEFINED_CATEGORIES = [
 
 type SeedDb = {
   insert: (table: typeof categories) => {
-    values: (data: { name: string }[]) => {
+    values: (data: { name: string; projectId: null }[]) => {
       onConflictDoNothing: () => Promise<unknown>;
     };
   };
@@ -27,7 +27,7 @@ type SeedDb = {
 export async function seedCategories(db: SeedDb): Promise<void> {
   await db
     .insert(categories)
-    .values(PREDEFINED_CATEGORIES.map((name) => ({ name })))
+    .values(PREDEFINED_CATEGORIES.map((name) => ({ name, projectId: null })))
     .onConflictDoNothing();
 }
 

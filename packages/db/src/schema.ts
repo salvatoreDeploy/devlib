@@ -4,8 +4,10 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   primaryKey,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -32,14 +34,6 @@ export const refreshTokens = pgTable("refresh_tokens", {
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
 });
 
-export const categories = pgTable("categories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull().unique(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
-
 export const tags = pgTable("tags", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull().unique(),
@@ -62,6 +56,33 @@ export const projects = pgTable("projects", {
     .notNull()
     .defaultNow(),
 });
+
+// project_id nulo = categoria predefinida/global (visível pra todos os
+// projetos); preenchido = categoria custom, só do projeto dono. Duas
+// constraints de unicidade porque são dois escopos diferentes: nome único
+// dentro do mesmo projeto (constraint composta) e nome único entre as
+// categorias globais (índice único parcial, já que um unique(project_id,
+// name) comum não impede duas linhas com project_id NULL e mesmo name —
+// Postgres trata NULL como distinto de NULL numa constraint multi-coluna).
+export const categories = pgTable(
+  "categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").references(() => projects.id, {
+      onDelete: "cascade",
+    }),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique().on(table.projectId, table.name),
+    uniqueIndex("categories_global_name_unique")
+      .on(table.name)
+      .where(sql`${table.projectId} IS NULL`),
+  ],
+);
 
 export const libraries = pgTable("libraries", {
   id: uuid("id").primaryKey().defaultRandom(),

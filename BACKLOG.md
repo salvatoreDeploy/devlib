@@ -33,6 +33,7 @@ Fica para depois do MVP (v1.1+):
 - Snippets de instalação/configuração
 - Dashboard de métricas
 - Multiusuário/times
+- API pública com chave de API (endpoint read-only pra consultar bibliotecas de um projeto fora do app)
 
 > Motivo: o MVP prova o valor central (rastrear lib ↔ projeto) com o menor esforço. As integrações externas e métricas dependem de dados reais no catálogo pra fazerem sentido.
 
@@ -115,6 +116,14 @@ Fica para depois do MVP (v1.1+):
 - [ ] Query agregada: bibliotecas mais usadas
 - [ ] Query agregada: distribuição por categoria
 - [ ] Tela de dashboard de métricas
+
+## Sprint 7 — API pública / Developers (pós-MVP)
+
+> Adicionado em 2026-09-02 a partir da tela "Developers" do pacote de design hi-fi — não estava em nenhuma sprint antes disso. Exige um mecanismo de autenticação novo (chave de API), separado do JWT de sessão usado por `apps/web` — decidir o desenho antes de implementar a primeira subtask.
+
+- [ ] Decidir mecanismo de chave de API (formato, revogação, escopo por projeto) — antes de implementar
+- [ ] Rota `GET /v1/projects/:id/libraries` autenticada por chave de API (Bearer), somente leitura
+- [ ] Tela "Developers" no projeto: gerar/exibir/revogar chave de API, exemplo de `curl`
 
 ---
 
