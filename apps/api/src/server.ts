@@ -1,6 +1,9 @@
 import Fastify, { type FastifyError } from "fastify";
+import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import { getCorsConfig, type CorsConfig } from "./config/env";
 import {
   hasZodFastifySchemaValidationErrors,
   jsonSchemaTransform,
@@ -43,13 +46,26 @@ export type BuildServerDeps = RegisterRouteOptions &
   ProjectsListRouteOptions &
   ProjectsGetRouteOptions &
   ProjectsUpdateRouteOptions &
-  ProjectsDeleteRouteOptions;
+  ProjectsDeleteRouteOptions & {
+    corsConfig?: CorsConfig;
+  };
 
 export function buildServer(deps: BuildServerDeps = {}) {
   const app = Fastify().withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+
+  app.register(cors, {
+    origin: (origin, callback) => {
+      const { webUrl } = deps.corsConfig ?? getCorsConfig();
+      callback(null, origin === webUrl);
+    },
+  });
+  app.register(rateLimit, {
+    max: 100,
+    timeWindow: "1 minute",
+  });
 
   app.register(swagger, {
     openapi: {

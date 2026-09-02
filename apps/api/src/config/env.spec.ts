@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getAuthConfig } from "./env";
+import { getAuthConfig, getCorsConfig } from "./env";
 
 const ENV_KEYS = [
   "JWT_SECRET",
@@ -67,5 +67,35 @@ describe("getAuthConfig", () => {
     delete process.env.JWT_REFRESH_EXPIRES_IN;
 
     expect(() => getAuthConfig()).toThrow(/JWT_REFRESH_EXPIRES_IN/);
+  });
+});
+
+describe("getCorsConfig", () => {
+  const original = process.env.WEB_URL;
+
+  afterEach(() => {
+    if (original === undefined) {
+      delete process.env.WEB_URL;
+    } else {
+      process.env.WEB_URL = original;
+    }
+  });
+
+  it("retorna http://localhost:3000 quando WEB_URL não está definida", () => {
+    delete process.env.WEB_URL;
+
+    expect(getCorsConfig()).toEqual({ webUrl: "http://localhost:3000" });
+  });
+
+  it("retorna o valor de WEB_URL quando definida", () => {
+    process.env.WEB_URL = "https://devlib.example.com";
+
+    expect(getCorsConfig()).toEqual({ webUrl: "https://devlib.example.com" });
+  });
+
+  it("lança erro claro quando WEB_URL não é uma URL válida", () => {
+    process.env.WEB_URL = "nao-e-uma-url";
+
+    expect(() => getCorsConfig()).toThrow(/WEB_URL/);
   });
 });

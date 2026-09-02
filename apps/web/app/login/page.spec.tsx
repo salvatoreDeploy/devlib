@@ -46,6 +46,22 @@ describe("LoginPage", () => {
     expect(screen.getByLabelText(/senha/i)).not.toBeNull();
   });
 
+  it("renderiza subtítulo e links de esqueci minha senha / criar conta", () => {
+    renderLoginPage();
+
+    expect(
+      screen.getByText("Acesse seu catálogo de bibliotecas"),
+    ).not.toBeNull();
+
+    const forgotPasswordLink = screen.getByRole("link", {
+      name: /esqueci minha senha/i,
+    });
+    expect(forgotPasswordLink.getAttribute("href")).toBe("/forgot-password");
+
+    const registerLink = screen.getByRole("link", { name: /criar conta/i });
+    expect(registerLink.getAttribute("href")).toBe("/register");
+  });
+
   it("mostra erro de validação e não chama a API quando o email é inválido", async () => {
     renderLoginPage();
 
