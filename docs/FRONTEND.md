@@ -158,7 +158,7 @@ Corrige uma versão anterior deste documento que dizia "todo botão termina com 
 
 ### Badges de categoria
 
-> **Divergência de modelo, sinalizada, não resolvida aqui**: o pacote de design trata categoria como algo **por projeto** (tela "Categorias" dentro de um projeto, com "Criar categoria" escopado a ele). `packages/db/schema.ts` tem `categories` **global/predefinida** (seed único de 10 categorias, sem `project_id`) — decisão já registrada em `docs/DECISIONS.md`. Ao implementar a tela de Categorias (fora do escopo desta atualização de documento), decidir com o usuário se o modelo muda ou se a tela vira só um filtro sobre as categorias globais existentes — não assumir um dos dois lados aqui.
+> **Resolvido** (2026-09-02, PR #32): `categories` agora tem `project_id` nulável — `NULL` = predefinida/global (as 10 já seedadas, visíveis a todos os projetos), preenchido = custom de um projeto. `libraries.categoryId` não mudou — a categoria continua sendo da biblioteca, não da associação projeto↔biblioteca (a mesma lib usada em dois projetos tem a mesma categoria nos dois). Detalhe completo, incluindo as duas constraints de unicidade (por-projeto e entre as globais) e os testes manuais contra o Postgres local, em `docs/DECISIONS.md`. Ainda não existe service/rota/tela de categorias — quando forem implementados, a regra de "nome custom não pode colidir com uma categoria global já visível pro mesmo projeto" fica pra decidir na hora, é regra de aplicação, não de banco.
 
 Paleta por categoria (mantém a tabela já validada antes, funciona em fundo escuro):
 
