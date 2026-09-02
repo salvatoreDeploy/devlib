@@ -24,7 +24,7 @@ _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. 
 - CRUD de projetos via API (`/projects`), protegido por autenticação (primeiro uso real do middleware `authenticate`): cada projeto pertence a um usuário; acessar/editar/excluir um projeto de outro usuário responde 404 (não revela que o ID existe); nome de projeto duplicado para o mesmo usuário é bloqueado (409).
 - Criação de projeto em `apps/web` (`/projects/new`): primeira tela protegida do frontend — sem access token válido em `localStorage`, redireciona para `/login` (hook reutilizável `useRequireAuth`). Formulário nome/descrição, chama `POST /projects` com o token e redireciona para `/` no sucesso.
 - `apps/api` libera CORS só para a origem configurada em `WEB_URL` (`@fastify/cors`, padrão `http://localhost:3000`) e aplica rate limit global (`@fastify/rate-limit`, 100 requisições/minuto por IP) em todas as rotas.
-- `apps/web` roda em tema escuro fixo (sem alternância pra claro), seguindo o protótipo de UI aprovado (`docs/FRONTEND.md`).
+- `apps/web` roda em tema escuro fixo (sem alternância pra claro), com paleta de cores exata (hex) do pacote de design hi-fi entregue em 2026-09-02 — ver tabela completa de tokens em `docs/FRONTEND.md`.
 
 ## Rotas da API
 
