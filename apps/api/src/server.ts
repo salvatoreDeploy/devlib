@@ -38,6 +38,26 @@ import {
   projectsDeleteRoute,
   type ProjectsDeleteRouteOptions,
 } from "./routes/projects-delete.route";
+import {
+  librariesCreateRoute,
+  type LibrariesCreateRouteOptions,
+} from "./routes/libraries-create.route";
+import {
+  librariesListRoute,
+  type LibrariesListRouteOptions,
+} from "./routes/libraries-list.route";
+import {
+  librariesGetRoute,
+  type LibrariesGetRouteOptions,
+} from "./routes/libraries-get.route";
+import {
+  librariesUpdateRoute,
+  type LibrariesUpdateRouteOptions,
+} from "./routes/libraries-update.route";
+import {
+  librariesDeleteRoute,
+  type LibrariesDeleteRouteOptions,
+} from "./routes/libraries-delete.route";
 
 export type BuildServerDeps = RegisterRouteOptions &
   LoginRouteOptions &
@@ -46,7 +66,12 @@ export type BuildServerDeps = RegisterRouteOptions &
   ProjectsListRouteOptions &
   ProjectsGetRouteOptions &
   ProjectsUpdateRouteOptions &
-  ProjectsDeleteRouteOptions & {
+  ProjectsDeleteRouteOptions &
+  LibrariesCreateRouteOptions &
+  LibrariesListRouteOptions &
+  LibrariesGetRouteOptions &
+  LibrariesUpdateRouteOptions &
+  LibrariesDeleteRouteOptions & {
     corsConfig?: CorsConfig;
   };
 
@@ -82,6 +107,11 @@ export function buildServer(deps: BuildServerDeps = {}) {
           name: "Projects",
           description:
             "CRUD de projetos do usuário autenticado. Todo projeto pertence a um único usuário (dono) — tentar ler, editar ou excluir um projeto de outro usuário responde 404, nunca 403 (evita confirmar a existência do ID a quem não é dono).",
+        },
+        {
+          name: "Libraries",
+          description:
+            "CRUD de bibliotecas do catálogo global. Diferente de projetos, biblioteca não tem dono — qualquer usuário autenticado pode ler, editar ou excluir qualquer biblioteca do catálogo compartilhado.",
         },
       ],
       components: {
@@ -120,6 +150,11 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(projectsGetRoute, deps);
   app.register(projectsUpdateRoute, deps);
   app.register(projectsDeleteRoute, deps);
+  app.register(librariesCreateRoute, deps);
+  app.register(librariesListRoute, deps);
+  app.register(librariesGetRoute, deps);
+  app.register(librariesUpdateRoute, deps);
+  app.register(librariesDeleteRoute, deps);
 
   return app;
 }

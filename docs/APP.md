@@ -27,22 +27,28 @@ _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. 
 - `@fastify/cors` libera explicitamente `GET, HEAD, POST, PATCH, PUT, DELETE` no preflight — o default do `@fastify/cors@11.3.0` (`GET,HEAD,POST`) bloqueava `PATCH`/`DELETE` em qualquer chamada feita por um navegador de verdade.
 - `apps/api` libera CORS só para a origem configurada em `WEB_URL` (`@fastify/cors`, padrão `http://localhost:3000`) e aplica rate limit global (`@fastify/rate-limit`, 100 requisições/minuto por IP) em todas as rotas.
 - `apps/web` roda em tema escuro fixo (sem alternância pra claro), com paleta de cores exata (hex) do pacote de design hi-fi entregue em 2026-09-02 — ver tabela completa de tokens em `docs/FRONTEND.md`.
+- CRUD de bibliotecas via API (`/libraries`), protegido por autenticação. Diferente de `/projects`, é um catálogo **global** sem dono — qualquer usuário autenticado pode ler, editar ou excluir qualquer biblioteca. Nome de biblioteca duplicado no catálogo é bloqueado (409); `categoryId` inexistente é rejeitado (404) antes de gravar.
 
 ## Rotas da API
 
 _Atualizar com cada rota nova criada em `apps/api/src/routes`._
 
-| Método | Rota             | Auth? | Descrição                                                                                                       |
-| ------ | ---------------- | ----- | --------------------------------------------------------------------------------------------------------------- |
-| GET    | `/health`        | Não   | Health check — retorna `{ status: "ok" }`                                                                       |
-| POST   | `/auth/register` | Não   | Cadastra usuário (email + senha); retorna `{ id, email, createdAt }`                                            |
-| POST   | `/auth/login`    | Não   | Login (email + senha); retorna `{ accessToken, refreshToken }`                                                  |
-| POST   | `/auth/refresh`  | Não   | Renova a sessão (`{ refreshToken }`); retorna novo `{ accessToken, refreshToken }`                              |
-| POST   | `/projects`      | Sim   | Cria um projeto (`{ name, description? }`) para o usuário autenticado; 409 se o nome já existe pra esse usuário |
-| GET    | `/projects`      | Sim   | Lista os projetos do usuário autenticado                                                                        |
-| GET    | `/projects/:id`  | Sim   | Detalha um projeto; 404 se não existe ou é de outro usuário                                                     |
-| PATCH  | `/projects/:id`  | Sim   | Atualiza `{ name?, description? }`; 404 se não é do usuário, 409 se o novo nome já existe                       |
-| DELETE | `/projects/:id`  | Sim   | Exclui o projeto; 404 se não é do usuário                                                                       |
+| Método | Rota             | Auth? | Descrição                                                                                                                         |
+| ------ | ---------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/health`        | Não   | Health check — retorna `{ status: "ok" }`                                                                                         |
+| POST   | `/auth/register` | Não   | Cadastra usuário (email + senha); retorna `{ id, email, createdAt }`                                                              |
+| POST   | `/auth/login`    | Não   | Login (email + senha); retorna `{ accessToken, refreshToken }`                                                                    |
+| POST   | `/auth/refresh`  | Não   | Renova a sessão (`{ refreshToken }`); retorna novo `{ accessToken, refreshToken }`                                                |
+| POST   | `/projects`      | Sim   | Cria um projeto (`{ name, description? }`) para o usuário autenticado; 409 se o nome já existe pra esse usuário                   |
+| GET    | `/projects`      | Sim   | Lista os projetos do usuário autenticado                                                                                          |
+| GET    | `/projects/:id`  | Sim   | Detalha um projeto; 404 se não existe ou é de outro usuário                                                                       |
+| PATCH  | `/projects/:id`  | Sim   | Atualiza `{ name?, description? }`; 404 se não é do usuário, 409 se o novo nome já existe                                         |
+| DELETE | `/projects/:id`  | Sim   | Exclui o projeto; 404 se não é do usuário                                                                                         |
+| POST   | `/libraries`     | Sim   | Cria uma biblioteca no catálogo global (`{ name, categoryId?, notes? }`); 409 se o nome já existe, 404 se `categoryId` não existe |
+| GET    | `/libraries`     | Sim   | Lista todas as bibliotecas do catálogo (sem filtro por usuário)                                                                   |
+| GET    | `/libraries/:id` | Sim   | Detalha uma biblioteca; 404 se não existe                                                                                         |
+| PATCH  | `/libraries/:id` | Sim   | Atualiza `{ name?, categoryId?, notes? }`; 404 se não existe ou `categoryId` não existe, 409 se o novo nome já existe             |
+| DELETE | `/libraries/:id` | Sim   | Exclui a biblioteca; 404 se não existe                                                                                            |
 
 ## Telas do frontend
 

@@ -68,6 +68,7 @@ Atualizar `docs/DECISIONS.md` e `docs/APP.md` faz parte do passo 5.5 da skill `n
 ## Skills e subagentes disponíveis
 
 - `/nova-feature` — use ao implementar qualquer item do `BACKLOG.md`, do planejamento ao PR
+- `/nova-rota-crud` — use ao criar rotas REST CRUD novas em `apps/api/src/routes` para um recurso já com repositório + service prontos; padroniza o esqueleto (zod, auth, injeção de repositório, mapeamento de erros) usando `projects-*.route.ts`/`libraries-*.route.ts` como templates
 - `/revisar-pr` — use antes de sugerir abrir um PR, faz a autoavaliação contra o checklist
 - `/propor-skill` — use ao perceber um padrão repetido; propõe nova skill/hook/subagente, nunca cria sem aprovação
 - Subagente `revisor-arquitetura` (somente leitura) — audita conformidade com a arquitetura acima; use antes de um PR ou quando pedir uma checagem de conformidade
