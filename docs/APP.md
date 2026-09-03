@@ -30,6 +30,7 @@ _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. 
 - CRUD de bibliotecas via API (`/libraries`), protegido por autenticação. Diferente de `/projects`, é um catálogo **global** sem dono — qualquer usuário autenticado pode ler, editar ou excluir qualquer biblioteca. Nome de biblioteca duplicado no catálogo é bloqueado (409); `categoryId` inexistente é rejeitado (404) antes de gravar.
 - Listagem de categorias globais via API (`GET /categories`), protegida por autenticação — usada pelo formulário de biblioteca pra popular o select de categoria. Só categorias com `projectId: null` (as 10 predefinidas do seed); ainda não existe CRUD de categoria (criação/edição/exclusão) nem categorias por projeto na prática.
 - Criação de biblioteca em `apps/web` (`/libraries/new`): formulário nome/categoria/notas, protegida (`useRequireAuth`). Categoria é um `Select` (shadcn/Radix) populado via `GET /categories`; campo opcional — "Sem categoria" fica selecionável. Chama `POST /libraries` com o token e redireciona para `/` no sucesso; mostra erro inline se o nome já existir no catálogo (409).
+- Edição de biblioteca em `apps/web` (`/libraries/[id]/edit`): busca a biblioteca via `GET /libraries/:id`, pré-preenche nome/categoria/notas (mesmo select de categoria de `/libraries/new`), envia `PATCH /libraries/:id` no submit e redireciona para `/` no sucesso. Mostra erro inline se a biblioteca não existir (404) ou se o nome novo colidir com outra (409).
 
 ## Rotas da API
 
@@ -57,13 +58,14 @@ _Atualizar com cada rota nova criada em `apps/api/src/routes`._
 
 _Atualizar com cada tela nova implementada em `apps/web`._
 
-| Tela            | Rota                  | Descrição                                                                                                                              |
-| --------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Home            | `/`                   | Página em branco (placeholder do scaffold inicial)                                                                                     |
-| Login           | `/login`              | Formulário de login (email + senha), redireciona para `/` no sucesso                                                                   |
-| Novo projeto    | `/projects/new`       | Formulário de criação de projeto (nome + descrição), protegida (redireciona para `/login` sem sessão), redireciona para `/` no sucesso |
-| Editar projeto  | `/projects/[id]/edit` | Formulário de edição de projeto, pré-preenchido via `GET /projects/:id`, protegida, redireciona para `/` no sucesso                    |
-| Nova biblioteca | `/libraries/new`      | Formulário de criação de biblioteca (nome + categoria via select + notas), protegida, redireciona para `/` no sucesso                  |
+| Tela              | Rota                   | Descrição                                                                                                                                         |
+| ----------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home              | `/`                    | Página em branco (placeholder do scaffold inicial)                                                                                                |
+| Login             | `/login`               | Formulário de login (email + senha), redireciona para `/` no sucesso                                                                              |
+| Novo projeto      | `/projects/new`        | Formulário de criação de projeto (nome + descrição), protegida (redireciona para `/login` sem sessão), redireciona para `/` no sucesso            |
+| Editar projeto    | `/projects/[id]/edit`  | Formulário de edição de projeto, pré-preenchido via `GET /projects/:id`, protegida, redireciona para `/` no sucesso                               |
+| Nova biblioteca   | `/libraries/new`       | Formulário de criação de biblioteca (nome + categoria via select + notas), protegida, redireciona para `/` no sucesso                             |
+| Editar biblioteca | `/libraries/[id]/edit` | Formulário de edição de biblioteca, pré-preenchido via `GET /libraries/:id` (nome, categoria e notas), protegida, redireciona para `/` no sucesso |
 
 ## Modelo de dados
 
