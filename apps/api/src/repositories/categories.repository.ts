@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { categories, type createDb } from "@devlib/db";
 
 export type DbClient = ReturnType<typeof createDb>;
@@ -12,6 +12,7 @@ export type CategoryRecord = {
 
 export type CategoriesRepository = {
   findCategoryById(id: string): Promise<CategoryRecord | undefined>;
+  findGlobalCategories(): Promise<CategoryRecord[]>;
 };
 
 export function createCategoriesRepository(db: DbClient): CategoriesRepository {
@@ -24,6 +25,10 @@ export function createCategoriesRepository(db: DbClient): CategoriesRepository {
         .limit(1);
 
       return rows[0];
+    },
+
+    async findGlobalCategories() {
+      return db.select().from(categories).where(isNull(categories.projectId));
     },
   };
 }

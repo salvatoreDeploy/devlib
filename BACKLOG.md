@@ -83,6 +83,7 @@ Fica para depois do MVP (v1.1+):
 - [ ] CRUD de bibliotecas — cadastro manual, sem integração externa ainda (api + web)
   - [x] API: repositório + service de bibliotecas (create, list, getById, update, delete)
   - [x] API: rotas REST de bibliotecas com validação zod (inclui categoryId)
+  - [x] API: rota GET /categories (lista categorias globais, pra popular o select do formulário de biblioteca)
   - [ ] Web: formulário de criação de biblioteca (com seleção de categoria)
   - [ ] Web: formulário de edição de biblioteca
 - [x] Categorias predefinidas no seed do banco
