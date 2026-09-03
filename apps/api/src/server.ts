@@ -57,6 +57,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.setSerializerCompiler(serializerCompiler);
 
   app.register(cors, {
+    methods: ["GET", "HEAD", "POST", "PATCH", "PUT", "DELETE"],
     origin: (origin, callback) => {
       const { webUrl } = deps.corsConfig ?? getCorsConfig();
       callback(null, origin === webUrl);

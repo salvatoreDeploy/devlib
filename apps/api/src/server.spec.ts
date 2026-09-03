@@ -54,6 +54,29 @@ describe("CORS", () => {
 
     expect(response.headers["access-control-allow-origin"]).toBeUndefined();
   });
+
+  it("libera PATCH, PUT e DELETE no preflight, não só o default GET/HEAD/POST do @fastify/cors", async () => {
+    const app = buildServer({
+      corsConfig: { webUrl: "http://localhost:3000" },
+    });
+
+    const response = await app.inject({
+      method: "OPTIONS",
+      url: "/projects/00000000-0000-0000-0000-000000000000",
+      headers: {
+        origin: "http://localhost:3000",
+        "access-control-request-method": "PATCH",
+      },
+    });
+
+    const allowedMethods = response.headers["access-control-allow-methods"]
+      ?.toString()
+      .split(",")
+      .map((method) => method.trim());
+    expect(allowedMethods).toEqual(
+      expect.arrayContaining(["PATCH", "PUT", "DELETE"]),
+    );
+  });
 });
 
 describe("Rate limit", () => {
