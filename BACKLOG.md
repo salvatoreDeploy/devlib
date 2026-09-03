@@ -75,11 +75,11 @@ Fica para depois do MVP (v1.1+):
 
 ## Sprint 3 — Núcleo: projetos e bibliotecas
 
-- [ ] CRUD de projetos (api + web)
+- [x] CRUD de projetos (api + web)
   - [x] API: repositório + service de projetos (create, list, getById, update, delete)
   - [x] API: rotas REST de projetos com validação zod (POST/GET/GET:id/PATCH/DELETE /projects)
   - [x] Web: formulário de criação de projeto
-  - [ ] Web: formulário de edição de projeto
+  - [x] Web: formulário de edição de projeto
 - [ ] CRUD de bibliotecas — cadastro manual, sem integração externa ainda (api + web)
   - [ ] API: repositório + service de bibliotecas (create, list, getById, update, delete)
   - [ ] API: rotas REST de bibliotecas com validação zod (inclui categoryId)
