@@ -58,6 +58,10 @@ import {
   librariesDeleteRoute,
   type LibrariesDeleteRouteOptions,
 } from "./routes/libraries-delete.route";
+import {
+  categoriesListRoute,
+  type CategoriesListRouteOptions,
+} from "./routes/categories-list.route";
 
 export type BuildServerDeps = RegisterRouteOptions &
   LoginRouteOptions &
@@ -71,7 +75,8 @@ export type BuildServerDeps = RegisterRouteOptions &
   LibrariesListRouteOptions &
   LibrariesGetRouteOptions &
   LibrariesUpdateRouteOptions &
-  LibrariesDeleteRouteOptions & {
+  LibrariesDeleteRouteOptions &
+  CategoriesListRouteOptions & {
     corsConfig?: CorsConfig;
   };
 
@@ -112,6 +117,11 @@ export function buildServer(deps: BuildServerDeps = {}) {
           name: "Libraries",
           description:
             "CRUD de bibliotecas do catálogo global. Diferente de projetos, biblioteca não tem dono — qualquer usuário autenticado pode ler, editar ou excluir qualquer biblioteca do catálogo compartilhado.",
+        },
+        {
+          name: "Categories",
+          description:
+            "Leitura das categorias globais/predefinidas do catálogo. Sem CRUD ainda — categorias são seedadas, não criadas via API.",
         },
       ],
       components: {
@@ -155,6 +165,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(librariesGetRoute, deps);
   app.register(librariesUpdateRoute, deps);
   app.register(librariesDeleteRoute, deps);
+  app.register(categoriesListRoute, deps);
 
   return app;
 }

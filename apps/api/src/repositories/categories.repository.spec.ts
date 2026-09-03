@@ -13,6 +13,14 @@ function fakeDbForSelectWithLimit(rows: unknown[]) {
   return { db: { select } as unknown as DbClient, select, from, where, limit };
 }
 
+function fakeDbForSelectWithWhere(rows: unknown[]) {
+  const where = vi.fn().mockResolvedValue(rows);
+  const from = vi.fn().mockReturnValue({ where });
+  const select = vi.fn().mockReturnValue({ from });
+
+  return { db: { select } as unknown as DbClient, select, from, where };
+}
+
 const category = {
   id: "category-1",
   projectId: null,
@@ -38,6 +46,27 @@ describe("createCategoriesRepository", () => {
       const result = await repository.findCategoryById("category-inexistente");
 
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe("findGlobalCategories", () => {
+    it("retorna as categorias globais (projectId null)", async () => {
+      const { db, where } = fakeDbForSelectWithWhere([category]);
+
+      const repository = createCategoriesRepository(db);
+      const result = await repository.findGlobalCategories();
+
+      expect(result).toEqual([category]);
+      expect(where).toHaveBeenCalledOnce();
+    });
+
+    it("retorna array vazio quando não há categorias globais", async () => {
+      const { db } = fakeDbForSelectWithWhere([]);
+
+      const repository = createCategoriesRepository(db);
+      const result = await repository.findGlobalCategories();
+
+      expect(result).toEqual([]);
     });
   });
 });

@@ -28,6 +28,7 @@ _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. 
 - `apps/api` libera CORS só para a origem configurada em `WEB_URL` (`@fastify/cors`, padrão `http://localhost:3000`) e aplica rate limit global (`@fastify/rate-limit`, 100 requisições/minuto por IP) em todas as rotas.
 - `apps/web` roda em tema escuro fixo (sem alternância pra claro), com paleta de cores exata (hex) do pacote de design hi-fi entregue em 2026-09-02 — ver tabela completa de tokens em `docs/FRONTEND.md`.
 - CRUD de bibliotecas via API (`/libraries`), protegido por autenticação. Diferente de `/projects`, é um catálogo **global** sem dono — qualquer usuário autenticado pode ler, editar ou excluir qualquer biblioteca. Nome de biblioteca duplicado no catálogo é bloqueado (409); `categoryId` inexistente é rejeitado (404) antes de gravar.
+- Listagem de categorias globais via API (`GET /categories`), protegida por autenticação — usada pelo formulário de biblioteca pra popular o select de categoria. Só categorias com `projectId: null` (as 10 predefinidas do seed); ainda não existe CRUD de categoria (criação/edição/exclusão) nem categorias por projeto na prática.
 
 ## Rotas da API
 
@@ -49,6 +50,7 @@ _Atualizar com cada rota nova criada em `apps/api/src/routes`._
 | GET    | `/libraries/:id` | Sim   | Detalha uma biblioteca; 404 se não existe                                                                                         |
 | PATCH  | `/libraries/:id` | Sim   | Atualiza `{ name?, categoryId?, notes? }`; 404 se não existe ou `categoryId` não existe, 409 se o novo nome já existe             |
 | DELETE | `/libraries/:id` | Sim   | Exclui a biblioteca; 404 se não existe                                                                                            |
+| GET    | `/categories`    | Sim   | Lista as categorias globais/predefinidas (`projectId: null`); não há CRUD de categoria ainda, só seed                             |
 
 ## Telas do frontend
 
