@@ -80,12 +80,12 @@ Fica para depois do MVP (v1.1+):
   - [x] API: rotas REST de projetos com validação zod (POST/GET/GET:id/PATCH/DELETE /projects)
   - [x] Web: formulário de criação de projeto
   - [x] Web: formulário de edição de projeto
-- [ ] CRUD de bibliotecas — cadastro manual, sem integração externa ainda (api + web)
+- [x] CRUD de bibliotecas — cadastro manual, sem integração externa ainda (api + web)
   - [x] API: repositório + service de bibliotecas (create, list, getById, update, delete)
   - [x] API: rotas REST de bibliotecas com validação zod (inclui categoryId)
   - [x] API: rota GET /categories (lista categorias globais, pra popular o select do formulário de biblioteca)
   - [x] Web: formulário de criação de biblioteca (com seleção de categoria)
-  - [ ] Web: formulário de edição de biblioteca
+  - [x] Web: formulário de edição de biblioteca
 - [x] Categorias predefinidas no seed do banco
 - [ ] Tags livres (criar/associar)
   - [ ] API: rota/service de criação de tag + associação tag↔biblioteca
@@ -98,6 +98,13 @@ Fica para depois do MVP (v1.1+):
 - [ ] Tela de detalhe da biblioteca (notas, usado em)
   - [ ] API: rota GET /libraries/:id/projects
   - [ ] Web: tela /libraries/[id] com notas, categoria, tags e projetos onde é usada
+
+## Dívida técnica / bugs conhecidos
+
+_Achados durante o desenvolvimento que não bloqueiam a subtask em andamento, mas precisam de uma subtask própria depois. Não remover daqui sem resolver ou mover pra dentro de um sprint._
+
+- [ ] Web: telas protegidas não tratam sessão expirada/401 nas queries — descoberto em 2026-09-03 ao investigar reclamação de que o select de categoria em `/libraries/new` aparecia vazio. Causa: `useRequireAuth` só checa se existe um `accessToken` no `localStorage`, não se ele ainda é válido (`JWT_ACCESS_EXPIRES_IN=15m`); nenhuma tela usa o refresh token nem mostra erro quando uma chamada à API volta 401 — a query simplesmente falha e a tela renderiza como se não houvesse dado (sem feedback nenhum pro usuário). Afeta qualquer tela que busca dados depois de montar: `/libraries/new` (select de categoria), `/projects/[id]/edit`, `/libraries/[id]/edit` (quando existir). Decidir entre implementar renovação automática via `POST /auth/refresh` ou, no mínimo, detectar 401 e redirecionar pra `/login` com uma mensagem — antes de implementar.
+- [ ] Web: não existe fluxo de logout em nenhuma tela — usuário não tem como encerrar a sessão manualmente hoje, só esperando o access token expirar (15 min) ou limpando o `localStorage` à mão. Adicionar logout nas telas que precisam dele (provavelmente um botão/menu visível nas telas protegidas, chamando `clearTokens()` e redirecionando pra `/login`) — ver `docs/FRONTEND.md` se já existe um padrão de header/nav previsto pro protótipo antes de desenhar um novo.
 
 ## Sprint 4 — Associação cruzada
 
