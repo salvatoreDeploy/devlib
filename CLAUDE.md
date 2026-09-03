@@ -33,7 +33,7 @@ packages/
 - `docker compose up -d --build` — sobe Postgres, API e Web juntos, localmente (ver `docker-compose.yml`)
 - `docker compose logs -f api` — acompanhar logs de um serviço específico
 - `npm install` — instala dependências do monorepo (necessário mesmo usando Docker, para lint/type-check no editor)
-- `turbo run dev` — sobe web + api em paralelo
+- `npm run dev` (raiz) — sobe web + api em paralelo **fora do Docker**, carregando o `.env` da raiz antes (`set -a && . ./.env && set +a && turbo run dev`) — `apps/api` não lê `.env` sozinho em runtime (só `packages/db/drizzle.config.ts` faz isso, e só pra tooling do `drizzle-kit`), então chamar `turbo run dev` direto sem isso quebra com `DATABASE_URL inválida ou não definida`. Preferir `docker compose up -d --build` quando possível — é o caminho já validado ponta a ponta.
 - `turbo run build --filter=api` — builda só o backend
 - `turbo run test --filter=api...` — testa só o que foi afetado por mudanças na api
 - `turbo run lint`
