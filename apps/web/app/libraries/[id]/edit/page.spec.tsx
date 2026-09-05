@@ -10,6 +10,11 @@ import {
   UpdateLibraryError,
 } from "../../../../lib/api/libraries";
 import { getCategories } from "../../../../lib/api/categories";
+import {
+  addTagToLibrary,
+  AddTagToLibraryError,
+  listLibraryTags,
+} from "../../../../lib/api/tags";
 import { clearTokens, saveTokens } from "../../../../lib/auth-storage";
 
 const pushMock = vi.fn();
@@ -31,6 +36,13 @@ vi.mock("../../../../lib/api/categories", async () => {
     typeof import("../../../../lib/api/categories")
   >("../../../../lib/api/categories");
   return { ...actual, getCategories: vi.fn() };
+});
+
+vi.mock("../../../../lib/api/tags", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../../lib/api/tags")
+  >("../../../../lib/api/tags");
+  return { ...actual, listLibraryTags: vi.fn(), addTagToLibrary: vi.fn() };
 });
 
 const category = {
@@ -72,6 +84,9 @@ describe("EditLibraryPage", () => {
     vi.mocked(updateLibrary).mockReset();
     vi.mocked(getCategories).mockReset();
     vi.mocked(getCategories).mockResolvedValue([category, otherCategory]);
+    vi.mocked(listLibraryTags).mockReset();
+    vi.mocked(listLibraryTags).mockResolvedValue([]);
+    vi.mocked(addTagToLibrary).mockReset();
     clearTokens();
     saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
   });
@@ -186,6 +201,72 @@ describe("EditLibraryPage", () => {
     await waitFor(() => {
       expect(
         screen.getByText('Já existe uma biblioteca com o nome "outra"'),
+      ).not.toBeNull();
+    });
+  });
+
+  it("busca e mostra as tags existentes da biblioteca", async () => {
+    vi.mocked(getLibrary).mockResolvedValue(library);
+    vi.mocked(listLibraryTags).mockResolvedValue([
+      { id: "tag-1", name: "react", createdAt: "2026-09-05T00:00:00.000Z" },
+    ]);
+    renderEditLibraryPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("react")).not.toBeNull();
+    });
+    expect(vi.mocked(listLibraryTags).mock.calls[0]).toEqual([
+      "library-1",
+      "access-token",
+    ]);
+  });
+
+  it("adiciona uma tag nova via '+ tag' e mostra a pill assim que a API confirma", async () => {
+    vi.mocked(getLibrary).mockResolvedValue(library);
+    vi.mocked(listLibraryTags).mockResolvedValue([]);
+    vi.mocked(addTagToLibrary).mockResolvedValue({
+      id: "tag-1",
+      name: "typescript",
+      createdAt: "2026-09-05T00:00:00.000Z",
+    });
+    const user = userEvent.setup();
+    renderEditLibraryPage();
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("drizzle-orm")).not.toBeNull(),
+    );
+
+    await user.click(screen.getByRole("button", { name: "+ tag" }));
+    await user.type(screen.getByLabelText(/nova tag/i), "typescript{Enter}");
+
+    await waitFor(() => {
+      expect(addTagToLibrary).toHaveBeenCalledWith(
+        "library-1",
+        "typescript",
+        "access-token",
+      );
+    });
+  });
+
+  it("mostra a mensagem de erro da API quando adicionar uma tag falha", async () => {
+    vi.mocked(getLibrary).mockResolvedValue(library);
+    vi.mocked(listLibraryTags).mockResolvedValue([]);
+    vi.mocked(addTagToLibrary).mockRejectedValue(
+      new AddTagToLibraryError(
+        'A tag "react" já está associada a essa biblioteca',
+      ),
+    );
+    const user = userEvent.setup();
+    renderEditLibraryPage();
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("drizzle-orm")).not.toBeNull(),
+    );
+
+    await user.click(screen.getByRole("button", { name: "+ tag" }));
+    await user.type(screen.getByLabelText(/nova tag/i), "react{Enter}");
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('A tag "react" já está associada a essa biblioteca'),
       ).not.toBeNull();
     });
   });

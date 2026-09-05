@@ -89,7 +89,7 @@ Fica para depois do MVP (v1.1+):
 - [x] Categorias predefinidas no seed do banco
 - [ ] Tags livres (criar/associar)
   - [x] API: rota/service de criação de tag + associação tag↔biblioteca
-  - [ ] API: rota GET /libraries/:id/tags (lista tags de uma biblioteca) — necessária para o form de edição mostrar as tags atuais
+  - [x] API: rota GET /libraries/:id/tags (lista tags de uma biblioteca) — necessária para o form de edição mostrar as tags atuais
   - [ ] Web: componente de input de tags (criar on-the-fly) integrado ao form de biblioteca
 - [ ] Dashboard de projetos (lista)
   - [ ] Web: tela /projects (listagem via GET /projects, ação de excluir, links pra criar/detalhe)

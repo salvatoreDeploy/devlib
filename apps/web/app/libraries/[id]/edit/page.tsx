@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { Check } from "lucide-react";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { TagInput } from "@/components/tag-input";
 import {
   Select,
   SelectContent,
@@ -24,6 +25,11 @@ import {
   UpdateLibraryError,
 } from "../../../../lib/api/libraries";
 import { getCategories } from "../../../../lib/api/categories";
+import {
+  addTagToLibrary,
+  AddTagToLibraryError,
+  listLibraryTags,
+} from "../../../../lib/api/tags";
 import { getAccessToken } from "../../../../lib/auth-storage";
 import { useRequireAuth } from "../../../../lib/use-require-auth";
 
@@ -52,6 +58,22 @@ export default function EditLibraryPage() {
     queryKey: ["categories"],
     queryFn: () => getCategories(getAccessToken() ?? ""),
     enabled: isAuthenticated,
+  });
+
+  const tagsQuery = useQuery({
+    queryKey: ["library-tags", id],
+    queryFn: () => listLibraryTags(id, getAccessToken() ?? ""),
+    enabled: isAuthenticated,
+  });
+
+  const queryClient = useQueryClient();
+
+  const addTagMutation = useMutation({
+    mutationFn: (name: string) =>
+      addTagToLibrary(id, name, getAccessToken() ?? ""),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["library-tags", id] });
+    },
   });
 
   const {
@@ -193,6 +215,24 @@ export default function EditLibraryPage() {
             placeholder="pra que serve, quando usar"
             className="h-[76px] resize-none rounded-lg border-input bg-surface-input px-3 py-2 text-[13.5px] text-foreground"
             {...register("notes")}
+          />
+        </div>
+
+        <div className="flex flex-col gap-[7px]">
+          <Label className="text-[12.5px] font-medium text-secondary-foreground">
+            Tags
+          </Label>
+          <TagInput
+            tags={tagsQuery.data ?? []}
+            onAddTag={(name) => addTagMutation.mutate(name)}
+            isAdding={addTagMutation.isPending}
+            error={
+              addTagMutation.isError
+                ? addTagMutation.error instanceof AddTagToLibraryError
+                  ? addTagMutation.error.message
+                  : "Não foi possível adicionar a tag."
+                : null
+            }
           />
         </div>
 
