@@ -31,28 +31,30 @@ _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. 
 - Listagem de categorias globais via API (`GET /categories`), protegida por autenticação — usada pelo formulário de biblioteca pra popular o select de categoria. Só categorias com `projectId: null` (as 10 predefinidas do seed); ainda não existe CRUD de categoria (criação/edição/exclusão) nem categorias por projeto na prática.
 - Criação de biblioteca em `apps/web` (`/libraries/new`): formulário nome/categoria/notas, protegida (`useRequireAuth`). Categoria é um `Select` (shadcn/Radix) populado via `GET /categories`; campo opcional — "Sem categoria" fica selecionável. Chama `POST /libraries` com o token e redireciona para `/` no sucesso; mostra erro inline se o nome já existir no catálogo (409).
 - Edição de biblioteca em `apps/web` (`/libraries/[id]/edit`): busca a biblioteca via `GET /libraries/:id`, pré-preenche nome/categoria/notas (mesmo select de categoria de `/libraries/new`), envia `PATCH /libraries/:id` no submit e redireciona para `/` no sucesso. Mostra erro inline se a biblioteca não existir (404) ou se o nome novo colidir com outra (409).
+- Tags via API (`POST /libraries/:id/tags`), protegido por autenticação. Tags são globais/compartilhadas (sem dono), assim como bibliotecas: se já existir uma tag com o nome informado, ela é reaproveitada; caso contrário, é criada na hora. 404 se a biblioteca não existir, 409 se a tag já estiver associada a essa biblioteca. Ainda não há rota de listagem ou remoção de tag — só criação/associação sob demanda.
 
 ## Rotas da API
 
 _Atualizar com cada rota nova criada em `apps/api/src/routes`._
 
-| Método | Rota             | Auth? | Descrição                                                                                                                         |
-| ------ | ---------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/health`        | Não   | Health check — retorna `{ status: "ok" }`                                                                                         |
-| POST   | `/auth/register` | Não   | Cadastra usuário (email + senha); retorna `{ id, email, createdAt }`                                                              |
-| POST   | `/auth/login`    | Não   | Login (email + senha); retorna `{ accessToken, refreshToken }`                                                                    |
-| POST   | `/auth/refresh`  | Não   | Renova a sessão (`{ refreshToken }`); retorna novo `{ accessToken, refreshToken }`                                                |
-| POST   | `/projects`      | Sim   | Cria um projeto (`{ name, description? }`) para o usuário autenticado; 409 se o nome já existe pra esse usuário                   |
-| GET    | `/projects`      | Sim   | Lista os projetos do usuário autenticado                                                                                          |
-| GET    | `/projects/:id`  | Sim   | Detalha um projeto; 404 se não existe ou é de outro usuário                                                                       |
-| PATCH  | `/projects/:id`  | Sim   | Atualiza `{ name?, description? }`; 404 se não é do usuário, 409 se o novo nome já existe                                         |
-| DELETE | `/projects/:id`  | Sim   | Exclui o projeto; 404 se não é do usuário                                                                                         |
-| POST   | `/libraries`     | Sim   | Cria uma biblioteca no catálogo global (`{ name, categoryId?, notes? }`); 409 se o nome já existe, 404 se `categoryId` não existe |
-| GET    | `/libraries`     | Sim   | Lista todas as bibliotecas do catálogo (sem filtro por usuário)                                                                   |
-| GET    | `/libraries/:id` | Sim   | Detalha uma biblioteca; 404 se não existe                                                                                         |
-| PATCH  | `/libraries/:id` | Sim   | Atualiza `{ name?, categoryId?, notes? }`; 404 se não existe ou `categoryId` não existe, 409 se o novo nome já existe             |
-| DELETE | `/libraries/:id` | Sim   | Exclui a biblioteca; 404 se não existe                                                                                            |
-| GET    | `/categories`    | Sim   | Lista as categorias globais/predefinidas (`projectId: null`); não há CRUD de categoria ainda, só seed                             |
+| Método | Rota                  | Auth? | Descrição                                                                                                                                                                       |
+| ------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/health`             | Não   | Health check — retorna `{ status: "ok" }`                                                                                                                                       |
+| POST   | `/auth/register`      | Não   | Cadastra usuário (email + senha); retorna `{ id, email, createdAt }`                                                                                                            |
+| POST   | `/auth/login`         | Não   | Login (email + senha); retorna `{ accessToken, refreshToken }`                                                                                                                  |
+| POST   | `/auth/refresh`       | Não   | Renova a sessão (`{ refreshToken }`); retorna novo `{ accessToken, refreshToken }`                                                                                              |
+| POST   | `/projects`           | Sim   | Cria um projeto (`{ name, description? }`) para o usuário autenticado; 409 se o nome já existe pra esse usuário                                                                 |
+| GET    | `/projects`           | Sim   | Lista os projetos do usuário autenticado                                                                                                                                        |
+| GET    | `/projects/:id`       | Sim   | Detalha um projeto; 404 se não existe ou é de outro usuário                                                                                                                     |
+| PATCH  | `/projects/:id`       | Sim   | Atualiza `{ name?, description? }`; 404 se não é do usuário, 409 se o novo nome já existe                                                                                       |
+| DELETE | `/projects/:id`       | Sim   | Exclui o projeto; 404 se não é do usuário                                                                                                                                       |
+| POST   | `/libraries`          | Sim   | Cria uma biblioteca no catálogo global (`{ name, categoryId?, notes? }`); 409 se o nome já existe, 404 se `categoryId` não existe                                               |
+| GET    | `/libraries`          | Sim   | Lista todas as bibliotecas do catálogo (sem filtro por usuário)                                                                                                                 |
+| GET    | `/libraries/:id`      | Sim   | Detalha uma biblioteca; 404 se não existe                                                                                                                                       |
+| PATCH  | `/libraries/:id`      | Sim   | Atualiza `{ name?, categoryId?, notes? }`; 404 se não existe ou `categoryId` não existe, 409 se o novo nome já existe                                                           |
+| DELETE | `/libraries/:id`      | Sim   | Exclui a biblioteca; 404 se não existe                                                                                                                                          |
+| GET    | `/categories`         | Sim   | Lista as categorias globais/predefinidas (`projectId: null`); não há CRUD de categoria ainda, só seed                                                                           |
+| POST   | `/libraries/:id/tags` | Sim   | Cria e/ou associa uma tag a uma biblioteca (`{ name }`); reaproveita a tag se o nome já existir no catálogo; 404 se a biblioteca não existir, 409 se a tag já estiver associada |
 
 ## Telas do frontend
 
