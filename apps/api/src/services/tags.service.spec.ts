@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { LibraryNotFoundError } from "./libraries.service";
 import {
   addTagToLibrary,
+  listLibraryTags,
   TagAlreadyAssociatedError,
   type TagsRepository,
 } from "./tags.service";
@@ -30,6 +31,7 @@ function fakeRepository(
     insertTag: vi.fn().mockResolvedValue(tag),
     findLibraryTag: vi.fn().mockResolvedValue(undefined),
     insertLibraryTag: vi.fn().mockResolvedValue(undefined),
+    findTagsByLibraryId: vi.fn().mockResolvedValue([tag]),
     ...overrides,
   };
 }
@@ -87,5 +89,37 @@ describe("addTagToLibrary", () => {
       addTagToLibrary(repository, "library-1", "react"),
     ).rejects.toThrow(TagAlreadyAssociatedError);
     expect(repository.insertLibraryTag).not.toHaveBeenCalled();
+  });
+});
+
+describe("listLibraryTags", () => {
+  it("retorna as tags da biblioteca quando ela existe", async () => {
+    const repository = fakeRepository();
+
+    const result = await listLibraryTags(repository, "library-1");
+
+    expect(result).toEqual([tag]);
+    expect(repository.findTagsByLibraryId).toHaveBeenCalledWith("library-1");
+  });
+
+  it("retorna array vazio quando a biblioteca não tem tags", async () => {
+    const repository = fakeRepository({
+      findTagsByLibraryId: vi.fn().mockResolvedValue([]),
+    });
+
+    const result = await listLibraryTags(repository, "library-1");
+
+    expect(result).toEqual([]);
+  });
+
+  it("lança LibraryNotFoundError quando a biblioteca não existe", async () => {
+    const repository = fakeRepository({
+      findLibraryById: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(listLibraryTags(repository, "library-x")).rejects.toThrow(
+      LibraryNotFoundError,
+    );
+    expect(repository.findTagsByLibraryId).not.toHaveBeenCalled();
   });
 });

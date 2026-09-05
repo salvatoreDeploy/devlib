@@ -31,7 +31,7 @@ _Atualizar esta seção a cada PR mesclado que entrega uma funcionalidade nova. 
 - Listagem de categorias globais via API (`GET /categories`), protegida por autenticação — usada pelo formulário de biblioteca pra popular o select de categoria. Só categorias com `projectId: null` (as 10 predefinidas do seed); ainda não existe CRUD de categoria (criação/edição/exclusão) nem categorias por projeto na prática.
 - Criação de biblioteca em `apps/web` (`/libraries/new`): formulário nome/categoria/notas, protegida (`useRequireAuth`). Categoria é um `Select` (shadcn/Radix) populado via `GET /categories`; campo opcional — "Sem categoria" fica selecionável. Chama `POST /libraries` com o token e redireciona para `/` no sucesso; mostra erro inline se o nome já existir no catálogo (409).
 - Edição de biblioteca em `apps/web` (`/libraries/[id]/edit`): busca a biblioteca via `GET /libraries/:id`, pré-preenche nome/categoria/notas (mesmo select de categoria de `/libraries/new`), envia `PATCH /libraries/:id` no submit e redireciona para `/` no sucesso. Mostra erro inline se a biblioteca não existir (404) ou se o nome novo colidir com outra (409).
-- Tags via API (`POST /libraries/:id/tags`), protegido por autenticação. Tags são globais/compartilhadas (sem dono), assim como bibliotecas: se já existir uma tag com o nome informado, ela é reaproveitada; caso contrário, é criada na hora. 404 se a biblioteca não existir, 409 se a tag já estiver associada a essa biblioteca. Ainda não há rota de listagem ou remoção de tag — só criação/associação sob demanda.
+- Tags via API (`POST /libraries/:id/tags`), protegido por autenticação. Tags são globais/compartilhadas (sem dono), assim como bibliotecas: se já existir uma tag com o nome informado, ela é reaproveitada; caso contrário, é criada na hora. 404 se a biblioteca não existir, 409 se a tag já estiver associada a essa biblioteca. `GET /libraries/:id/tags` lista as tags associadas a uma biblioteca (404 se ela não existir) — usado pelo formulário de edição de biblioteca pra mostrar as tags atuais. Ainda não há rota de remoção de tag.
 
 ## Rotas da API
 
@@ -55,6 +55,7 @@ _Atualizar com cada rota nova criada em `apps/api/src/routes`._
 | DELETE | `/libraries/:id`      | Sim   | Exclui a biblioteca; 404 se não existe                                                                                                                                          |
 | GET    | `/categories`         | Sim   | Lista as categorias globais/predefinidas (`projectId: null`); não há CRUD de categoria ainda, só seed                                                                           |
 | POST   | `/libraries/:id/tags` | Sim   | Cria e/ou associa uma tag a uma biblioteca (`{ name }`); reaproveita a tag se o nome já existir no catálogo; 404 se a biblioteca não existir, 409 se a tag já estiver associada |
+| GET    | `/libraries/:id/tags` | Sim   | Lista as tags associadas a uma biblioteca; 404 se a biblioteca não existir                                                                                                      |
 
 ## Telas do frontend
 

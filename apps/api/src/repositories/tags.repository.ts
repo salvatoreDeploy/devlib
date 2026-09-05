@@ -22,6 +22,7 @@ export type TagsRepository = {
     tagId: string,
   ): Promise<LibraryTagRecord | undefined>;
   insertLibraryTag(libraryId: string, tagId: string): Promise<void>;
+  findTagsByLibraryId(libraryId: string): Promise<TagRecord[]>;
 };
 
 export function createTagsRepository(db: DbClient): TagsRepository {
@@ -59,6 +60,14 @@ export function createTagsRepository(db: DbClient): TagsRepository {
 
     async insertLibraryTag(libraryId, tagId) {
       await db.insert(libraryTags).values({ libraryId, tagId });
+    },
+
+    async findTagsByLibraryId(libraryId) {
+      return db
+        .select({ id: tags.id, name: tags.name, createdAt: tags.createdAt })
+        .from(libraryTags)
+        .innerJoin(tags, eq(libraryTags.tagId, tags.id))
+        .where(eq(libraryTags.libraryId, libraryId));
     },
   };
 }
