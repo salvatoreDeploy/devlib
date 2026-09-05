@@ -25,6 +25,21 @@ function fakeDbForInsertWithoutReturning() {
   return { db: { insert } as unknown as DbClient, insert, values };
 }
 
+function fakeDbForSelectJoinWhere(rows: unknown[]) {
+  const where = vi.fn().mockResolvedValue(rows);
+  const innerJoin = vi.fn().mockReturnValue({ where });
+  const from = vi.fn().mockReturnValue({ innerJoin });
+  const select = vi.fn().mockReturnValue({ from });
+
+  return {
+    db: { select } as unknown as DbClient,
+    select,
+    from,
+    innerJoin,
+    where,
+  };
+}
+
 const tag = {
   id: "tag-1",
   name: "react",
@@ -96,6 +111,27 @@ describe("createTagsRepository", () => {
         libraryId: "library-1",
         tagId: "tag-1",
       });
+    });
+  });
+
+  describe("findTagsByLibraryId", () => {
+    it("retorna as tags associadas à biblioteca", async () => {
+      const { db, where } = fakeDbForSelectJoinWhere([tag]);
+
+      const repository = createTagsRepository(db);
+      const result = await repository.findTagsByLibraryId("library-1");
+
+      expect(result).toEqual([tag]);
+      expect(where).toHaveBeenCalledOnce();
+    });
+
+    it("retorna array vazio quando a biblioteca não tem tags", async () => {
+      const { db } = fakeDbForSelectJoinWhere([]);
+
+      const repository = createTagsRepository(db);
+      const result = await repository.findTagsByLibraryId("library-1");
+
+      expect(result).toEqual([]);
     });
   });
 });

@@ -46,3 +46,16 @@ export async function addTagToLibrary(
 
   return tag;
 }
+
+export async function listLibraryTags(
+  repository: TagsRepository,
+  libraryId: string,
+): Promise<TagRecord[]> {
+  const library = await repository.findLibraryById(libraryId);
+
+  if (!library) {
+    throw new LibraryNotFoundError();
+  }
+
+  return repository.findTagsByLibraryId(libraryId);
+}
