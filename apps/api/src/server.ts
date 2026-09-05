@@ -62,6 +62,10 @@ import {
   categoriesListRoute,
   type CategoriesListRouteOptions,
 } from "./routes/categories-list.route";
+import {
+  librariesTagsCreateRoute,
+  type LibrariesTagsCreateRouteOptions,
+} from "./routes/libraries-tags-create.route";
 
 export type BuildServerDeps = RegisterRouteOptions &
   LoginRouteOptions &
@@ -76,7 +80,8 @@ export type BuildServerDeps = RegisterRouteOptions &
   LibrariesGetRouteOptions &
   LibrariesUpdateRouteOptions &
   LibrariesDeleteRouteOptions &
-  CategoriesListRouteOptions & {
+  CategoriesListRouteOptions &
+  LibrariesTagsCreateRouteOptions & {
     corsConfig?: CorsConfig;
   };
 
@@ -123,6 +128,11 @@ export function buildServer(deps: BuildServerDeps = {}) {
           description:
             "Leitura das categorias globais/predefinidas do catálogo. Sem CRUD ainda — categorias são seedadas, não criadas via API.",
         },
+        {
+          name: "Tags",
+          description:
+            "Tags livres, globais e compartilhadas entre bibliotecas (sem dono). Ainda não há listagem/remoção via API — só criação sob demanda ao associar a uma biblioteca.",
+        },
       ],
       components: {
         securitySchemes: {
@@ -166,6 +176,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(librariesUpdateRoute, deps);
   app.register(librariesDeleteRoute, deps);
   app.register(categoriesListRoute, deps);
+  app.register(librariesTagsCreateRoute, deps);
 
   return app;
 }
