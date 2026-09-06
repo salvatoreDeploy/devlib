@@ -5,9 +5,11 @@ import {
   getProject,
   updateProject,
   deleteProject,
+  listProjectLibraries,
   ProjectNotFoundError,
   ProjectNameAlreadyExistsError,
   type ProjectsRepository,
+  type ProjectLibrariesRepository,
 } from "./projects.service";
 
 const project = {
@@ -175,6 +177,85 @@ describe("updateProject", () => {
     expect(repository.updateProject).toHaveBeenCalledWith("project-1", {
       name: "DevLib",
     });
+  });
+});
+
+describe("listProjectLibraries", () => {
+  const libraryAssociation = {
+    id: "library-1",
+    name: "drizzle-orm",
+    categoryId: "category-1",
+    notes: null,
+    version: "1.2.3",
+    createdAt: new Date("2026-09-03T00:00:00Z"),
+    updatedAt: new Date("2026-09-03T00:00:00Z"),
+  };
+
+  function fakeProjectLibrariesRepository(
+    overrides: Partial<ProjectLibrariesRepository> = {},
+  ): ProjectLibrariesRepository {
+    return {
+      ...fakeRepository(),
+      findLibrariesByProjectId: vi.fn().mockResolvedValue([libraryAssociation]),
+      ...overrides,
+    };
+  }
+
+  it("retorna as bibliotecas do projeto quando ele pertence ao usuário", async () => {
+    const repository = fakeProjectLibrariesRepository();
+
+    const result = await listProjectLibraries(repository, {
+      userId: "user-1",
+      projectId: "project-1",
+    });
+
+    expect(result).toEqual([libraryAssociation]);
+    expect(repository.findLibrariesByProjectId).toHaveBeenCalledWith(
+      "project-1",
+    );
+  });
+
+  it("retorna array vazio quando o projeto não tem bibliotecas associadas", async () => {
+    const repository = fakeProjectLibrariesRepository({
+      findLibrariesByProjectId: vi.fn().mockResolvedValue([]),
+    });
+
+    const result = await listProjectLibraries(repository, {
+      userId: "user-1",
+      projectId: "project-1",
+    });
+
+    expect(result).toEqual([]);
+  });
+
+  it("lança ProjectNotFoundError quando o projeto não existe", async () => {
+    const repository = fakeProjectLibrariesRepository({
+      findProjectById: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(
+      listProjectLibraries(repository, {
+        userId: "user-1",
+        projectId: "project-x",
+      }),
+    ).rejects.toThrow(ProjectNotFoundError);
+    expect(repository.findLibrariesByProjectId).not.toHaveBeenCalled();
+  });
+
+  it("lança ProjectNotFoundError quando o projeto é de outro usuário", async () => {
+    const repository = fakeProjectLibrariesRepository({
+      findProjectById: vi
+        .fn()
+        .mockResolvedValue({ ...project, userId: "outro-usuario" }),
+    });
+
+    await expect(
+      listProjectLibraries(repository, {
+        userId: "user-1",
+        projectId: "project-1",
+      }),
+    ).rejects.toThrow(ProjectNotFoundError);
+    expect(repository.findLibrariesByProjectId).not.toHaveBeenCalled();
   });
 });
 
