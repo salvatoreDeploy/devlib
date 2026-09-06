@@ -6,6 +6,8 @@ import {
   DeleteProjectError,
   getProject,
   GetProjectError,
+  getProjectLibraries,
+  GetProjectLibrariesError,
   listProjects,
   ListProjectsError,
   updateProject,
@@ -228,6 +230,51 @@ describe("deleteProject", () => {
     );
     await expect(deleteProject("project-x")).rejects.toBeInstanceOf(
       DeleteProjectError,
+    );
+  });
+});
+
+describe("getProjectLibraries", () => {
+  afterEach(() => {
+    vi.mocked(authenticatedFetch).mockReset();
+  });
+
+  it("retorna as bibliotecas associadas ao projeto", async () => {
+    const libraries = [
+      {
+        id: "library-1",
+        name: "drizzle-orm",
+        categoryId: "category-1",
+        notes: null,
+        version: "1.2.3",
+        createdAt: "2026-09-03T00:00:00.000Z",
+        updatedAt: "2026-09-03T00:00:00.000Z",
+      },
+    ];
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(libraries),
+    } as Response);
+
+    const result = await getProjectLibraries("project-1");
+
+    expect(result).toEqual(libraries);
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/projects/project-1/libraries",
+    );
+  });
+
+  it("lança GetProjectLibrariesError com a mensagem da API quando a busca falha", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ error: "Projeto não encontrado" }),
+    } as Response);
+
+    await expect(getProjectLibraries("project-x")).rejects.toThrow(
+      "Projeto não encontrado",
+    );
+    await expect(getProjectLibraries("project-x")).rejects.toBeInstanceOf(
+      GetProjectLibrariesError,
     );
   });
 });
