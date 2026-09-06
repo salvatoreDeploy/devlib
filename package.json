@@ -10,7 +10,8 @@
     "dev": "set -a && . ./.env && set +a && turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "docker:clean": "bash scripts/docker-clean.sh"
   },
   "devDependencies": {
     "drizzle-orm": "^0.45.2",
