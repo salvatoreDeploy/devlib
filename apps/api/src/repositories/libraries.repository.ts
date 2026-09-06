@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { libraries, type createDb } from "@devlib/db";
+import { libraries, projectLibraries, type createDb } from "@devlib/db";
 
 export type DbClient = ReturnType<typeof createDb>;
 
@@ -10,6 +10,10 @@ export type LibraryRecord = {
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type ProjectLibraryRecord = LibraryRecord & {
+  version: string | null;
 };
 
 export type LibrariesRepository = {
@@ -26,6 +30,7 @@ export type LibrariesRepository = {
     data: { name?: string; categoryId?: string | null; notes?: string | null },
   ): Promise<LibraryRecord | undefined>;
   deleteLibrary(id: string): Promise<void>;
+  findLibrariesByProjectId(projectId: string): Promise<ProjectLibraryRecord[]>;
 };
 
 export function createLibrariesRepository(db: DbClient): LibrariesRepository {
@@ -79,6 +84,22 @@ export function createLibrariesRepository(db: DbClient): LibrariesRepository {
 
     async deleteLibrary(id) {
       await db.delete(libraries).where(eq(libraries.id, id));
+    },
+
+    async findLibrariesByProjectId(projectId) {
+      return db
+        .select({
+          id: libraries.id,
+          name: libraries.name,
+          categoryId: libraries.categoryId,
+          notes: libraries.notes,
+          createdAt: libraries.createdAt,
+          updatedAt: libraries.updatedAt,
+          version: projectLibraries.version,
+        })
+        .from(projectLibraries)
+        .innerJoin(libraries, eq(projectLibraries.libraryId, libraries.id))
+        .where(eq(projectLibraries.projectId, projectId));
     },
   };
 }

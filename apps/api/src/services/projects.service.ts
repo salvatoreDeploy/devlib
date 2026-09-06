@@ -2,8 +2,13 @@ import type {
   ProjectRecord,
   ProjectsRepository,
 } from "../repositories/projects.repository";
+import type { ProjectLibraryRecord } from "../repositories/libraries.repository";
 
-export type { ProjectRecord, ProjectsRepository };
+export type { ProjectRecord, ProjectsRepository, ProjectLibraryRecord };
+
+export type ProjectLibrariesRepository = ProjectsRepository & {
+  findLibrariesByProjectId(projectId: string): Promise<ProjectLibraryRecord[]>;
+};
 
 export class ProjectNotFoundError extends Error {
   constructor() {
@@ -94,6 +99,15 @@ export async function updateProject(
   }
 
   return updated;
+}
+
+export async function listProjectLibraries(
+  repository: ProjectLibrariesRepository,
+  { userId, projectId }: ProjectOwnerInput,
+): Promise<ProjectLibraryRecord[]> {
+  await getProject(repository, { userId, projectId });
+
+  return repository.findLibrariesByProjectId(projectId);
 }
 
 export async function deleteProject(

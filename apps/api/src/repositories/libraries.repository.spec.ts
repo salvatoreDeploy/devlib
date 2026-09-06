@@ -50,6 +50,21 @@ function fakeDbForDelete() {
   return { db: { delete: del } as unknown as DbClient, delete: del, where };
 }
 
+function fakeDbForSelectJoinWhere(rows: unknown[]) {
+  const where = vi.fn().mockResolvedValue(rows);
+  const innerJoin = vi.fn().mockReturnValue({ where });
+  const from = vi.fn().mockReturnValue({ innerJoin });
+  const select = vi.fn().mockReturnValue({ from });
+
+  return {
+    db: { select } as unknown as DbClient,
+    select,
+    from,
+    innerJoin,
+    where,
+  };
+}
+
 const library = {
   id: "library-1",
   name: "drizzle-orm",
@@ -195,6 +210,38 @@ describe("createLibrariesRepository", () => {
 
       expect(del).toHaveBeenCalledOnce();
       expect(where).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe("findLibrariesByProjectId", () => {
+    it("retorna as bibliotecas associadas ao projeto, com a versão da associação", async () => {
+      const row = { ...library, version: "1.2.3" };
+      const { db, where } = fakeDbForSelectJoinWhere([row]);
+
+      const repository = createLibrariesRepository(db);
+      const result = await repository.findLibrariesByProjectId("project-1");
+
+      expect(result).toEqual([row]);
+      expect(where).toHaveBeenCalledOnce();
+    });
+
+    it("retorna array vazio quando o projeto não tem bibliotecas associadas", async () => {
+      const { db } = fakeDbForSelectJoinWhere([]);
+
+      const repository = createLibrariesRepository(db);
+      const result = await repository.findLibrariesByProjectId("project-1");
+
+      expect(result).toEqual([]);
+    });
+
+    it("retorna version null quando a associação não tem versão informada", async () => {
+      const row = { ...library, version: null };
+      const { db } = fakeDbForSelectJoinWhere([row]);
+
+      const repository = createLibrariesRepository(db);
+      const result = await repository.findLibrariesByProjectId("project-1");
+
+      expect(result).toEqual([row]);
     });
   });
 });
