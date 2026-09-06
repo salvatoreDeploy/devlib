@@ -3,6 +3,10 @@
 # de build/teste via `docker compose up --build`, pra não acumular imagens
 # órfãs de rebuilds sucessivos.
 #
+# Só para/remove `api`/`web` — `postgres` fica rodando (evita reiniciar o
+# banco e perder a conexão só por causa da limpeza; ele já não muda com
+# rebuilds de api/web, não faz parte do problema que este script resolve).
+#
 # NUNCA remove volumes (`devlib_pgdata` guarda o Postgres local de dev —
 # rodar `docker volume prune` logo depois de um `compose down` marcaria
 # esse volume como "não usado" e apagaria o banco). Também não roda
@@ -15,10 +19,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-echo "Parando e removendo containers/rede do devlib (mantém volumes)..."
-docker compose down
+echo "Parando e removendo containers de api/web (mantém postgres rodando e os volumes)..."
+docker compose stop api web
+docker compose rm -f api web
 
 echo "Removendo imagens dangling (sem tag, de rebuilds anteriores)..."
 docker image prune -f
 
-echo "Feito. Volumes preservados; para liberar o cache de build (afeta outros projetos do host), rode manualmente: docker builder prune -f"
+echo "Feito. Postgres continua rodando; volumes preservados. Para liberar o cache de build (afeta outros projetos do host), rode manualmente: docker builder prune -f"
