@@ -57,4 +57,24 @@ describe("Header", () => {
 
     expect(screen.queryByText(/@/)).toBeNull();
   });
+
+  it("a marca devlib.dev linka pra /projects", () => {
+    render(<Header />);
+
+    const brandLink = screen.getByRole("link", { name: /devlib\.dev/i });
+    expect(brandLink.getAttribute("href")).toBe("/projects");
+  });
+
+  it("não mostra breadcrumb de projeto quando projectName não é informado", () => {
+    render(<Header />);
+
+    expect(screen.queryByText("/")).toBeNull();
+  });
+
+  it("mostra o nome do projeto no breadcrumb quando projectName é informado", () => {
+    render(<Header projectName="DevLib" />);
+
+    expect(screen.getByText("DevLib")).not.toBeNull();
+    expect(screen.getByText("/")).not.toBeNull();
+  });
 });

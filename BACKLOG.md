@@ -93,9 +93,9 @@ Fica para depois do MVP (v1.1+):
   - [x] Web: componente de input de tags (criar on-the-fly) integrado ao form de biblioteca
 - [x] Dashboard de projetos (lista)
   - [x] Web: tela /projects (listagem via GET /projects, ação de excluir, links pra criar/detalhe)
-- [ ] Tela de detalhe do projeto (tabela de bibliotecas)
+- [x] Tela de detalhe do projeto (tabela de bibliotecas)
   - [x] API: rota GET /projects/:id/libraries
-  - [ ] Web: tela /projects/[id] com dados do projeto + tabela de bibliotecas associadas
+  - [x] Web: tela /projects/[id] com dados do projeto + tabela de bibliotecas associadas
 - [ ] Tela de detalhe da biblioteca (notas, usado em)
   - [ ] API: rota GET /libraries/:id/projects
   - [ ] Web: tela /libraries/[id] com notas, categoria, tags e projetos onde é usada
