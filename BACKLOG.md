@@ -94,7 +94,7 @@ Fica para depois do MVP (v1.1+):
 - [x] Dashboard de projetos (lista)
   - [x] Web: tela /projects (listagem via GET /projects, ação de excluir, links pra criar/detalhe)
 - [ ] Tela de detalhe do projeto (tabela de bibliotecas)
-  - [ ] API: rota GET /projects/:id/libraries
+  - [x] API: rota GET /projects/:id/libraries
   - [ ] Web: tela /projects/[id] com dados do projeto + tabela de bibliotecas associadas
 - [ ] Tela de detalhe da biblioteca (notas, usado em)
   - [ ] API: rota GET /libraries/:id/projects
