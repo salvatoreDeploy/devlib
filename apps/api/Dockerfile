@@ -6,11 +6,22 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copia o monorepo inteiro — necessário porque npm workspaces resolve
-# dependências entre apps/api e packages/* a partir da raiz.
-COPY . .
+# Copia só os manifests primeiro — `npm ci` só depende deles, não do
+# código-fonte. Mantém essa camada em cache entre builds que só mudam
+# código (o caso comum em dev com hot reload via bind mount), evitando
+# reinstalar tudo — e recriar uma imagem gigante — a cada rebuild.
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY packages/config/package.json packages/config/
+COPY packages/db/package.json packages/db/
+COPY packages/shared-types/package.json packages/shared-types/
 
 RUN npm ci
+
+# Resto do monorepo — muda a cada alteração de código, mas não invalida
+# a camada de npm ci acima.
+COPY . .
 
 EXPOSE 3333
 

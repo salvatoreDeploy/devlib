@@ -37,6 +37,7 @@ packages/
 - `turbo run build --filter=api` — builda só o backend
 - `turbo run test --filter=api...` — testa só o que foi afetado por mudanças na api
 - `turbo run lint`
+- `npm run docker:clean` — roda depois de terminar um ciclo de `docker compose up --build` (ex: ao validar uma tela nova antes de um PR): para os containers do devlib e remove imagens dangling de rebuilds anteriores, sem tocar em volumes (`devlib_pgdata` guarda o Postgres local — nunca automatizar `docker volume prune`) nem em containers/imagens de outros projetos do mesmo host. Ver `docs/DECISIONS.md` ("`.dockerignore` novo + `npm ci` cacheado...") para o motivo — repetidos `--build` sem essa limpeza já encheram o disco local uma vez.
 
 ## Convenções — sempre seguir
 
