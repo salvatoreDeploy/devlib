@@ -56,7 +56,7 @@ export default function EditProjectPage() {
     mutationFn: (data: EditProjectFormValues) =>
       updateProject(id, data, getAccessToken() ?? ""),
     onSuccess: () => {
-      router.push("/");
+      router.push("/projects");
     },
   });
 

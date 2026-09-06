@@ -31,7 +31,7 @@ export default function LoginPage() {
     mutationFn: login,
     onSuccess: (tokens) => {
       saveTokens(tokens);
-      router.push("/");
+      router.push("/projects");
     },
   });
 

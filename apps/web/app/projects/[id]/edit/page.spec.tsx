@@ -103,7 +103,7 @@ describe("EditProjectPage", () => {
     expect(updateProject).not.toHaveBeenCalled();
   });
 
-  it("chama updateProject com o access token e redireciona pra / quando salvo com sucesso", async () => {
+  it("chama updateProject com o access token e redireciona pra /projects quando salvo com sucesso", async () => {
     vi.mocked(getProject).mockResolvedValue(project);
     vi.mocked(updateProject).mockResolvedValue({
       ...project,
@@ -120,7 +120,7 @@ describe("EditProjectPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /salvar/i }));
 
     await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith("/");
+      expect(pushMock).toHaveBeenCalledWith("/projects");
     });
     expect(vi.mocked(updateProject).mock.calls[0]).toEqual([
       "project-1",

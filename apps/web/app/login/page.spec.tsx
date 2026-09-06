@@ -93,7 +93,7 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
     await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith("/");
+      expect(pushMock).toHaveBeenCalledWith("/projects");
     });
     expect(vi.mocked(login).mock.calls[0][0]).toEqual({
       email: "ana@example.com",
