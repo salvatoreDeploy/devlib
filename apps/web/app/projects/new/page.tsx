@@ -35,7 +35,7 @@ export default function NewProjectPage() {
     mutationFn: (data: NewProjectFormValues) =>
       createProject(data, getAccessToken() ?? ""),
     onSuccess: () => {
-      router.push("/");
+      router.push("/projects");
     },
   });
 

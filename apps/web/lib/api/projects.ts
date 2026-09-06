@@ -20,6 +20,8 @@ export type UpdateProjectInput = {
 export class CreateProjectError extends Error {}
 export class GetProjectError extends Error {}
 export class UpdateProjectError extends Error {}
+export class ListProjectsError extends Error {}
+export class DeleteProjectError extends Error {}
 
 export async function createProject(
   input: CreateProjectInput,
@@ -93,4 +95,40 @@ export async function updateProject(
   }
 
   return body;
+}
+
+export async function listProjects(accessToken: string): Promise<Project[]> {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/projects`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  const body = await response.json();
+
+  if (!response.ok) {
+    throw new ListProjectsError(
+      body.error ?? "Não foi possível listar os projetos",
+    );
+  }
+
+  return body;
+}
+
+export async function deleteProject(
+  id: string,
+  accessToken: string,
+): Promise<void> {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/projects/${id}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
+
+  if (!response.ok) {
+    const body = await response.json();
+    throw new DeleteProjectError(
+      body.error ?? "Não foi possível excluir o projeto",
+    );
+  }
 }

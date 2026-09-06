@@ -2,8 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createProject,
   CreateProjectError,
+  deleteProject,
+  DeleteProjectError,
   getProject,
   GetProjectError,
+  listProjects,
+  ListProjectsError,
   updateProject,
   UpdateProjectError,
 } from "./projects";
@@ -161,5 +165,96 @@ describe("updateProject", () => {
     await expect(
       updateProject("project-1", { name: "DevLib" }, "access-token"),
     ).rejects.toBeInstanceOf(UpdateProjectError);
+  });
+});
+
+describe("listProjects", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("envia o Authorization header e retorna a lista de projetos", async () => {
+    const projects = [
+      {
+        id: "project-1",
+        userId: "user-1",
+        name: "DevLib",
+        description: "Catálogo pessoal",
+        createdAt: "2026-09-02T00:00:00.000Z",
+        updatedAt: "2026-09-02T00:00:00.000Z",
+      },
+    ];
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(projects),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await listProjects("access-token");
+
+    expect(result).toEqual(projects);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/projects");
+    expect(init.headers).toMatchObject({
+      Authorization: "Bearer access-token",
+    });
+  });
+
+  it("lança ListProjectsError com a mensagem da API quando a listagem falha", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ error: "Sessão expirada" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(listProjects("access-token")).rejects.toThrow(
+      "Sessão expirada",
+    );
+    await expect(listProjects("access-token")).rejects.toBeInstanceOf(
+      ListProjectsError,
+    );
+  });
+});
+
+describe("deleteProject", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("envia o método DELETE e o Authorization header, sem ler corpo quando a resposta é 204", async () => {
+    const jsonMock = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 204,
+      json: jsonMock,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      deleteProject("project-1", "access-token"),
+    ).resolves.toBeUndefined();
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/projects/project-1");
+    expect(init.method).toBe("DELETE");
+    expect(init.headers).toMatchObject({
+      Authorization: "Bearer access-token",
+    });
+    expect(jsonMock).not.toHaveBeenCalled();
+  });
+
+  it("lança DeleteProjectError com a mensagem da API quando a exclusão falha", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ error: "Projeto não encontrado" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(deleteProject("project-x", "access-token")).rejects.toThrow(
+      "Projeto não encontrado",
+    );
+    await expect(
+      deleteProject("project-x", "access-token"),
+    ).rejects.toBeInstanceOf(DeleteProjectError);
   });
 });
