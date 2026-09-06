@@ -65,7 +65,7 @@ describe("NewProjectPage", () => {
     expect(createProject).not.toHaveBeenCalled();
   });
 
-  it("chama createProject com o access token e redireciona pra /projects quando criado com sucesso", async () => {
+  it("chama createProject e redireciona pra /projects quando criado com sucesso", async () => {
     vi.mocked(createProject).mockResolvedValue({
       id: "project-1",
       userId: "user-1",
@@ -90,7 +90,6 @@ describe("NewProjectPage", () => {
     });
     expect(vi.mocked(createProject).mock.calls[0]).toEqual([
       { name: "DevLib", description: "Catálogo pessoal" },
-      "access-token",
     ]);
   });
 

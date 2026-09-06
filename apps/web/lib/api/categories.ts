@@ -1,3 +1,5 @@
+import { authenticatedFetch } from "./http-client";
+
 export type Category = {
   id: string;
   projectId: string | null;
@@ -7,13 +9,8 @@ export type Category = {
 
 export class GetCategoriesError extends Error {}
 
-export async function getCategories(accessToken: string): Promise<Category[]> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/categories`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
-  );
+export async function getCategories(): Promise<Category[]> {
+  const response = await authenticatedFetch("/categories");
 
   const body = await response.json();
 

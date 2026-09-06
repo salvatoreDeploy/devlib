@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createProject, CreateProjectError } from "../../../lib/api/projects";
-import { getAccessToken } from "../../../lib/auth-storage";
 import { useRequireAuth } from "../../../lib/use-require-auth";
 
 const newProjectFormSchema = z.object({
@@ -32,8 +31,7 @@ export default function NewProjectPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: (data: NewProjectFormValues) =>
-      createProject(data, getAccessToken() ?? ""),
+    mutationFn: (data: NewProjectFormValues) => createProject(data),
     onSuccess: () => {
       router.push("/projects");
     },

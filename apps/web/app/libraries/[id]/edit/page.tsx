@@ -30,7 +30,6 @@ import {
   AddTagToLibraryError,
   listLibraryTags,
 } from "../../../../lib/api/tags";
-import { getAccessToken } from "../../../../lib/auth-storage";
 import { useRequireAuth } from "../../../../lib/use-require-auth";
 
 const editLibraryFormSchema = z.object({
@@ -49,28 +48,27 @@ export default function EditLibraryPage() {
 
   const libraryQuery = useQuery({
     queryKey: ["library", id],
-    queryFn: () => getLibrary(id, getAccessToken() ?? ""),
+    queryFn: () => getLibrary(id),
     enabled: isAuthenticated,
     retry: false,
   });
 
   const categoriesQuery = useQuery({
     queryKey: ["categories"],
-    queryFn: () => getCategories(getAccessToken() ?? ""),
+    queryFn: () => getCategories(),
     enabled: isAuthenticated,
   });
 
   const tagsQuery = useQuery({
     queryKey: ["library-tags", id],
-    queryFn: () => listLibraryTags(id, getAccessToken() ?? ""),
+    queryFn: () => listLibraryTags(id),
     enabled: isAuthenticated,
   });
 
   const queryClient = useQueryClient();
 
   const addTagMutation = useMutation({
-    mutationFn: (name: string) =>
-      addTagToLibrary(id, name, getAccessToken() ?? ""),
+    mutationFn: (name: string) => addTagToLibrary(id, name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["library-tags", id] });
     },
@@ -95,15 +93,11 @@ export default function EditLibraryPage() {
 
   const mutation = useMutation({
     mutationFn: (data: EditLibraryFormValues) =>
-      updateLibrary(
-        id,
-        {
-          name: data.name,
-          ...(data.categoryId ? { categoryId: data.categoryId } : {}),
-          ...(data.notes ? { notes: data.notes } : {}),
-        },
-        getAccessToken() ?? "",
-      ),
+      updateLibrary(id, {
+        name: data.name,
+        ...(data.categoryId ? { categoryId: data.categoryId } : {}),
+        ...(data.notes ? { notes: data.notes } : {}),
+      }),
     onSuccess: () => {
       router.push("/");
     },

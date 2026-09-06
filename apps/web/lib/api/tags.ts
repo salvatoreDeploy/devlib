@@ -1,3 +1,5 @@
+import { authenticatedFetch } from "./http-client";
+
 export type Tag = {
   id: string;
   name: string;
@@ -7,16 +9,8 @@ export type Tag = {
 export class ListLibraryTagsError extends Error {}
 export class AddTagToLibraryError extends Error {}
 
-export async function listLibraryTags(
-  libraryId: string,
-  accessToken: string,
-): Promise<Tag[]> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/libraries/${libraryId}/tags`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
-  );
+export async function listLibraryTags(libraryId: string): Promise<Tag[]> {
+  const response = await authenticatedFetch(`/libraries/${libraryId}/tags`);
 
   const body = await response.json();
 
@@ -32,19 +26,12 @@ export async function listLibraryTags(
 export async function addTagToLibrary(
   libraryId: string,
   name: string,
-  accessToken: string,
 ): Promise<Tag> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/libraries/${libraryId}/tags`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ name }),
-    },
-  );
+  const response = await authenticatedFetch(`/libraries/${libraryId}/tags`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
 
   const body = await response.json();
 

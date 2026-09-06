@@ -111,10 +111,7 @@ describe("EditLibraryPage", () => {
     expect(
       screen.getByRole("combobox", { name: /categoria/i }).textContent,
     ).toContain("ORM");
-    expect(vi.mocked(getLibrary).mock.calls[0]).toEqual([
-      "library-1",
-      "access-token",
-    ]);
+    expect(vi.mocked(getLibrary).mock.calls[0]).toEqual(["library-1"]);
   });
 
   it("mostra mensagem de erro quando a busca da biblioteca falha", async () => {
@@ -179,7 +176,6 @@ describe("EditLibraryPage", () => {
         categoryId: "category-2",
         notes: "ORM leve",
       },
-      "access-token",
     ]);
   });
 
@@ -215,10 +211,7 @@ describe("EditLibraryPage", () => {
     await waitFor(() => {
       expect(screen.getByText("react")).not.toBeNull();
     });
-    expect(vi.mocked(listLibraryTags).mock.calls[0]).toEqual([
-      "library-1",
-      "access-token",
-    ]);
+    expect(vi.mocked(listLibraryTags).mock.calls[0]).toEqual(["library-1"]);
   });
 
   it("adiciona uma tag nova via '+ tag' e mostra a pill assim que a API confirma", async () => {
@@ -239,11 +232,7 @@ describe("EditLibraryPage", () => {
     await user.type(screen.getByLabelText(/nova tag/i), "typescript{Enter}");
 
     await waitFor(() => {
-      expect(addTagToLibrary).toHaveBeenCalledWith(
-        "library-1",
-        "typescript",
-        "access-token",
-      );
+      expect(addTagToLibrary).toHaveBeenCalledWith("library-1", "typescript");
     });
   });
 

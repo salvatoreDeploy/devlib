@@ -68,10 +68,7 @@ describe("EditProjectPage", () => {
       expect(screen.getByDisplayValue("DevLib")).not.toBeNull();
     });
     expect(screen.getByDisplayValue("Catálogo pessoal")).not.toBeNull();
-    expect(vi.mocked(getProject).mock.calls[0]).toEqual([
-      "project-1",
-      "access-token",
-    ]);
+    expect(vi.mocked(getProject).mock.calls[0]).toEqual(["project-1"]);
   });
 
   it("mostra mensagem de erro quando a busca do projeto falha", async () => {
@@ -103,7 +100,7 @@ describe("EditProjectPage", () => {
     expect(updateProject).not.toHaveBeenCalled();
   });
 
-  it("chama updateProject com o access token e redireciona pra /projects quando salvo com sucesso", async () => {
+  it("chama updateProject e redireciona pra /projects quando salvo com sucesso", async () => {
     vi.mocked(getProject).mockResolvedValue(project);
     vi.mocked(updateProject).mockResolvedValue({
       ...project,
@@ -125,7 +122,6 @@ describe("EditProjectPage", () => {
     expect(vi.mocked(updateProject).mock.calls[0]).toEqual([
       "project-1",
       { name: "DevLib v2", description: "Catálogo pessoal" },
-      "access-token",
     ]);
   });
 

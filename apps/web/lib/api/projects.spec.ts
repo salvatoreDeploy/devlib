@@ -11,13 +11,16 @@ import {
   updateProject,
   UpdateProjectError,
 } from "./projects";
+import { authenticatedFetch } from "./http-client";
+
+vi.mock("./http-client", () => ({ authenticatedFetch: vi.fn() }));
 
 describe("createProject", () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.mocked(authenticatedFetch).mockReset();
   });
 
-  it("envia o body e o Authorization header corretos e retorna o projeto criado", async () => {
+  it("envia o body e o método corretos e retorna o projeto criado", async () => {
     const project = {
       id: "project-1",
       userId: "user-1",
@@ -26,54 +29,52 @@ describe("createProject", () => {
       createdAt: "2026-09-02T00:00:00.000Z",
       updatedAt: "2026-09-02T00:00:00.000Z",
     };
-    const fetchMock = vi.fn().mockResolvedValue({
+    vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(project),
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    } as Response);
 
-    const result = await createProject(
-      { name: "DevLib", description: "Catálogo pessoal" },
-      "access-token",
-    );
-
-    expect(result).toEqual(project);
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain("/projects");
-    expect(init.method).toBe("POST");
-    expect(init.headers).toMatchObject({
-      "Content-Type": "application/json",
-      Authorization: "Bearer access-token",
-    });
-    expect(JSON.parse(init.body)).toEqual({
+    const result = await createProject({
       name: "DevLib",
       description: "Catálogo pessoal",
     });
+
+    expect(result).toEqual(project);
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/projects",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "DevLib",
+          description: "Catálogo pessoal",
+        }),
+      }),
+    );
   });
 
   it("lança CreateProjectError com a mensagem da API quando a criação falha", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
+    vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: false,
       json: () =>
         Promise.resolve({ error: 'Já existe um projeto com o nome "DevLib"' }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    } as Response);
 
-    await expect(
-      createProject({ name: "DevLib" }, "access-token"),
-    ).rejects.toThrow('Já existe um projeto com o nome "DevLib"');
-    await expect(
-      createProject({ name: "DevLib" }, "access-token"),
-    ).rejects.toBeInstanceOf(CreateProjectError);
+    await expect(createProject({ name: "DevLib" })).rejects.toThrow(
+      'Já existe um projeto com o nome "DevLib"',
+    );
+    await expect(createProject({ name: "DevLib" })).rejects.toBeInstanceOf(
+      CreateProjectError,
+    );
   });
 });
 
 describe("getProject", () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.mocked(authenticatedFetch).mockReset();
   });
 
-  it("envia o Authorization header e retorna o projeto", async () => {
+  it("retorna o projeto", async () => {
     const project = {
       id: "project-1",
       userId: "user-1",
@@ -82,44 +83,38 @@ describe("getProject", () => {
       createdAt: "2026-09-02T00:00:00.000Z",
       updatedAt: "2026-09-02T00:00:00.000Z",
     };
-    const fetchMock = vi.fn().mockResolvedValue({
+    vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(project),
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    } as Response);
 
-    const result = await getProject("project-1", "access-token");
+    const result = await getProject("project-1");
 
     expect(result).toEqual(project);
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain("/projects/project-1");
-    expect(init.headers).toMatchObject({
-      Authorization: "Bearer access-token",
-    });
+    expect(authenticatedFetch).toHaveBeenCalledWith("/projects/project-1");
   });
 
   it("lança GetProjectError com a mensagem da API quando a busca falha", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
+    vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: false,
       json: () => Promise.resolve({ error: "Projeto não encontrado" }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    } as Response);
 
-    await expect(getProject("project-x", "access-token")).rejects.toThrow(
+    await expect(getProject("project-x")).rejects.toThrow(
       "Projeto não encontrado",
     );
-    await expect(
-      getProject("project-x", "access-token"),
-    ).rejects.toBeInstanceOf(GetProjectError);
+    await expect(getProject("project-x")).rejects.toBeInstanceOf(
+      GetProjectError,
+    );
   });
 });
 
 describe("updateProject", () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.mocked(authenticatedFetch).mockReset();
   });
 
-  it("envia o body, o método PATCH e o Authorization header, e retorna o projeto atualizado", async () => {
+  it("envia o body e o método PATCH corretos e retorna o projeto atualizado", async () => {
     const project = {
       id: "project-1",
       userId: "user-1",
@@ -128,52 +123,46 @@ describe("updateProject", () => {
       createdAt: "2026-09-02T00:00:00.000Z",
       updatedAt: "2026-09-02T00:00:00.000Z",
     };
-    const fetchMock = vi.fn().mockResolvedValue({
+    vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(project),
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    } as Response);
 
-    const result = await updateProject(
-      "project-1",
-      { name: "DevLib v2" },
-      "access-token",
-    );
+    const result = await updateProject("project-1", { name: "DevLib v2" });
 
     expect(result).toEqual(project);
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain("/projects/project-1");
-    expect(init.method).toBe("PATCH");
-    expect(init.headers).toMatchObject({
-      "Content-Type": "application/json",
-      Authorization: "Bearer access-token",
-    });
-    expect(JSON.parse(init.body)).toEqual({ name: "DevLib v2" });
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/projects/project-1",
+      expect.objectContaining({
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "DevLib v2" }),
+      }),
+    );
   });
 
   it("lança UpdateProjectError com a mensagem da API quando a atualização falha", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
+    vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: false,
       json: () =>
         Promise.resolve({ error: 'Já existe um projeto com o nome "DevLib"' }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    } as Response);
 
     await expect(
-      updateProject("project-1", { name: "DevLib" }, "access-token"),
+      updateProject("project-1", { name: "DevLib" }),
     ).rejects.toThrow('Já existe um projeto com o nome "DevLib"');
     await expect(
-      updateProject("project-1", { name: "DevLib" }, "access-token"),
+      updateProject("project-1", { name: "DevLib" }),
     ).rejects.toBeInstanceOf(UpdateProjectError);
   });
 });
 
 describe("listProjects", () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.mocked(authenticatedFetch).mockReset();
   });
 
-  it("envia o Authorization header e retorna a lista de projetos", async () => {
+  it("retorna a lista de projetos", async () => {
     const projects = [
       {
         id: "project-1",
@@ -184,77 +173,61 @@ describe("listProjects", () => {
         updatedAt: "2026-09-02T00:00:00.000Z",
       },
     ];
-    const fetchMock = vi.fn().mockResolvedValue({
+    vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(projects),
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    } as Response);
 
-    const result = await listProjects("access-token");
+    const result = await listProjects();
 
     expect(result).toEqual(projects);
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain("/projects");
-    expect(init.headers).toMatchObject({
-      Authorization: "Bearer access-token",
-    });
+    expect(authenticatedFetch).toHaveBeenCalledWith("/projects");
   });
 
   it("lança ListProjectsError com a mensagem da API quando a listagem falha", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
+    vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: false,
-      json: () => Promise.resolve({ error: "Sessão expirada" }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
+      json: () => Promise.resolve({ error: "Não foi possível listar" }),
+    } as Response);
 
-    await expect(listProjects("access-token")).rejects.toThrow(
-      "Sessão expirada",
-    );
-    await expect(listProjects("access-token")).rejects.toBeInstanceOf(
-      ListProjectsError,
-    );
+    await expect(listProjects()).rejects.toThrow("Não foi possível listar");
+    await expect(listProjects()).rejects.toBeInstanceOf(ListProjectsError);
   });
 });
 
 describe("deleteProject", () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.mocked(authenticatedFetch).mockReset();
   });
 
-  it("envia o método DELETE e o Authorization header, sem ler corpo quando a resposta é 204", async () => {
+  it("envia o método DELETE, sem ler corpo quando a resposta é 204", async () => {
     const jsonMock = vi.fn();
-    const fetchMock = vi.fn().mockResolvedValue({
+    vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: true,
       status: 204,
       json: jsonMock,
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    } as unknown as Response);
 
-    await expect(
-      deleteProject("project-1", "access-token"),
-    ).resolves.toBeUndefined();
+    await expect(deleteProject("project-1")).resolves.toBeUndefined();
 
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain("/projects/project-1");
-    expect(init.method).toBe("DELETE");
-    expect(init.headers).toMatchObject({
-      Authorization: "Bearer access-token",
-    });
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/projects/project-1",
+      expect.objectContaining({ method: "DELETE" }),
+    );
     expect(jsonMock).not.toHaveBeenCalled();
   });
 
   it("lança DeleteProjectError com a mensagem da API quando a exclusão falha", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
+    vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: false,
       json: () => Promise.resolve({ error: "Projeto não encontrado" }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    } as Response);
 
-    await expect(deleteProject("project-x", "access-token")).rejects.toThrow(
+    await expect(deleteProject("project-x")).rejects.toThrow(
       "Projeto não encontrado",
     );
-    await expect(
-      deleteProject("project-x", "access-token"),
-    ).rejects.toBeInstanceOf(DeleteProjectError);
+    await expect(deleteProject("project-x")).rejects.toBeInstanceOf(
+      DeleteProjectError,
+    );
   });
 });

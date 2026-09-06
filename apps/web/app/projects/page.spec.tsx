@@ -92,7 +92,7 @@ describe("ProjectsPage", () => {
 
     expect(await screen.findByRole("link", { name: "DevLib" })).not.toBeNull();
     expect(screen.getByRole("link", { name: "Outro projeto" })).not.toBeNull();
-    expect(vi.mocked(listProjects).mock.calls[0]).toEqual(["access-token"]);
+    expect(vi.mocked(listProjects).mock.calls[0]).toEqual([]);
   });
 
   it("mostra mensagem de erro quando a listagem falha", async () => {
@@ -126,10 +126,7 @@ describe("ProjectsPage", () => {
     await waitFor(() => {
       expect(screen.queryByRole("link", { name: "DevLib" })).toBeNull();
     });
-    expect(vi.mocked(deleteProject).mock.calls[0]).toEqual([
-      "project-1",
-      "access-token",
-    ]);
+    expect(vi.mocked(deleteProject).mock.calls[0]).toEqual(["project-1"]);
     expect(screen.getByRole("link", { name: "Outro projeto" })).not.toBeNull();
   });
 

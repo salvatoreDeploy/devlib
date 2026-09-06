@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Check } from "lucide-react";
 import Link from "next/link";
@@ -21,11 +22,18 @@ type LoginFormValues = z.infer<typeof loginFormSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const [sessionExpired, setSessionExpired] = useState(false);
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormValues>({ resolver: zodResolver(loginFormSchema) });
+
+  useEffect(() => {
+    setSessionExpired(
+      new URLSearchParams(window.location.search).get("sessionExpired") === "1",
+    );
+  }, []);
 
   const mutation = useMutation({
     mutationFn: login,
@@ -60,6 +68,12 @@ export default function LoginPage() {
           comando de instalação e a nota do porquê você escolheu ela.{" "}
           <span className="text-foreground">Um lugar só</span>, por projeto.
         </p>
+
+        {sessionExpired && (
+          <p className="rounded-[9px] border border-border-faint bg-surface-input px-3.5 py-2.5 text-[13px] text-muted-foreground">
+            Sua sessão expirou. Faça login novamente.
+          </p>
+        )}
 
         <div className="flex flex-col gap-2.5">
           <label htmlFor="email" className="sr-only">

@@ -1,3 +1,5 @@
+import { authenticatedFetch } from "./http-client";
+
 export type CreateProjectInput = {
   name: string;
   description?: string;
@@ -25,14 +27,10 @@ export class DeleteProjectError extends Error {}
 
 export async function createProject(
   input: CreateProjectInput,
-  accessToken: string,
 ): Promise<Project> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/projects`, {
+  const response = await authenticatedFetch("/projects", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
 
@@ -47,16 +45,8 @@ export async function createProject(
   return body;
 }
 
-export async function getProject(
-  id: string,
-  accessToken: string,
-): Promise<Project> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/projects/${id}`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
-  );
+export async function getProject(id: string): Promise<Project> {
+  const response = await authenticatedFetch(`/projects/${id}`);
 
   const body = await response.json();
 
@@ -72,19 +62,12 @@ export async function getProject(
 export async function updateProject(
   id: string,
   input: UpdateProjectInput,
-  accessToken: string,
 ): Promise<Project> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/projects/${id}`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(input),
-    },
-  );
+  const response = await authenticatedFetch(`/projects/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
 
   const body = await response.json();
 
@@ -97,10 +80,8 @@ export async function updateProject(
   return body;
 }
 
-export async function listProjects(accessToken: string): Promise<Project[]> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/projects`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+export async function listProjects(): Promise<Project[]> {
+  const response = await authenticatedFetch("/projects");
 
   const body = await response.json();
 
@@ -113,17 +94,10 @@ export async function listProjects(accessToken: string): Promise<Project[]> {
   return body;
 }
 
-export async function deleteProject(
-  id: string,
-  accessToken: string,
-): Promise<void> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/projects/${id}`,
-    {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
-  );
+export async function deleteProject(id: string): Promise<void> {
+  const response = await authenticatedFetch(`/projects/${id}`, {
+    method: "DELETE",
+  });
 
   if (!response.ok) {
     const body = await response.json();

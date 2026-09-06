@@ -37,6 +37,7 @@ describe("LoginPage", () => {
     pushMock.mockClear();
     vi.mocked(login).mockReset();
     clearTokens();
+    window.history.pushState({}, "", "/login");
   });
 
   it("renderiza os campos de email e senha", () => {
@@ -101,6 +102,19 @@ describe("LoginPage", () => {
     });
     expect(getAccessToken()).toBe("access-token");
     expect(getRefreshToken()).toBe("refresh-token");
+  });
+
+  it("mostra aviso de sessão expirada quando a URL tem ?sessionExpired=1", () => {
+    window.history.pushState({}, "", "/login?sessionExpired=1");
+    renderLoginPage();
+
+    expect(screen.getByText(/sua sessão expirou/i)).not.toBeNull();
+  });
+
+  it("não mostra aviso de sessão expirada em acesso normal", () => {
+    renderLoginPage();
+
+    expect(screen.queryByText(/sua sessão expirou/i)).toBeNull();
   });
 
   it("mostra a mensagem de erro da API quando o login falha", async () => {
