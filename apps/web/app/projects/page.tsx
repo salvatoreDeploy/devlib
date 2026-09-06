@@ -10,7 +10,6 @@ import {
   ListProjectsError,
   listProjects,
 } from "../../lib/api/projects";
-import { getAccessToken } from "../../lib/auth-storage";
 import { useRequireAuth } from "../../lib/use-require-auth";
 
 export default function ProjectsPage() {
@@ -19,13 +18,13 @@ export default function ProjectsPage() {
 
   const projectsQuery = useQuery({
     queryKey: ["projects"],
-    queryFn: () => listProjects(getAccessToken() ?? ""),
+    queryFn: () => listProjects(),
     enabled: isAuthenticated,
     retry: false,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteProject(id, getAccessToken() ?? ""),
+    mutationFn: (id: string) => deleteProject(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },

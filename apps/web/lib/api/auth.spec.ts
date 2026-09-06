@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { login, LoginError } from "./auth";
+import { login, LoginError, refreshSession, RefreshSessionError } from "./auth";
 
 describe("login", () => {
   beforeEach(() => {
@@ -62,5 +62,63 @@ describe("login", () => {
     await expect(
       login({ email: "ana@example.com", password: "senha-errada" }),
     ).rejects.toThrow("Credenciais inválidas");
+  });
+});
+
+describe("refreshSession", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://localhost:3333");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("envia o refreshToken e retorna o par de tokens novo quando a API responde 200", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          accessToken: "new-access-token",
+          refreshToken: "new-refresh-token",
+        }),
+      }),
+    );
+
+    const result = await refreshSession("refresh-token");
+
+    expect(result).toEqual({
+      accessToken: "new-access-token",
+      refreshToken: "new-refresh-token",
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      "http://localhost:3333/auth/refresh",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({ refreshToken: "refresh-token" }),
+      }),
+    );
+  });
+
+  it("lança RefreshSessionError com a mensagem da API quando o refresh token é inválido", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: "Refresh token inválido ou expirado" }),
+      }),
+    );
+
+    await expect(refreshSession("refresh-token-revogado")).rejects.toThrow(
+      RefreshSessionError,
+    );
+    await expect(refreshSession("refresh-token-revogado")).rejects.toThrow(
+      "Refresh token inválido ou expirado",
+    );
   });
 });

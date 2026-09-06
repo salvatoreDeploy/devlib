@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import { createLibrary, CreateLibraryError } from "../../../lib/api/libraries";
 import { getCategories } from "../../../lib/api/categories";
-import { getAccessToken } from "../../../lib/auth-storage";
 import { useRequireAuth } from "../../../lib/use-require-auth";
 
 const newLibraryFormSchema = z.object({
@@ -36,7 +35,7 @@ export default function NewLibraryPage() {
 
   const categoriesQuery = useQuery({
     queryKey: ["categories"],
-    queryFn: () => getCategories(getAccessToken() ?? ""),
+    queryFn: () => getCategories(),
     enabled: isAuthenticated,
   });
 
@@ -52,14 +51,11 @@ export default function NewLibraryPage() {
 
   const mutation = useMutation({
     mutationFn: (data: NewLibraryFormValues) =>
-      createLibrary(
-        {
-          name: data.name,
-          ...(data.categoryId ? { categoryId: data.categoryId } : {}),
-          ...(data.notes ? { notes: data.notes } : {}),
-        },
-        getAccessToken() ?? "",
-      ),
+      createLibrary({
+        name: data.name,
+        ...(data.categoryId ? { categoryId: data.categoryId } : {}),
+        ...(data.notes ? { notes: data.notes } : {}),
+      }),
     onSuccess: () => {
       router.push("/");
     },

@@ -15,7 +15,6 @@ import {
   updateProject,
   UpdateProjectError,
 } from "../../../../lib/api/projects";
-import { getAccessToken } from "../../../../lib/auth-storage";
 import { useRequireAuth } from "../../../../lib/use-require-auth";
 
 const editProjectFormSchema = z.object({
@@ -33,7 +32,7 @@ export default function EditProjectPage() {
 
   const projectQuery = useQuery({
     queryKey: ["project", id],
-    queryFn: () => getProject(id, getAccessToken() ?? ""),
+    queryFn: () => getProject(id),
     enabled: isAuthenticated,
     retry: false,
   });
@@ -53,8 +52,7 @@ export default function EditProjectPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: (data: EditProjectFormValues) =>
-      updateProject(id, data, getAccessToken() ?? ""),
+    mutationFn: (data: EditProjectFormValues) => updateProject(id, data),
     onSuccess: () => {
       router.push("/projects");
     },

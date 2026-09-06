@@ -1,3 +1,5 @@
+import { authenticatedFetch } from "./http-client";
+
 export type CreateLibraryInput = {
   name: string;
   categoryId?: string;
@@ -25,14 +27,10 @@ export class UpdateLibraryError extends Error {}
 
 export async function createLibrary(
   input: CreateLibraryInput,
-  accessToken: string,
 ): Promise<Library> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/libraries`, {
+  const response = await authenticatedFetch("/libraries", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
 
@@ -47,16 +45,8 @@ export async function createLibrary(
   return body;
 }
 
-export async function getLibrary(
-  id: string,
-  accessToken: string,
-): Promise<Library> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/libraries/${id}`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
-  );
+export async function getLibrary(id: string): Promise<Library> {
+  const response = await authenticatedFetch(`/libraries/${id}`);
 
   const body = await response.json();
 
@@ -72,19 +62,12 @@ export async function getLibrary(
 export async function updateLibrary(
   id: string,
   input: UpdateLibraryInput,
-  accessToken: string,
 ): Promise<Library> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/libraries/${id}`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(input),
-    },
-  );
+  const response = await authenticatedFetch(`/libraries/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
 
   const body = await response.json();
 

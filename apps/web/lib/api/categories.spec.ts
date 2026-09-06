@@ -1,12 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getCategories, GetCategoriesError } from "./categories";
+import { authenticatedFetch } from "./http-client";
+
+vi.mock("./http-client", () => ({ authenticatedFetch: vi.fn() }));
 
 describe("getCategories", () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.mocked(authenticatedFetch).mockReset();
   });
 
-  it("envia o Authorization header e retorna as categorias", async () => {
+  it("retorna as categorias", async () => {
     const categories = [
       {
         id: "category-1",
@@ -15,34 +18,24 @@ describe("getCategories", () => {
         createdAt: "2026-09-03T00:00:00.000Z",
       },
     ];
-    const fetchMock = vi.fn().mockResolvedValue({
+    vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(categories),
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    } as Response);
 
-    const result = await getCategories("access-token");
+    const result = await getCategories();
 
     expect(result).toEqual(categories);
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain("/categories");
-    expect(init.headers).toMatchObject({
-      Authorization: "Bearer access-token",
-    });
+    expect(authenticatedFetch).toHaveBeenCalledWith("/categories");
   });
 
   it("lança GetCategoriesError com a mensagem da API quando a busca falha", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
+    vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: false,
       json: () => Promise.resolve({ error: "Não autorizado" }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    } as Response);
 
-    await expect(getCategories("access-token")).rejects.toThrow(
-      "Não autorizado",
-    );
-    await expect(getCategories("access-token")).rejects.toBeInstanceOf(
-      GetCategoriesError,
-    );
+    await expect(getCategories()).rejects.toThrow("Não autorizado");
+    await expect(getCategories()).rejects.toBeInstanceOf(GetCategoriesError);
   });
 });

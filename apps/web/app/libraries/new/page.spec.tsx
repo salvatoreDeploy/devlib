@@ -84,7 +84,7 @@ describe("NewLibraryPage", () => {
     expect(createLibrary).not.toHaveBeenCalled();
   });
 
-  it("chama createLibrary com o access token e redireciona pra / quando criada com sucesso", async () => {
+  it("chama createLibrary e redireciona pra / quando criada com sucesso", async () => {
     vi.mocked(createLibrary).mockResolvedValue({
       id: "library-1",
       name: "drizzle-orm",
@@ -115,7 +115,6 @@ describe("NewLibraryPage", () => {
     });
     expect(vi.mocked(createLibrary).mock.calls[0]).toEqual([
       { name: "drizzle-orm", categoryId: "category-1", notes: "ORM leve" },
-      "access-token",
     ]);
   });
 
@@ -141,7 +140,6 @@ describe("NewLibraryPage", () => {
     });
     expect(vi.mocked(createLibrary).mock.calls[0]).toEqual([
       { name: "drizzle-orm" },
-      "access-token",
     ]);
   });
 
