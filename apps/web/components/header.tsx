@@ -16,7 +16,7 @@ export function Header({ projectName }: HeaderProps) {
   return (
     <header className="flex items-center justify-between px-10 py-[18px]">
       <div className="flex items-center gap-2.5">
-        <Link href="/projects" className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5">
           <div className="flex size-[26px] items-center justify-center rounded-[7px] border-[1.5px] border-primary text-[13px] font-bold text-primary">
             D
           </div>
