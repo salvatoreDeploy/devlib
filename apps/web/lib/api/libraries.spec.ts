@@ -4,6 +4,8 @@ import {
   CreateLibraryError,
   getLibrary,
   GetLibraryError,
+  getLibraryProjects,
+  GetLibraryProjectsError,
   updateLibrary,
   UpdateLibraryError,
 } from "./libraries";
@@ -164,5 +166,59 @@ describe("updateLibrary", () => {
     await expect(
       updateLibrary("library-1", { name: "drizzle-orm" }),
     ).rejects.toBeInstanceOf(UpdateLibraryError);
+  });
+});
+
+describe("getLibraryProjects", () => {
+  afterEach(() => {
+    vi.mocked(authenticatedFetch).mockReset();
+  });
+
+  it("retorna os projetos que usam a biblioteca", async () => {
+    const project = {
+      id: "project-1",
+      userId: "user-1",
+      name: "DevLib",
+      description: "Catálogo pessoal",
+      version: "1.2.3",
+      createdAt: "2026-09-01T00:00:00.000Z",
+      updatedAt: "2026-09-01T00:00:00.000Z",
+    };
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([project]),
+    } as Response);
+
+    const result = await getLibraryProjects("library-1");
+
+    expect(result).toEqual([project]);
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/libraries/library-1/projects",
+    );
+  });
+
+  it("retorna array vazio quando nenhum projeto usa a biblioteca", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
+
+    const result = await getLibraryProjects("library-1");
+
+    expect(result).toEqual([]);
+  });
+
+  it("lança GetLibraryProjectsError com a mensagem da API quando a busca falha", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ error: "Biblioteca não encontrada" }),
+    } as Response);
+
+    await expect(getLibraryProjects("library-x")).rejects.toThrow(
+      "Biblioteca não encontrada",
+    );
+    await expect(getLibraryProjects("library-x")).rejects.toBeInstanceOf(
+      GetLibraryProjectsError,
+    );
   });
 });

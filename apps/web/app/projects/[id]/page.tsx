@@ -91,7 +91,7 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header projectName={project.name} />
+      <Header breadcrumbLabel={project.name} />
       <ProjectTabs projectId={id} />
 
       <main className="px-10 py-[34px] pb-[60px]">

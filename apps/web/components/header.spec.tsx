@@ -65,14 +65,14 @@ describe("Header", () => {
     expect(brandLink.getAttribute("href")).toBe("/");
   });
 
-  it("não mostra breadcrumb de projeto quando projectName não é informado", () => {
+  it("não mostra breadcrumb quando breadcrumbLabel não é informado", () => {
     render(<Header />);
 
     expect(screen.queryByText("/")).toBeNull();
   });
 
-  it("mostra o nome do projeto no breadcrumb quando projectName é informado", () => {
-    render(<Header projectName="DevLib" />);
+  it("mostra o breadcrumb quando breadcrumbLabel é informado (projeto ou biblioteca)", () => {
+    render(<Header breadcrumbLabel="DevLib" />);
 
     expect(screen.getByText("DevLib")).not.toBeNull();
     expect(screen.getByText("/")).not.toBeNull();
