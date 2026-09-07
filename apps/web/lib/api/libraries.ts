@@ -21,9 +21,20 @@ export type UpdateLibraryInput = {
   notes?: string;
 };
 
+export type LibraryProject = {
+  id: string;
+  userId: string;
+  name: string;
+  description: string | null;
+  version: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export class CreateLibraryError extends Error {}
 export class GetLibraryError extends Error {}
 export class UpdateLibraryError extends Error {}
+export class GetLibraryProjectsError extends Error {}
 
 export async function createLibrary(
   input: CreateLibraryInput,
@@ -53,6 +64,22 @@ export async function getLibrary(id: string): Promise<Library> {
   if (!response.ok) {
     throw new GetLibraryError(
       body.error ?? "Não foi possível buscar a biblioteca",
+    );
+  }
+
+  return body;
+}
+
+export async function getLibraryProjects(
+  id: string,
+): Promise<LibraryProject[]> {
+  const response = await authenticatedFetch(`/libraries/${id}/projects`);
+
+  const body = await response.json();
+
+  if (!response.ok) {
+    throw new GetLibraryProjectsError(
+      body.error ?? "Não foi possível buscar os projetos da biblioteca",
     );
   }
 

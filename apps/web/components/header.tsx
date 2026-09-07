@@ -6,10 +6,10 @@ import { getAccessToken } from "@/lib/auth-storage";
 import { decodeAccessToken } from "@/lib/session";
 
 export type HeaderProps = {
-  projectName?: string;
+  breadcrumbLabel?: string;
 };
 
-export function Header({ projectName }: HeaderProps) {
+export function Header({ breadcrumbLabel }: HeaderProps) {
   const accessToken = getAccessToken();
   const session = accessToken ? decodeAccessToken(accessToken) : null;
 
@@ -25,11 +25,11 @@ export function Header({ projectName }: HeaderProps) {
           </span>
         </Link>
 
-        {projectName && (
+        {breadcrumbLabel && (
           <div className="flex items-center gap-2.5">
             <span className="text-[15px] text-checkbox-border">/</span>
             <span className="text-[15px] font-medium text-foreground">
-              {projectName}
+              {breadcrumbLabel}
             </span>
             <ChevronDown
               className="size-[15px] text-text-faint"

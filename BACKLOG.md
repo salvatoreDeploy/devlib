@@ -97,9 +97,9 @@ Fica para depois do MVP (v1.1+):
   - [x] API: rota GET /projects/:id/libraries
   - [x] Web: tela /projects/[id] com dados do projeto + tabela de bibliotecas associadas
   - [x] Web: Elaborar tela home alinhada com nosso projeto, e navegação entre as telas.
-- [ ] Tela de detalhe da biblioteca (notas, usado em)
+- [x] Tela de detalhe da biblioteca (notas, usado em)
   - [x] API: rota GET /libraries/:id/projects
-  - [ ] Web: tela /libraries/[id] com notas, categoria, tags e projetos onde é usada
+  - [x] Web: tela /libraries/[id] com notas, categoria, tags e projetos onde é usada
 
 ## Sprint 4 — Perfil do usuário e Header global
 
