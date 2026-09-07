@@ -101,38 +101,66 @@ Fica para depois do MVP (v1.1+):
   - [x] API: rota GET /libraries/:id/projects
   - [ ] Web: tela /libraries/[id] com notas, categoria, tags e projetos onde é usada
 
-## Dívida técnica / bugs conhecidos
+## Sprint 4 — Perfil do usuário e Header global
 
-_Achados durante o desenvolvimento que não bloqueiam a subtask em andamento, mas precisam de uma subtask própria depois. Não remover daqui sem resolver ou mover pra dentro de um sprint._
+- [ ] Endpoints de perfil do usuário (api)
+  - [ ] API: rota GET /users/me (retorna nome, e-mail e foto do usuário autenticado)
+  - [ ] API: rota PATCH /users/me com validação zod (atualizar nome, e-mail, etc.)
+  - [ ] API: rota POST /users/me/photo (upload de foto, valida tipo/tamanho de arquivo)
+  - [ ] API: rota POST /auth/logout (invalida token/sessão)
+- [ ] Menu de perfil no header (api + web)
+  - [ ] Web: componente ProfileButton (avatar, e-mail truncado, ícone de seta)
+  - [ ] Web: dropdown com ações "Minhas informações", "Editar perfil", "Sair"
+  - [ ] Web: tela/modal "Minhas informações" (consome GET /users/me)
+  - [ ] Web: formulário "Editar perfil" (consome PATCH /users/me e POST /users/me/photo)
+  - [ ] Web: fluxo de logout (limpa sessão local, chama POST /auth/logout, redireciona pro login)
+- [ ] Header global reutilizável (web)
+  - [ ] Web: componente Header (layout base) incluindo o ProfileButton
+  - [ ] Web: integração do Header em todas as rotas/páginas via layout compartilhado
+  - [ ] Web: botão "Voltar" usando histórico de navegação (router.back())
+  - [ ] Web: regra de exibição do botão Voltar (oculto em páginas de entrada, ex: Home)
+- [ ] Estados de loading/erro e responsividade do header (web)
+  - [ ] Web: skeleton/loading ao carregar dados do usuário no header
+  - [ ] Web: fallback de avatar quando a foto falhar ou não existir
+  - [ ] Web: adaptação do menu de perfil e do header pra mobile/tablet
+- [ ] Testes
+  - [ ] API: testes unitários/integração dos endpoints de perfil e logout
+  - [ ] Web: testes E2E (abrir menu, editar perfil, logout, navegação com botão voltar)
 
-- [ ] Web: não existe fluxo de logout em nenhuma tela — usuário não tem como encerrar a sessão manualmente hoje, só esperando o access token expirar (15 min) ou limpando o `localStorage` à mão. Adicionar logout nas telas que precisam dele (provavelmente um botão/menu visível nas telas protegidas, chamando `clearTokens()` e redirecionando pra `/login`) — ver `docs/FRONTEND.md` se já existe um padrão de header/nav previsto pro protótipo antes de desenhar um novo.
-
-## Sprint 4 — Associação cruzada
+## Sprint 5 — Associação cruzada
 
 - [ ] Associar biblioteca a projeto (a partir da tela da biblioteca)
 - [ ] Adicionar biblioteca a projeto (a partir da tela do projeto)
 - [ ] Remover associação nos dois sentidos
 
-## Sprint 5 — Integrações (pós-MVP)
+## Sprint 6 — Integrações (pós-MVP)
 
 - [ ] Provider npm (busca + versão + docs)
 - [ ] Provider PyPI (busca + versão + docs)
 - [ ] Autopreenchimento no formulário de cadastro
 - [ ] Snippets de instalação/configuração por biblioteca
 
-## Sprint 6 — Métricas (pós-MVP)
+## Sprint 7 — Métricas (pós-MVP)
 
 - [ ] Query agregada: bibliotecas mais usadas
 - [ ] Query agregada: distribuição por categoria
 - [ ] Tela de dashboard de métricas
 
-## Sprint 7 — API pública / Developers (pós-MVP)
+## Sprint 8 — API pública / Developers (pós-MVP)
 
 > Adicionado em 2026-09-02 a partir da tela "Developers" do pacote de design hi-fi — não estava em nenhuma sprint antes disso. Exige um mecanismo de autenticação novo (chave de API), separado do JWT de sessão usado por `apps/web` — decidir o desenho antes de implementar a primeira subtask.
 
 - [ ] Decidir mecanismo de chave de API (formato, revogação, escopo por projeto) — antes de implementar
 - [ ] Rota `GET /v1/projects/:id/libraries` autenticada por chave de API (Bearer), somente leitura
 - [ ] Tela "Developers" no projeto: gerar/exibir/revogar chave de API, exemplo de `curl`
+
+---
+
+## Dívida técnica / bugs conhecidos
+
+_Achados durante o desenvolvimento que não bloqueiam a subtask em andamento, mas precisam de uma subtask própria depois. Não remover daqui sem resolver ou mover pra dentro de um sprint._
+
+- [ ] Web: não existe fluxo de logout em nenhuma tela — usuário não tem como encerrar a sessão manualmente hoje, só esperando o access token expirar (15 min) ou limpando o `localStorage` à mão. Adicionar logout nas telas que precisam dele (provavelmente um botão/menu visível nas telas protegidas, chamando `clearTokens()` e redirecionando pra `/login`) — ver `docs/FRONTEND.md` se já existe um padrão de header/nav previsto pro protótipo antes de desenhar um novo.
 
 ---
 
