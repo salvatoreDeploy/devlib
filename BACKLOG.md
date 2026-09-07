@@ -97,7 +97,7 @@ Fica para depois do MVP (v1.1+):
   - [x] API: rota GET /projects/:id/libraries
   - [x] Web: tela /projects/[id] com dados do projeto + tabela de bibliotecas associadas
 - [ ] Tela de detalhe da biblioteca (notas, usado em)
-  - [ ] API: rota GET /libraries/:id/projects
+  - [x] API: rota GET /libraries/:id/projects
   - [ ] Web: tela /libraries/[id] com notas, categoria, tags e projetos onde é usada
 
 ## Dívida técnica / bugs conhecidos
