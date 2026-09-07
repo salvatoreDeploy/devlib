@@ -100,6 +100,9 @@ Fica para depois do MVP (v1.1+):
 - [x] Tela de detalhe da biblioteca (notas, usado em)
   - [x] API: rota GET /libraries/:id/projects
   - [x] Web: tela /libraries/[id] com notas, categoria, tags e projetos onde é usada
+- [ ] Dashboard de bibliotecas (lista)
+  - [ ] API: rota GET /libraries/overview (lista bibliotecas do catálogo com `projectsCount` — quantidade de projetos do usuário autenticado que usam cada uma)
+  - [ ] Web: tela /libraries (listagem via GET /libraries/overview, categoria resolvida via GET /categories, coluna "usada em" com a contagem, ação "+ Nova biblioteca" pra /libraries/new, linha linka pro detalhe /libraries/[id]); repontar o card "Bibliotecas" da Home pra /libraries (hoje aponta pra /libraries/new, ver docs/DECISIONS.md)
 
 ## Sprint 4 — Perfil do usuário e Header global
 
