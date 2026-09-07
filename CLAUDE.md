@@ -68,6 +68,7 @@ Atualizar `docs/DECISIONS.md` e `docs/APP.md` faz parte do passo 5.5 da skill `n
 
 ## Skills e subagentes disponíveis
 
+- `/elaborar-backlog` — use ao transformar uma ideia crua ou uma dor em uma sprint, task ou subtask nova do `BACKLOG.md`; faz brainstorm e questionamento (motivação, escopo MVP/pós-MVP, dependências, quebra em subtasks) e fecha com um plano de aprovação explícito antes de escrever no arquivo
 - `/nova-feature` — use ao implementar qualquer item do `BACKLOG.md`, do planejamento ao PR
 - `/nova-rota-crud` — use ao criar rotas REST CRUD novas em `apps/api/src/routes` para um recurso já com repositório + service prontos; padroniza o esqueleto (zod, auth, injeção de repositório, mapeamento de erros) usando `projects-*.route.ts`/`libraries-*.route.ts` como templates
 - `/novo-form-web` — use ao criar um formulário protegido novo em `apps/web` (criação/edição de um recurso com rota REST já pronta); padroniza cliente de API tipado, `useRequireAuth`, react-hook-form+zod, TanStack Query e tokens visuais, usando `projects/new`, `projects/[id]/edit` e `libraries/new` como templates
