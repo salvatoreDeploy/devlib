@@ -48,6 +48,21 @@ function fakeDbForDelete() {
   return { db: { delete: del } as unknown as DbClient, delete: del, where };
 }
 
+function fakeDbForSelectJoinWhere(rows: unknown[]) {
+  const where = vi.fn().mockResolvedValue(rows);
+  const innerJoin = vi.fn().mockReturnValue({ where });
+  const from = vi.fn().mockReturnValue({ innerJoin });
+  const select = vi.fn().mockReturnValue({ from });
+
+  return {
+    db: { select } as unknown as DbClient,
+    select,
+    from,
+    innerJoin,
+    where,
+  };
+}
+
 const project = {
   id: "project-1",
   userId: "user-1",
@@ -202,6 +217,47 @@ describe("createProjectsRepository", () => {
 
       expect(del).toHaveBeenCalledOnce();
       expect(where).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe("findProjectsByLibraryId", () => {
+    it("retorna os projetos do usuário que usam a biblioteca, com a versão da associação", async () => {
+      const row = { ...project, version: "1.2.3" };
+      const { db, where } = fakeDbForSelectJoinWhere([row]);
+
+      const repository = createProjectsRepository(db);
+      const result = await repository.findProjectsByLibraryId(
+        "library-1",
+        "user-1",
+      );
+
+      expect(result).toEqual([row]);
+      expect(where).toHaveBeenCalledOnce();
+    });
+
+    it("retorna array vazio quando o usuário não tem projeto usando a biblioteca", async () => {
+      const { db } = fakeDbForSelectJoinWhere([]);
+
+      const repository = createProjectsRepository(db);
+      const result = await repository.findProjectsByLibraryId(
+        "library-1",
+        "user-1",
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("retorna version null quando a associação não tem versão informada", async () => {
+      const row = { ...project, version: null };
+      const { db } = fakeDbForSelectJoinWhere([row]);
+
+      const repository = createProjectsRepository(db);
+      const result = await repository.findProjectsByLibraryId(
+        "library-1",
+        "user-1",
+      );
+
+      expect(result).toEqual([row]);
     });
   });
 });

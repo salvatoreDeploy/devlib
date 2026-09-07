@@ -5,10 +5,11 @@ import {
   getLibrary,
   updateLibrary,
   deleteLibrary,
+  listLibraryProjects,
   LibraryNotFoundError,
   LibraryNameAlreadyExistsError,
   CategoryNotFoundError,
-  type LibrariesRepository,
+  type LibraryProjectsRepository,
 } from "./libraries.service";
 
 const library = {
@@ -27,9 +28,19 @@ const category = {
   createdAt: new Date("2026-09-03T00:00:00Z"),
 };
 
+const project = {
+  id: "project-1",
+  userId: "user-1",
+  name: "DevLib",
+  description: null,
+  version: "1.2.3",
+  createdAt: new Date("2026-09-01T00:00:00Z"),
+  updatedAt: new Date("2026-09-01T00:00:00Z"),
+};
+
 function fakeRepository(
-  overrides: Partial<LibrariesRepository> = {},
-): LibrariesRepository {
+  overrides: Partial<LibraryProjectsRepository> = {},
+): LibraryProjectsRepository {
   return {
     insertLibrary: vi.fn().mockResolvedValue(library),
     findLibraries: vi.fn().mockResolvedValue([library]),
@@ -38,6 +49,8 @@ function fakeRepository(
     updateLibrary: vi.fn().mockResolvedValue(library),
     deleteLibrary: vi.fn().mockResolvedValue(undefined),
     findCategoryById: vi.fn().mockResolvedValue(category),
+    findLibrariesByProjectId: vi.fn().mockResolvedValue([]),
+    findProjectsByLibraryId: vi.fn().mockResolvedValue([project]),
     ...overrides,
   };
 }
@@ -94,6 +107,50 @@ describe("createLibrary", () => {
       }),
     ).rejects.toThrow(CategoryNotFoundError);
     expect(repository.insertLibrary).not.toHaveBeenCalled();
+  });
+});
+
+describe("listLibraryProjects", () => {
+  it("retorna os projetos do usuário autenticado que usam a biblioteca", async () => {
+    const repository = fakeRepository();
+
+    const result = await listLibraryProjects(repository, {
+      userId: "user-1",
+      libraryId: "library-1",
+    });
+
+    expect(result).toEqual([project]);
+    expect(repository.findProjectsByLibraryId).toHaveBeenCalledWith(
+      "library-1",
+      "user-1",
+    );
+  });
+
+  it("retorna array vazio quando nenhum projeto do usuário usa a biblioteca", async () => {
+    const repository = fakeRepository({
+      findProjectsByLibraryId: vi.fn().mockResolvedValue([]),
+    });
+
+    const result = await listLibraryProjects(repository, {
+      userId: "user-1",
+      libraryId: "library-1",
+    });
+
+    expect(result).toEqual([]);
+  });
+
+  it("lança LibraryNotFoundError quando a biblioteca não existe", async () => {
+    const repository = fakeRepository({
+      findLibraryById: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(
+      listLibraryProjects(repository, {
+        userId: "user-1",
+        libraryId: "library-x",
+      }),
+    ).rejects.toThrow(LibraryNotFoundError);
+    expect(repository.findProjectsByLibraryId).not.toHaveBeenCalled();
   });
 });
 

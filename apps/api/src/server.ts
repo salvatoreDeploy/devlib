@@ -74,6 +74,10 @@ import {
   projectsLibrariesListRoute,
   type ProjectsLibrariesListRouteOptions,
 } from "./routes/projects-libraries-list.route";
+import {
+  librariesProjectsListRoute,
+  type LibrariesProjectsListRouteOptions,
+} from "./routes/libraries-projects-list.route";
 
 export type BuildServerDeps = RegisterRouteOptions &
   LoginRouteOptions &
@@ -91,7 +95,8 @@ export type BuildServerDeps = RegisterRouteOptions &
   CategoriesListRouteOptions &
   LibrariesTagsCreateRouteOptions &
   LibrariesTagsListRouteOptions &
-  ProjectsLibrariesListRouteOptions & {
+  ProjectsLibrariesListRouteOptions &
+  LibrariesProjectsListRouteOptions & {
     corsConfig?: CorsConfig;
   };
 
@@ -189,6 +194,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(librariesTagsCreateRoute, deps);
   app.register(librariesTagsListRoute, deps);
   app.register(projectsLibrariesListRoute, deps);
+  app.register(librariesProjectsListRoute, deps);
 
   return app;
 }

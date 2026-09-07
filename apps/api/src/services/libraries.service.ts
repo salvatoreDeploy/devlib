@@ -3,11 +3,19 @@ import type {
   LibrariesRepository as LibrariesDataRepository,
 } from "../repositories/libraries.repository";
 import type { CategoryRecord } from "../repositories/categories.repository";
+import type { LibraryProjectRecord } from "../repositories/projects.repository";
 
-export type { LibraryRecord };
+export type { LibraryRecord, LibraryProjectRecord };
 
 export type LibrariesRepository = LibrariesDataRepository & {
   findCategoryById(id: string): Promise<CategoryRecord | undefined>;
+};
+
+export type LibraryProjectsRepository = LibrariesRepository & {
+  findProjectsByLibraryId(
+    libraryId: string,
+    userId: string,
+  ): Promise<LibraryProjectRecord[]>;
 };
 
 export class LibraryNotFoundError extends Error {
@@ -121,4 +129,18 @@ export async function deleteLibrary(
 ): Promise<void> {
   await getLibrary(repository, id);
   await repository.deleteLibrary(id);
+}
+
+export type ListLibraryProjectsInput = {
+  userId: string;
+  libraryId: string;
+};
+
+export async function listLibraryProjects(
+  repository: LibraryProjectsRepository,
+  { userId, libraryId }: ListLibraryProjectsInput,
+): Promise<LibraryProjectRecord[]> {
+  await getLibrary(repository, libraryId);
+
+  return repository.findProjectsByLibraryId(libraryId, userId);
 }
