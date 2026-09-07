@@ -58,11 +58,11 @@ describe("Header", () => {
     expect(screen.queryByText(/@/)).toBeNull();
   });
 
-  it("a marca devlib.dev linka pra /projects", () => {
+  it("a marca devlib.dev linka pra / (hub)", () => {
     render(<Header />);
 
     const brandLink = screen.getByRole("link", { name: /devlib\.dev/i });
-    expect(brandLink.getAttribute("href")).toBe("/projects");
+    expect(brandLink.getAttribute("href")).toBe("/");
   });
 
   it("não mostra breadcrumb de projeto quando projectName não é informado", () => {
