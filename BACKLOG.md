@@ -100,35 +100,44 @@ Fica para depois do MVP (v1.1+):
 - [x] Tela de detalhe da biblioteca (notas, usado em)
   - [x] API: rota GET /libraries/:id/projects
   - [x] Web: tela /libraries/[id] com notas, categoria, tags e projetos onde é usada
-- [ ] Dashboard de bibliotecas (lista)
+- [ ] Seção "Bibliotecas" na Home (lista)
   - [ ] API: rota GET /libraries/overview (lista bibliotecas do catálogo com `projectsCount` — quantidade de projetos do usuário autenticado que usam cada uma)
-  - [ ] Web: tela /libraries (listagem via GET /libraries/overview, categoria resolvida via GET /categories, coluna "usada em" com a contagem, ação "+ Nova biblioteca" pra /libraries/new, linha linka pro detalhe /libraries/[id]); repontar o card "Bibliotecas" da Home pra /libraries (hoje aponta pra /libraries/new, ver docs/DECISIONS.md)
+  - [ ] Web: seção "Bibliotecas" na Home (`/`) — usa GET /libraries/overview, categoria resolvida via GET /categories, coluna "usada em" com a contagem e uma badge de status visual (valor fixo, sem integração real de versão ainda — ver Sprint 6), ação "+ Nova biblioteca" pra /libraries/new, linha linka pro detalhe /libraries/[id]; remove o card "Bibliotecas" do hub atual (a seção substitui o destino, seguindo a "Dashboard Libraries Section" do devlib_design.pen)
 
-## Sprint 4 — Perfil do usuário e Header global
+## Sprint 4 — Refatoração Front-end com Design System e Refatoração do Back-end
 
-- [ ] Endpoints de perfil do usuário (api)
-  - [ ] API: rota GET /users/me (retorna nome, e-mail e foto do usuário autenticado)
-  - [ ] API: rota PATCH /users/me com validação zod (atualizar nome, e-mail, etc.)
-  - [ ] API: rota POST /users/me/photo (upload de foto, valida tipo/tamanho de arquivo)
-  - [ ] API: rota POST /auth/logout (invalida token/sessão)
-- [ ] Menu de perfil no header (api + web)
-  - [ ] Web: componente ProfileButton (avatar, e-mail truncado, ícone de seta)
-  - [ ] Web: dropdown com ações "Minhas informações", "Editar perfil", "Sair"
-  - [ ] Web: tela/modal "Minhas informações" (consome GET /users/me)
-  - [ ] Web: formulário "Editar perfil" (consome PATCH /users/me e POST /users/me/photo)
-  - [ ] Web: fluxo de logout (limpa sessão local, chama POST /auth/logout, redireciona pro login)
-- [ ] Header global reutilizável (web)
-  - [ ] Web: componente Header (layout base) incluindo o ProfileButton
-  - [ ] Web: integração do Header em todas as rotas/páginas via layout compartilhado
-  - [ ] Web: botão "Voltar" usando histórico de navegação (router.back())
-  - [ ] Web: regra de exibição do botão Voltar (oculto em páginas de entrada, ex: Home)
-- [ ] Estados de loading/erro e responsividade do header (web)
-  - [ ] Web: skeleton/loading ao carregar dados do usuário no header
-  - [ ] Web: fallback de avatar quando a foto falhar ou não existir
-  - [ ] Web: adaptação do menu de perfil e do header pra mobile/tablet
+> Fonte: `devlib_design.pen`, que passa a ser a fonte da verdade de `docs/FRONTEND.md` (substitui o pacote HTML hi-fi de 2026-09-02 — ver `docs/DECISIONS.md`). Reverte a decisão de manter `/projects/new` como página cheia em vez de drawer (`docs/FRONTEND.md`, decisão de 2026-09-02) — os fluxos de criação/detalhe voltam a ser drawers, como no design original. Fora de escopo: abas "Métricas" e "Developers" (permanecem desabilitadas, tratadas nas Sprints 7 e 8), telas públicas "Presentation" e "Blog" (Sprint 9), campos de organização/plano/função/membros/billing (multiusuário é pós-MVP), busca de pacote npm/PyPI no drawer de biblioteca (Sprint 6), associação biblioteca↔projeto no drawer de detalhe (Sprint 5) e a seção "Preferências" do perfil (sem dado real por trás ainda).
+
+- [ ] `.pen` vira fonte da verdade do design system
+  - [ ] Doc: nova entrada em `docs/DECISIONS.md` (supersede a de 2026-09-02) — `.pen` como fonte da verdade, reversão da decisão página-vs-drawer
+  - [ ] Doc: `docs/FRONTEND.md` reescrito a partir dos tokens/telas do `devlib_design.pen`
+- [ ] Componentes base do design system (web)
+  - [ ] Web: Button/Input/Badge/Tab/Metric Card revisados pra bater com os componentes reutilizáveis do `.pen`
+  - [ ] Web: componente Drawer (Sheet) padrão com overlay, base pros fluxos de criação/detalhe abaixo
+- [ ] Perfil do usuário (api + web)
+  - [ ] `packages/db`: migration adicionando `name` e `avatarUrl` a `users`
+  - [ ] API: rota GET /users/me
+  - [ ] API: rota PATCH /users/me (nome, e-mail, senha)
+  - [ ] API: rota POST /users/me/photo
+  - [ ] API: rota POST /auth/logout
+  - [ ] Web: Profile Dropdown no header (nome/e-mail/avatar, ações "Editar perfil" e "Sair")
+  - [ ] Web: tela /profile (foto, dados pessoais, alteração de senha)
+- [ ] Header e Home (web)
+  - [ ] Web: Header alinhado ao Dashboard Header do `.pen`, com ProfileButton real (abre o Profile Dropdown)
+  - [ ] Web: Home (`/`) restilizada nos tokens/componentes novos, mantendo o hub de cards e a seção "Bibliotecas" (Sprint 3) — sem feed de atividade recente nem card de plano/billing (dependem de multiusuário, pós-MVP)
+- [ ] Fluxos de criação/detalhe migram de página pra drawer (web)
+  - [ ] Web: Drawer "Criar projeto" substitui /projects/new
+  - [ ] Web: Drawer "Criar biblioteca" substitui /libraries/new
+  - [ ] Web: Drawer "Detalhe da biblioteca" substitui /libraries/[id]
+  - [ ] Web: atualizar links/redirects que apontavam pras páginas antigas
+- [ ] Aba Categorias do projeto (api + web)
+  - [ ] API: repositório + service de categorias (criar, listar globais+do projeto, bloquear nome duplicado no mesmo escopo)
+  - [ ] API: rotas REST de categorias com validação zod (POST/GET/DELETE /projects/:id/categories)
+  - [ ] Web: tela "Categorias" (tabela + busca) na tab bar do projeto
+  - [ ] Web: Drawer "Criar categoria"
 - [ ] Testes
-  - [ ] API: testes unitários/integração dos endpoints de perfil e logout
-  - [ ] Web: testes E2E (abrir menu, editar perfil, logout, navegação com botão voltar)
+  - [ ] API: testes unitários/integração de perfil, logout e categorias
+  - [ ] Web: testes E2E dos drawers e do menu de perfil
 
 ## Sprint 5 — Associação cruzada
 
@@ -156,6 +165,17 @@ Fica para depois do MVP (v1.1+):
 - [ ] Decidir mecanismo de chave de API (formato, revogação, escopo por projeto) — antes de implementar
 - [ ] Rota `GET /v1/projects/:id/libraries` autenticada por chave de API (Bearer), somente leitura
 - [ ] Tela "Developers" no projeto: gerar/exibir/revogar chave de API, exemplo de `curl`
+
+## Sprint 9 — Landing pública e Blog (pós-MVP)
+
+> Adicionado em 2026-09-08 a partir das telas "Presentation" e "Public Blog" do `devlib_design.pen` — páginas públicas (sem autenticação), fora do escopo do MVP atual. Duas decisões em aberto antes de implementar a primeira subtask: (1) hoje `/` é o hub autenticado (Home) — decidir a rota real da landing pública sem colidir com ela; (2) fonte de conteúdo do blog (CMS externo, markdown no repo, tabela no banco).
+
+- [ ] Decidir rota da landing pública e fonte de conteúdo do blog — antes de implementar
+- [ ] Landing page pública (web)
+  - [ ] Web: tela pública (Presentation Screen) — hero, cards de features, sem sessão
+  - [ ] Web: header/nav públicos (sem ProfileButton)
+- [ ] Blog público (api + web)
+  - [ ] Web: tela de listagem do blog (Public Blog Screen)
 
 ---
 
