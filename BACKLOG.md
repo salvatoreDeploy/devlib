@@ -100,9 +100,9 @@ Fica para depois do MVP (v1.1+):
 - [x] Tela de detalhe da biblioteca (notas, usado em)
   - [x] API: rota GET /libraries/:id/projects
   - [x] Web: tela /libraries/[id] com notas, categoria, tags e projetos onde é usada
-- [ ] Seção "Bibliotecas" na Home (lista)
-  - [ ] API: rota GET /libraries/overview (lista bibliotecas do catálogo com `projectsCount` — quantidade de projetos do usuário autenticado que usam cada uma)
-  - [ ] Web: seção "Bibliotecas" na Home (`/`) — usa GET /libraries/overview, categoria resolvida via GET /categories, coluna "usada em" com a contagem e uma badge de status visual (valor fixo, sem integração real de versão ainda — ver Sprint 6), ação "+ Nova biblioteca" pra /libraries/new, linha linka pro detalhe /libraries/[id]; remove o card "Bibliotecas" do hub atual (a seção substitui o destino, seguindo a "Dashboard Libraries Section" do devlib_design.pen)
+- [x] Seção "Bibliotecas" na Home (lista)
+  - [x] API: rota GET /libraries/overview (lista bibliotecas do catálogo com `projectsCount` — quantidade de projetos do usuário autenticado que usam cada uma)
+  - [x] Web: seção "Bibliotecas" na Home (`/`) — usa GET /libraries/overview, categoria resolvida via GET /categories, coluna "usada em" com a contagem e uma badge de status visual (valor fixo, sem integração real de versão ainda — ver Sprint 6), ação "+ Nova biblioteca" pra /libraries/new, linha linka pro detalhe /libraries/[id]; remove o card "Bibliotecas" do hub atual (a seção substitui o destino, seguindo a "Dashboard Libraries Section" do devlib_design.pen)
 
 ## Sprint 4 — Refatoração Front-end com Design System e Refatoração do Back-end
 

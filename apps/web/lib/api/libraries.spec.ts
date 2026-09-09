@@ -6,6 +6,8 @@ import {
   GetLibraryError,
   getLibraryProjects,
   GetLibraryProjectsError,
+  getLibrariesOverview,
+  GetLibrariesOverviewError,
   updateLibrary,
   UpdateLibraryError,
 } from "./libraries";
@@ -166,6 +168,59 @@ describe("updateLibrary", () => {
     await expect(
       updateLibrary("library-1", { name: "drizzle-orm" }),
     ).rejects.toBeInstanceOf(UpdateLibraryError);
+  });
+});
+
+describe("getLibrariesOverview", () => {
+  afterEach(() => {
+    vi.mocked(authenticatedFetch).mockReset();
+  });
+
+  it("retorna as bibliotecas do catálogo com projectsCount", async () => {
+    const overview = {
+      id: "library-1",
+      name: "drizzle-orm",
+      categoryId: "category-1",
+      notes: null,
+      createdAt: "2026-09-03T00:00:00.000Z",
+      updatedAt: "2026-09-03T00:00:00.000Z",
+      projectsCount: 2,
+    };
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([overview]),
+    } as Response);
+
+    const result = await getLibrariesOverview();
+
+    expect(result).toEqual([overview]);
+    expect(authenticatedFetch).toHaveBeenCalledWith("/libraries/overview");
+  });
+
+  it("retorna array vazio quando o catálogo está vazio", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
+
+    const result = await getLibrariesOverview();
+
+    expect(result).toEqual([]);
+  });
+
+  it("lança GetLibrariesOverviewError com a mensagem da API quando a busca falha", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      json: () =>
+        Promise.resolve({ error: "Não foi possível buscar as bibliotecas" }),
+    } as Response);
+
+    await expect(getLibrariesOverview()).rejects.toThrow(
+      "Não foi possível buscar as bibliotecas",
+    );
+    await expect(getLibrariesOverview()).rejects.toBeInstanceOf(
+      GetLibrariesOverviewError,
+    );
   });
 });
 

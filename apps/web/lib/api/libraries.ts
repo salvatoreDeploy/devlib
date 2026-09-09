@@ -31,10 +31,15 @@ export type LibraryProject = {
   updatedAt: string;
 };
 
+export type LibraryOverview = Library & {
+  projectsCount: number;
+};
+
 export class CreateLibraryError extends Error {}
 export class GetLibraryError extends Error {}
 export class UpdateLibraryError extends Error {}
 export class GetLibraryProjectsError extends Error {}
+export class GetLibrariesOverviewError extends Error {}
 
 export async function createLibrary(
   input: CreateLibraryInput,
@@ -80,6 +85,20 @@ export async function getLibraryProjects(
   if (!response.ok) {
     throw new GetLibraryProjectsError(
       body.error ?? "Não foi possível buscar os projetos da biblioteca",
+    );
+  }
+
+  return body;
+}
+
+export async function getLibrariesOverview(): Promise<LibraryOverview[]> {
+  const response = await authenticatedFetch("/libraries/overview");
+
+  const body = await response.json();
+
+  if (!response.ok) {
+    throw new GetLibrariesOverviewError(
+      body.error ?? "Não foi possível buscar as bibliotecas",
     );
   }
 
