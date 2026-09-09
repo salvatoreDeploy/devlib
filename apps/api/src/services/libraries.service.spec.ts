@@ -6,10 +6,12 @@ import {
   updateLibrary,
   deleteLibrary,
   listLibraryProjects,
+  listLibrariesOverview,
   LibraryNotFoundError,
   LibraryNameAlreadyExistsError,
   CategoryNotFoundError,
   type LibraryProjectsRepository,
+  type LibrariesOverviewRepository,
 } from "./libraries.service";
 
 const library = {
@@ -246,6 +248,41 @@ describe("updateLibrary", () => {
       updateLibrary(repository, "library-1", { categoryId: "category-x" }),
     ).rejects.toThrow(CategoryNotFoundError);
     expect(repository.updateLibrary).not.toHaveBeenCalled();
+  });
+});
+
+describe("listLibrariesOverview", () => {
+  function fakeOverviewRepository(
+    overrides: Partial<LibrariesOverviewRepository> = {},
+  ): LibrariesOverviewRepository {
+    return {
+      findLibrariesOverview: vi
+        .fn()
+        .mockResolvedValue([{ ...library, projectsCount: 0 }]),
+      ...overrides,
+    };
+  }
+
+  it("retorna as bibliotecas do catálogo com projectsCount, pro usuário informado", async () => {
+    const overview = { ...library, projectsCount: 3 };
+    const repository = fakeOverviewRepository({
+      findLibrariesOverview: vi.fn().mockResolvedValue([overview]),
+    });
+
+    const result = await listLibrariesOverview(repository, "user-1");
+
+    expect(result).toEqual([overview]);
+    expect(repository.findLibrariesOverview).toHaveBeenCalledWith("user-1");
+  });
+
+  it("retorna array vazio quando o catálogo está vazio", async () => {
+    const repository = fakeOverviewRepository({
+      findLibrariesOverview: vi.fn().mockResolvedValue([]),
+    });
+
+    const result = await listLibrariesOverview(repository, "user-1");
+
+    expect(result).toEqual([]);
   });
 });
 
