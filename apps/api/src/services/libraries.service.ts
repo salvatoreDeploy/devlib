@@ -1,11 +1,12 @@
 import type {
   LibraryRecord,
+  LibraryOverviewRecord,
   LibrariesRepository as LibrariesDataRepository,
 } from "../repositories/libraries.repository";
 import type { CategoryRecord } from "../repositories/categories.repository";
 import type { LibraryProjectRecord } from "../repositories/projects.repository";
 
-export type { LibraryRecord, LibraryProjectRecord };
+export type { LibraryRecord, LibraryProjectRecord, LibraryOverviewRecord };
 
 export type LibrariesRepository = LibrariesDataRepository & {
   findCategoryById(id: string): Promise<CategoryRecord | undefined>;
@@ -143,4 +144,15 @@ export async function listLibraryProjects(
   await getLibrary(repository, libraryId);
 
   return repository.findProjectsByLibraryId(libraryId, userId);
+}
+
+export type LibrariesOverviewRepository = {
+  findLibrariesOverview(userId: string): Promise<LibraryOverviewRecord[]>;
+};
+
+export async function listLibrariesOverview(
+  repository: LibrariesOverviewRepository,
+  userId: string,
+): Promise<LibraryOverviewRecord[]> {
+  return repository.findLibrariesOverview(userId);
 }

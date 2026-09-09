@@ -65,6 +65,23 @@ function fakeDbForSelectJoinWhere(rows: unknown[]) {
   };
 }
 
+function fakeDbForSelectOverview(rows: unknown[]) {
+  const groupBy = vi.fn().mockResolvedValue(rows);
+  const secondLeftJoin = vi.fn().mockReturnValue({ groupBy });
+  const firstLeftJoin = vi.fn().mockReturnValue({ leftJoin: secondLeftJoin });
+  const from = vi.fn().mockReturnValue({ leftJoin: firstLeftJoin });
+  const select = vi.fn().mockReturnValue({ from });
+
+  return {
+    db: { select } as unknown as DbClient,
+    select,
+    from,
+    firstLeftJoin,
+    secondLeftJoin,
+    groupBy,
+  };
+}
+
 const library = {
   id: "library-1",
   name: "drizzle-orm",
@@ -242,6 +259,39 @@ describe("createLibrariesRepository", () => {
       const result = await repository.findLibrariesByProjectId("project-1");
 
       expect(result).toEqual([row]);
+    });
+  });
+
+  describe("findLibrariesOverview", () => {
+    it("retorna as bibliotecas do catálogo com projectsCount do usuário autenticado", async () => {
+      const row = { ...library, projectsCount: 2 };
+      const { db, from, groupBy } = fakeDbForSelectOverview([row]);
+
+      const repository = createLibrariesRepository(db);
+      const result = await repository.findLibrariesOverview("user-1");
+
+      expect(result).toEqual([row]);
+      expect(from).toHaveBeenCalledOnce();
+      expect(groupBy).toHaveBeenCalledOnce();
+    });
+
+    it("retorna projectsCount 0 para bibliotecas que o usuário não usa em nenhum projeto", async () => {
+      const row = { ...library, projectsCount: 0 };
+      const { db } = fakeDbForSelectOverview([row]);
+
+      const repository = createLibrariesRepository(db);
+      const result = await repository.findLibrariesOverview("user-1");
+
+      expect(result).toEqual([row]);
+    });
+
+    it("retorna array vazio quando o catálogo está vazio", async () => {
+      const { db } = fakeDbForSelectOverview([]);
+
+      const repository = createLibrariesRepository(db);
+      const result = await repository.findLibrariesOverview("user-1");
+
+      expect(result).toEqual([]);
     });
   });
 });
