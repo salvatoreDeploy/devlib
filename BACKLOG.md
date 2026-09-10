@@ -111,9 +111,9 @@ Fica para depois do MVP (v1.1+):
 - [x] `.pen` vira fonte da verdade do design system
   - [x] Doc: nova entrada em `docs/DECISIONS.md` (supersede a de 2026-09-02) — `.pen` como fonte da verdade, reversão da decisão página-vs-drawer
   - [x] Doc: `docs/FRONTEND.md` reescrito a partir dos tokens/telas do `devlib_design.pen`
-- [ ] Componentes base do design system (web)
+- [x] Componentes base do design system (web)
   - [x] Web: Button/Input/Badge/Tab/Metric Card revisados pra bater com os componentes reutilizáveis do `.pen`
-  - [ ] Web: componente Drawer (Sheet) padrão com overlay, base pros fluxos de criação/detalhe abaixo
+  - [x] Web: componente Drawer (Sheet) padrão com overlay, base pros fluxos de criação/detalhe abaixo
 - [ ] Perfil do usuário (api + web)
   - [ ] `packages/db`: migration adicionando `name` e `avatarUrl` a `users`
   - [ ] API: rota GET /users/me
