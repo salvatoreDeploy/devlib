@@ -109,8 +109,8 @@ Fica para depois do MVP (v1.1+):
 > Fonte: `devlib_design.pen`, que passa a ser a fonte da verdade de `docs/FRONTEND.md` (substitui o pacote HTML hi-fi de 2026-09-02 — ver `docs/DECISIONS.md`). Reverte a decisão de manter `/projects/new` como página cheia em vez de drawer (`docs/FRONTEND.md`, decisão de 2026-09-02) — os fluxos de criação/detalhe voltam a ser drawers, como no design original. Fora de escopo: abas "Métricas" e "Developers" (permanecem desabilitadas, tratadas nas Sprints 7 e 8), telas públicas "Presentation" e "Blog" (Sprint 9), campos de organização/plano/função/membros/billing (multiusuário é pós-MVP), busca de pacote npm/PyPI no drawer de biblioteca (Sprint 6), associação biblioteca↔projeto no drawer de detalhe (Sprint 5) e a seção "Preferências" do perfil (sem dado real por trás ainda).
 
 - [ ] `.pen` vira fonte da verdade do design system
-  - [ ] Doc: nova entrada em `docs/DECISIONS.md` (supersede a de 2026-09-02) — `.pen` como fonte da verdade, reversão da decisão página-vs-drawer
-  - [ ] Doc: `docs/FRONTEND.md` reescrito a partir dos tokens/telas do `devlib_design.pen`
+  - [x] Doc: nova entrada em `docs/DECISIONS.md` (supersede a de 2026-09-02) — `.pen` como fonte da verdade, reversão da decisão página-vs-drawer
+  - [x] Doc: `docs/FRONTEND.md` reescrito a partir dos tokens/telas do `devlib_design.pen`
 - [ ] Componentes base do design system (web)
   - [ ] Web: Button/Input/Badge/Tab/Metric Card revisados pra bater com os componentes reutilizáveis do `.pen`
   - [ ] Web: componente Drawer (Sheet) padrão com overlay, base pros fluxos de criação/detalhe abaixo
