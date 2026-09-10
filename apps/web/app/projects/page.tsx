@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { Header } from "@/components/header";
+import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/project-card";
 import {
   DeleteProjectError,
@@ -43,12 +45,12 @@ export default function ProjectsPage() {
           <h2 className="text-[21px] font-bold tracking-[-0.015em] text-foreground">
             Projetos
           </h2>
-          <Link
-            href="/projects/new"
-            className="rounded-full bg-primary px-3 py-1.5 text-[12.5px] font-semibold text-primary-foreground hover:bg-brand-hover"
-          >
-            + Criar projeto
-          </Link>
+          <Button asChild>
+            <Link href="/projects/new">
+              <Plus />
+              Criar projeto
+            </Link>
+          </Button>
         </div>
 
         {deleteMutation.isError && (

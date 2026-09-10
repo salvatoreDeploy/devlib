@@ -121,11 +121,7 @@ export default function LoginPage() {
           <Link href="/forgot-password" className="text-[13px] text-text-faint">
             esqueci minha senha
           </Link>
-          <Button
-            type="submit"
-            disabled={mutation.isPending}
-            className="h-auto rounded-[9px] px-4 py-2.5 text-sm font-semibold"
-          >
+          <Button type="submit" disabled={mutation.isPending}>
             <Check />
             {mutation.isPending ? "entrando..." : "entrar"}
           </Button>

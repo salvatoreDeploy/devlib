@@ -6,10 +6,13 @@ import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
   FolderKanban,
+  Plus,
   Settings,
   type LucideIcon,
 } from "lucide-react";
 import { Header } from "@/components/header";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -145,12 +148,12 @@ export default function Home() {
             <h2 className="text-[21px] font-bold tracking-[-0.015em] text-foreground">
               Bibliotecas
             </h2>
-            <Link
-              href="/libraries/new"
-              className="rounded-full bg-primary px-3 py-1.5 text-[12.5px] font-semibold text-primary-foreground hover:bg-brand-hover"
-            >
-              + Nova biblioteca
-            </Link>
+            <Button asChild>
+              <Link href="/libraries/new">
+                <Plus />
+                Nova biblioteca
+              </Link>
+            </Button>
           </div>
 
           {librariesQuery.isLoading && (
@@ -201,9 +204,7 @@ export default function Home() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className="rounded-[6px] bg-brand-bg px-[9px] py-[3px] text-[10.5px] font-bold tracking-[0.05em] text-primary uppercase">
-                          Atualizada
-                        </span>
+                        <Badge variant="updated">Atualizada</Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {projectsCountLabel(library.projectsCount)}
