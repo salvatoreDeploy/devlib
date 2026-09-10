@@ -68,7 +68,6 @@ export default function NewProjectPage() {
             id="name"
             type="text"
             placeholder="DevLib App"
-            className="h-10 rounded-lg border-input bg-surface-input px-3 text-[13.5px] text-foreground"
             aria-invalid={errors.name ? true : undefined}
             {...register("name")}
           />
@@ -88,7 +87,6 @@ export default function NewProjectPage() {
             id="description"
             type="text"
             placeholder="pra que serve esse projeto"
-            className="h-10 rounded-lg border-input bg-surface-input px-3 text-[13.5px] text-foreground"
             {...register("description")}
           />
         </div>
@@ -102,11 +100,7 @@ export default function NewProjectPage() {
         )}
 
         <div className="flex justify-end gap-2.5">
-          <Button
-            type="submit"
-            disabled={mutation.isPending}
-            className="h-auto rounded-lg px-[15px] py-2.5 text-[13px] font-semibold"
-          >
+          <Button type="submit" disabled={mutation.isPending}>
             <Check />
             {mutation.isPending ? "criando..." : "Salvar"}
           </Button>

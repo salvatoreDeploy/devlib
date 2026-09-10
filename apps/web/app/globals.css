@@ -22,9 +22,11 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  /* Geist Mono (docs/FRONTEND.md), carregada via next/font/google em
+     app/layout.tsx — fallback pra stack genérica se a variável não existir. */
   --font-mono:
-    ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas,
-    monospace;
+    var(--font-geist-mono), ui-monospace, "SF Mono", "Cascadia Code",
+    "Roboto Mono", Menlo, Consolas, monospace;
 }
 
 /*

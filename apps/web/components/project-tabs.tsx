@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, Code2, List, Tag } from "lucide-react";
+import { Code, LayoutDashboard, Menu, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type ProjectTabsProps = {
@@ -20,14 +20,14 @@ export function ProjectTabs({ projectId }: ProjectTabsProps) {
           "border border-input bg-chip-alt text-foreground",
         )}
       >
-        <List className="size-[15px]" aria-hidden="true" />
+        <Menu className="size-[15px]" aria-hidden="true" />
         Bibliotecas
       </Link>
 
       {[
         { label: "Categorias", icon: Tag },
-        { label: "Métricas", icon: BarChart3 },
-        { label: "Developers", icon: Code2 },
+        { label: "Métricas", icon: LayoutDashboard },
+        { label: "Developers", icon: Code },
       ].map(({ label, icon: Icon }) => (
         <span
           key={label}

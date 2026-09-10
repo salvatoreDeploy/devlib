@@ -153,7 +153,6 @@ export default function EditLibraryPage() {
           <Input
             id="name"
             type="text"
-            className="h-10 rounded-lg border-input bg-surface-input px-3 text-[13.5px] text-foreground"
             aria-invalid={errors.name ? true : undefined}
             {...register("name")}
           />
@@ -239,11 +238,7 @@ export default function EditLibraryPage() {
         )}
 
         <div className="flex justify-end gap-2.5">
-          <Button
-            type="submit"
-            disabled={mutation.isPending}
-            className="h-auto rounded-lg px-[15px] py-2.5 text-[13px] font-semibold"
-          >
+          <Button type="submit" disabled={mutation.isPending}>
             <Check />
             {mutation.isPending ? "salvando..." : "Salvar"}
           </Button>
