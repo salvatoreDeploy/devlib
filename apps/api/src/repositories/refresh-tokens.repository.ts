@@ -20,6 +20,7 @@ export type RefreshTokensRepository = {
     tokenHash: string,
   ): Promise<RefreshTokenRecord | undefined>;
   revokeRefreshToken(id: string): Promise<void>;
+  revokeAllRefreshTokensByUserId(userId: string): Promise<void>;
 };
 
 export function createRefreshTokensRepository(
@@ -45,6 +46,13 @@ export function createRefreshTokensRepository(
         .update(refreshTokens)
         .set({ revokedAt: new Date() })
         .where(eq(refreshTokens.id, id));
+    },
+
+    async revokeAllRefreshTokensByUserId(userId) {
+      await db
+        .update(refreshTokens)
+        .set({ revokedAt: new Date() })
+        .where(eq(refreshTokens.userId, userId));
     },
   };
 }

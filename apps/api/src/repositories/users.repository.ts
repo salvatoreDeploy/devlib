@@ -20,6 +20,10 @@ export type UsersRepository = {
     email: string;
     passwordHash: string;
   }): Promise<UserRecord>;
+  updateUser(
+    id: string,
+    data: { name?: string; email?: string; passwordHash?: string },
+  ): Promise<UserRecord | undefined>;
 };
 
 export function createUsersRepository(db: DbClient): UsersRepository {
@@ -48,6 +52,16 @@ export function createUsersRepository(db: DbClient): UsersRepository {
       const rows = await db
         .insert(users)
         .values({ email, passwordHash })
+        .returning();
+
+      return rows[0];
+    },
+
+    async updateUser(id, data) {
+      const rows = await db
+        .update(users)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(users.id, id))
         .returning();
 
       return rows[0];

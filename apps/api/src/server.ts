@@ -86,6 +86,10 @@ import {
   usersMeGetRoute,
   type UsersMeGetRouteOptions,
 } from "./routes/users-me-get.route";
+import {
+  usersMeUpdateRoute,
+  type UsersMeUpdateRouteOptions,
+} from "./routes/users-me-update.route";
 
 export type BuildServerDeps = RegisterRouteOptions &
   LoginRouteOptions &
@@ -106,7 +110,8 @@ export type BuildServerDeps = RegisterRouteOptions &
   ProjectsLibrariesListRouteOptions &
   LibrariesProjectsListRouteOptions &
   LibrariesOverviewRouteOptions &
-  UsersMeGetRouteOptions & {
+  UsersMeGetRouteOptions &
+  UsersMeUpdateRouteOptions & {
     corsConfig?: CorsConfig;
   };
 
@@ -211,6 +216,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(projectsLibrariesListRoute, deps);
   app.register(librariesProjectsListRoute, deps);
   app.register(usersMeGetRoute, deps);
+  app.register(usersMeUpdateRoute, deps);
 
   return app;
 }
