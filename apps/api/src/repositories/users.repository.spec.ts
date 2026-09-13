@@ -18,6 +18,21 @@ function fakeDbForInsert(row: unknown) {
   return { db: { insert } as unknown as DbClient, insert, values, returning };
 }
 
+function fakeDbForUpdate(rows: unknown[]) {
+  const returning = vi.fn().mockResolvedValue(rows);
+  const where = vi.fn().mockReturnValue({ returning });
+  const set = vi.fn().mockReturnValue({ where });
+  const update = vi.fn().mockReturnValue({ set });
+
+  return {
+    db: { update } as unknown as DbClient,
+    update,
+    set,
+    where,
+    returning,
+  };
+}
+
 describe("createUsersRepository", () => {
   describe("findUserById", () => {
     it("retorna o usuário quando o id existe", async () => {
@@ -97,6 +112,48 @@ describe("createUsersRepository", () => {
         email: "bia@example.com",
         passwordHash: "hash-forte",
       });
+    });
+  });
+
+  describe("updateUser", () => {
+    it("atualiza e retorna o usuário", async () => {
+      const updated = {
+        id: "user-1",
+        email: "ana-nova@example.com",
+        passwordHash: "hash",
+        name: "Ana Nova",
+        avatarUrl: null,
+        createdAt: new Date("2026-08-29T00:00:00Z"),
+        updatedAt: new Date("2026-09-13T00:00:00Z"),
+      };
+      const { db, set, where } = fakeDbForUpdate([updated]);
+
+      const repository = createUsersRepository(db);
+      const result = await repository.updateUser("user-1", {
+        name: "Ana Nova",
+        email: "ana-nova@example.com",
+      });
+
+      expect(result).toEqual(updated);
+      expect(set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "Ana Nova",
+          email: "ana-nova@example.com",
+          updatedAt: expect.any(Date),
+        }),
+      );
+      expect(where).toHaveBeenCalledOnce();
+    });
+
+    it("retorna undefined quando o id não existe", async () => {
+      const { db } = fakeDbForUpdate([]);
+
+      const repository = createUsersRepository(db);
+      const result = await repository.updateUser("id-inexistente", {
+        name: "Alguém",
+      });
+
+      expect(result).toBeUndefined();
     });
   });
 });

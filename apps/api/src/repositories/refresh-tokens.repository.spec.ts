@@ -90,4 +90,18 @@ describe("createRefreshTokensRepository", () => {
       expect(where).toHaveBeenCalledOnce();
     });
   });
+
+  describe("revokeAllRefreshTokensByUserId", () => {
+    it("marca todos os refresh tokens do usuário como revogados", async () => {
+      const { db, set, where } = fakeDbForUpdate();
+
+      const repository = createRefreshTokensRepository(db);
+      await repository.revokeAllRefreshTokensByUserId("user-1");
+
+      expect(set).toHaveBeenCalledWith(
+        expect.objectContaining({ revokedAt: expect.any(Date) }),
+      );
+      expect(where).toHaveBeenCalledOnce();
+    });
+  });
 });
