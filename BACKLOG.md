@@ -115,8 +115,8 @@ Fica para depois do MVP (v1.1+):
   - [x] Web: Button/Input/Badge/Tab/Metric Card revisados pra bater com os componentes reutilizáveis do `.pen`
   - [x] Web: componente Drawer (Sheet) padrão com overlay, base pros fluxos de criação/detalhe abaixo
 - [ ] Perfil do usuário (api + web)
-  - [ ] `packages/db`: migration adicionando `name` e `avatarUrl` a `users`
-  - [ ] API: rota GET /users/me
+  - [x] `packages/db`: migration adicionando `name` e `avatarUrl` a `users`
+  - [x] API: rota GET /users/me
   - [ ] API: rota PATCH /users/me (nome, e-mail, senha)
   - [ ] API: rota POST /users/me/photo
   - [ ] API: rota POST /auth/logout
