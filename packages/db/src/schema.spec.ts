@@ -21,6 +21,8 @@ describe("users", () => {
         "id",
         "email",
         "passwordHash",
+        "name",
+        "avatarUrl",
         "createdAt",
         "updatedAt",
       ]),
@@ -38,6 +40,13 @@ describe("users", () => {
     const columns = getTableColumns(users);
 
     expect(columns.passwordHash.notNull).toBe(true);
+  });
+
+  it("name e avatarUrl são opcionais", () => {
+    const columns = getTableColumns(users);
+
+    expect(columns.name.notNull).toBe(false);
+    expect(columns.avatarUrl.notNull).toBe(false);
   });
 });
 
