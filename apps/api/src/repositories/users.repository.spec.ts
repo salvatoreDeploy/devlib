@@ -19,6 +19,36 @@ function fakeDbForInsert(row: unknown) {
 }
 
 describe("createUsersRepository", () => {
+  describe("findUserById", () => {
+    it("retorna o usuário quando o id existe", async () => {
+      const user = {
+        id: "user-1",
+        email: "ana@example.com",
+        passwordHash: "hash",
+        name: "Ana",
+        avatarUrl: null,
+        createdAt: new Date("2026-08-29T00:00:00Z"),
+        updatedAt: new Date("2026-08-29T00:00:00Z"),
+      };
+      const { db, select } = fakeDbForSelect([user]);
+
+      const repository = createUsersRepository(db);
+      const result = await repository.findUserById("user-1");
+
+      expect(result).toEqual(user);
+      expect(select).toHaveBeenCalledOnce();
+    });
+
+    it("retorna undefined quando o id não existe", async () => {
+      const { db } = fakeDbForSelect([]);
+
+      const repository = createUsersRepository(db);
+      const result = await repository.findUserById("id-inexistente");
+
+      expect(result).toBeUndefined();
+    });
+  });
+
   describe("findUserByEmail", () => {
     it("retorna o usuário quando o email existe", async () => {
       const user = {

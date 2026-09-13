@@ -82,6 +82,10 @@ import {
   librariesOverviewRoute,
   type LibrariesOverviewRouteOptions,
 } from "./routes/libraries-overview.route";
+import {
+  usersMeGetRoute,
+  type UsersMeGetRouteOptions,
+} from "./routes/users-me-get.route";
 
 export type BuildServerDeps = RegisterRouteOptions &
   LoginRouteOptions &
@@ -101,7 +105,8 @@ export type BuildServerDeps = RegisterRouteOptions &
   LibrariesTagsListRouteOptions &
   ProjectsLibrariesListRouteOptions &
   LibrariesProjectsListRouteOptions &
-  LibrariesOverviewRouteOptions & {
+  LibrariesOverviewRouteOptions &
+  UsersMeGetRouteOptions & {
     corsConfig?: CorsConfig;
   };
 
@@ -153,6 +158,10 @@ export function buildServer(deps: BuildServerDeps = {}) {
           description:
             "Tags livres, globais e compartilhadas entre bibliotecas (sem dono). Ainda não há listagem/remoção via API — só criação sob demanda ao associar a uma biblioteca.",
         },
+        {
+          name: "Users",
+          description: "Perfil do usuário autenticado.",
+        },
       ],
       components: {
         securitySchemes: {
@@ -201,6 +210,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(librariesTagsListRoute, deps);
   app.register(projectsLibrariesListRoute, deps);
   app.register(librariesProjectsListRoute, deps);
+  app.register(usersMeGetRoute, deps);
 
   return app;
 }
