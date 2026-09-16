@@ -120,7 +120,7 @@ Fica para depois do MVP (v1.1+):
   - [x] API: rota PATCH /users/me (nome, e-mail, senha)
   - [x] API: rota POST /users/me/photo
   - [x] API: rota POST /auth/logout
-  - [ ] Web: Profile Dropdown no header (nome/e-mail/avatar, ações "Editar perfil" e "Sair")
+  - [x] Web: Profile Dropdown no header (nome/e-mail/avatar, ações "Editar perfil" e "Sair")
   - [ ] Web: tela /profile (foto, dados pessoais, alteração de senha)
 - [ ] Header e Home (web)
   - [ ] Web: Header alinhado ao Dashboard Header do `.pen`, com ProfileButton real (abre o Profile Dropdown)

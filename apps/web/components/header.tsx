@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { getAccessToken } from "@/lib/auth-storage";
 import { decodeAccessToken } from "@/lib/session";
+import { ProfileMenu } from "@/components/profile-menu";
 
 export type HeaderProps = {
   breadcrumbLabel?: string;
@@ -39,20 +40,7 @@ export function Header({ breadcrumbLabel }: HeaderProps) {
         )}
       </div>
 
-      {session && (
-        <div className="flex items-center gap-2.5">
-          <span className="text-[13px] text-secondary-foreground">
-            {session.email}
-          </span>
-          <div className="flex size-[34px] items-center justify-center rounded-full border border-checkbox-border bg-track text-[13px] font-semibold text-foreground">
-            {session.email.charAt(0).toUpperCase()}
-          </div>
-          <ChevronDown
-            className="size-[15px] text-text-faint"
-            aria-hidden="true"
-          />
-        </div>
-      )}
+      {session && <ProfileMenu session={session} />}
     </header>
   );
 }
