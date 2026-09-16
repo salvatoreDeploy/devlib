@@ -8,6 +8,7 @@ import {
   InvalidCredentialsError,
   refreshSession,
   InvalidRefreshTokenError,
+  logoutUser,
   type AuthRepository,
   type LoginRepository,
   type RefreshRepository,
@@ -284,5 +285,47 @@ describe("refreshSession", () => {
       tokenHash: hashToken(result.refreshToken),
       expiresAt: new Date(decodedRefresh.exp * 1000),
     });
+  });
+});
+
+describe("logoutUser", () => {
+  it("revoga o refresh token quando ele existe e ainda não foi revogado", async () => {
+    const repository = fakeRefreshRepository({
+      findRefreshTokenByHash: vi.fn().mockResolvedValue({
+        id: "token-row-1",
+        userId: "user-1",
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+        revokedAt: null,
+      }),
+    });
+
+    await logoutUser(repository, { refreshToken: "algum-refresh-token" });
+
+    expect(repository.revokeRefreshToken).toHaveBeenCalledWith("token-row-1");
+  });
+
+  it("não faz nada (sem erro) quando o token já está revogado", async () => {
+    const repository = fakeRefreshRepository({
+      findRefreshTokenByHash: vi.fn().mockResolvedValue({
+        id: "token-row-1",
+        userId: "user-1",
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+        revokedAt: new Date("2026-08-01T00:00:00Z"),
+      }),
+    });
+
+    await expect(
+      logoutUser(repository, { refreshToken: "algum-refresh-token" }),
+    ).resolves.toBeUndefined();
+    expect(repository.revokeRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it("não faz nada (sem erro) quando o token não existe no banco", async () => {
+    const repository = fakeRefreshRepository();
+
+    await expect(
+      logoutUser(repository, { refreshToken: "token-desconhecido" }),
+    ).resolves.toBeUndefined();
+    expect(repository.revokeRefreshToken).not.toHaveBeenCalled();
   });
 });
