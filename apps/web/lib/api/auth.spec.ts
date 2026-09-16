@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { login, LoginError, refreshSession, RefreshSessionError } from "./auth";
+import {
+  login,
+  LoginError,
+  logout,
+  LogoutError,
+  refreshSession,
+  RefreshSessionError,
+} from "./auth";
 
 describe("login", () => {
   beforeEach(() => {
@@ -119,6 +126,54 @@ describe("refreshSession", () => {
     );
     await expect(refreshSession("refresh-token-revogado")).rejects.toThrow(
       "Refresh token inválido ou expirado",
+    );
+  });
+});
+
+describe("logout", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://localhost:3333");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("envia o refreshToken e não lança quando a API responde 204", async () => {
+    const jsonSpy = vi.fn();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 204, json: jsonSpy }),
+    );
+
+    await expect(logout("refresh-token")).resolves.toBeUndefined();
+
+    expect(fetch).toHaveBeenCalledWith(
+      "http://localhost:3333/auth/logout",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({ refreshToken: "refresh-token" }),
+      }),
+    );
+    expect(jsonSpy).not.toHaveBeenCalled();
+  });
+
+  it("lança LogoutError com a mensagem da API quando a resposta não é ok", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: "Não foi possível encerrar a sessão" }),
+      }),
+    );
+
+    await expect(logout("refresh-token")).rejects.toThrow(LogoutError);
+    await expect(logout("refresh-token")).rejects.toThrow(
+      "Não foi possível encerrar a sessão",
     );
   });
 });

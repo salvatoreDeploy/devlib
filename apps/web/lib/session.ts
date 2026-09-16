@@ -13,9 +13,11 @@ function base64UrlDecode(segment: string): string {
 }
 
 /**
- * Não há endpoint /me na API — o payload do access token (sub/email) já
- * carrega o necessário pro header exibir o usuário logado. Leitura local,
- * sem verificação de assinatura (só exibição, nunca usado pra autorizar).
+ * O trigger do Header usa só sub/email do próprio access token (sem round-trip
+ * de rede) — GET /users/me existe, mas é reservado pro ProfileMenu buscar o
+ * perfil completo (nome/avatarUrl) só quando o dropdown é aberto. Leitura
+ * local, sem verificação de assinatura (só exibição, nunca usado pra
+ * autorizar).
  */
 export function decodeAccessToken(accessToken: string): Session | null {
   try {
