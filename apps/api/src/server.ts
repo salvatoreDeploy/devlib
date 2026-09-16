@@ -3,7 +3,10 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import multipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
 import { getCorsConfig, type CorsConfig } from "./config/env";
+import { DEFAULT_AVATAR_UPLOAD_DIR } from "./services/avatar-storage.service";
 import {
   hasZodFastifySchemaValidationErrors,
   jsonSchemaTransform,
@@ -90,6 +93,10 @@ import {
   usersMeUpdateRoute,
   type UsersMeUpdateRouteOptions,
 } from "./routes/users-me-update.route";
+import {
+  usersMePhotoRoute,
+  type UsersMePhotoRouteOptions,
+} from "./routes/users-me-photo.route";
 
 export type BuildServerDeps = RegisterRouteOptions &
   LoginRouteOptions &
@@ -111,7 +118,8 @@ export type BuildServerDeps = RegisterRouteOptions &
   LibrariesProjectsListRouteOptions &
   LibrariesOverviewRouteOptions &
   UsersMeGetRouteOptions &
-  UsersMeUpdateRouteOptions & {
+  UsersMeUpdateRouteOptions &
+  UsersMePhotoRouteOptions & {
     corsConfig?: CorsConfig;
   };
 
@@ -131,6 +139,13 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(rateLimit, {
     max: 100,
     timeWindow: "1 minute",
+  });
+  app.register(multipart, {
+    limits: { fileSize: 2 * 1024 * 1024, files: 1 },
+  });
+  app.register(fastifyStatic, {
+    root: DEFAULT_AVATAR_UPLOAD_DIR,
+    prefix: "/uploads/avatars/",
   });
 
   app.register(swagger, {
@@ -217,6 +232,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(librariesProjectsListRoute, deps);
   app.register(usersMeGetRoute, deps);
   app.register(usersMeUpdateRoute, deps);
+  app.register(usersMePhotoRoute, deps);
 
   return app;
 }

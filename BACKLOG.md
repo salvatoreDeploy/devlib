@@ -118,7 +118,7 @@ Fica para depois do MVP (v1.1+):
   - [x] `packages/db`: migration adicionando `name` e `avatarUrl` a `users`
   - [x] API: rota GET /users/me
   - [x] API: rota PATCH /users/me (nome, e-mail, senha)
-  - [ ] API: rota POST /users/me/photo
+  - [x] API: rota POST /users/me/photo
   - [ ] API: rota POST /auth/logout
   - [ ] Web: Profile Dropdown no header (nome/e-mail/avatar, ações "Editar perfil" e "Sair")
   - [ ] Web: tela /profile (foto, dados pessoais, alteração de senha)

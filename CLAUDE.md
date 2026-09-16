@@ -38,6 +38,7 @@ packages/
 - `turbo run test --filter=api...` — testa só o que foi afetado por mudanças na api
 - `turbo run lint`
 - `npm run docker:clean` — roda depois de terminar um ciclo de `docker compose up --build` (ex: ao validar uma tela nova antes de um PR): para/remove os containers `api`/`web` e remove imagens dangling de rebuilds anteriores. `postgres` continua rodando (não faz parte do problema que essa limpeza resolve — só api/web geram imagem nova a cada rebuild). Sem tocar em volumes (`devlib_pgdata` guarda o Postgres local — nunca automatizar `docker volume prune`) nem em containers/imagens de outros projetos do mesmo host. Ver `docs/DECISIONS.md` ("`.dockerignore` novo + `npm ci` cacheado...") para o motivo — repetidos `--build` sem essa limpeza já encheram o disco local uma vez.
+- Hook `PostToolUse`/`Bash` em `.claude/settings.json` avisa (stderr, não bloqueia) sempre que um `docker compose up ... --build`/`docker build` roda com o disco do host acima de 85% — `docker:clean` não cobre o cache do BuildKit (compartilhado entre projetos), que já encheu o disco duas vezes. O aviso só sugere `docker builder prune -f`, nunca roda sozinho (afeta outros projetos do host). Ver `docs/DECISIONS.md`.
 
 ## Convenções — sempre seguir
 

@@ -22,7 +22,12 @@ export type UsersRepository = {
   }): Promise<UserRecord>;
   updateUser(
     id: string,
-    data: { name?: string; email?: string; passwordHash?: string },
+    data: {
+      name?: string;
+      email?: string;
+      passwordHash?: string;
+      avatarUrl?: string;
+    },
   ): Promise<UserRecord | undefined>;
 };
 
