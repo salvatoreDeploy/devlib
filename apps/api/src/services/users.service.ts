@@ -4,8 +4,9 @@ import type {
   UsersRepository,
 } from "../repositories/users.repository";
 import { EmailAlreadyInUseError } from "./auth.service";
+import type { AvatarStorage } from "./avatar-storage.service";
 
-export type { UserRecord, UsersRepository };
+export type { UserRecord, UsersRepository, AvatarStorage };
 export { EmailAlreadyInUseError };
 
 export type UpdateUserRepository = UsersRepository & {
@@ -90,6 +91,34 @@ export async function updateCurrentUser(
 
   if (data.password) {
     await repository.revokeAllRefreshTokensByUserId(userId);
+  }
+
+  return updated;
+}
+
+export type UpdateCurrentUserAvatarInput = {
+  userId: string;
+  buffer: Buffer;
+  mimetype: string;
+};
+
+export async function updateCurrentUserAvatar(
+  repository: UsersRepository,
+  avatarStorage: AvatarStorage,
+  { userId, buffer, mimetype }: UpdateCurrentUserAvatarInput,
+): Promise<UserRecord> {
+  const user = await getCurrentUser(repository, userId);
+
+  const { url } = await avatarStorage.saveAvatarFile(buffer, mimetype);
+
+  const updated = await repository.updateUser(userId, { avatarUrl: url });
+
+  if (!updated) {
+    throw new UserNotFoundError();
+  }
+
+  if (user.avatarUrl) {
+    await avatarStorage.deleteAvatarFile(user.avatarUrl);
   }
 
   return updated;

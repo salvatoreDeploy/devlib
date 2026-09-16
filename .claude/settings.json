@@ -22,6 +22,16 @@
             "timeout": 30
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(jq -r '.tool_input.command // empty'); if echo \"$CMD\" | grep -qE 'docker (compose.*up.*--build|build[[:space:]])'; then USE=$(df -h / | awk 'NR==2{gsub(\"%\",\"\",$5); print $5}'); if [ \"$USE\" -ge 85 ] 2>/dev/null; then echo \"⚠️  Disco em ${USE}% apos build Docker — considere: docker builder prune -f (libera cache do BuildKit, compartilhado entre projetos do host)\" >&2; fi; fi",
+            "timeout": 10
+          }
+        ]
       }
     ]
   }

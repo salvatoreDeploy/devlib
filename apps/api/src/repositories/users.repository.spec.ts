@@ -155,5 +155,28 @@ describe("createUsersRepository", () => {
 
       expect(result).toBeUndefined();
     });
+
+    it("atualiza avatarUrl", async () => {
+      const updated = {
+        id: "user-1",
+        email: "ana@example.com",
+        passwordHash: "hash",
+        name: "Ana",
+        avatarUrl: "/uploads/avatars/novo.png",
+        createdAt: new Date("2026-08-29T00:00:00Z"),
+        updatedAt: new Date("2026-09-16T00:00:00Z"),
+      };
+      const { db, set } = fakeDbForUpdate([updated]);
+
+      const repository = createUsersRepository(db);
+      const result = await repository.updateUser("user-1", {
+        avatarUrl: "/uploads/avatars/novo.png",
+      });
+
+      expect(result).toEqual(updated);
+      expect(set).toHaveBeenCalledWith(
+        expect.objectContaining({ avatarUrl: "/uploads/avatars/novo.png" }),
+      );
+    });
   });
 });

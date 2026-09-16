@@ -3,11 +3,14 @@ import * as argon2 from "argon2";
 import {
   getCurrentUser,
   updateCurrentUser,
+  updateCurrentUserAvatar,
   UserNotFoundError,
   InvalidCurrentPasswordError,
   type UpdateUserRepository,
 } from "./users.service";
 import { EmailAlreadyInUseError } from "./auth.service";
+import { InvalidFileTypeError } from "./avatar-storage.service";
+import type { AvatarStorage } from "./avatar-storage.service";
 import type { UsersRepository } from "../repositories/users.repository";
 
 function fakeUsersRepository(
@@ -232,5 +235,126 @@ describe("updateCurrentUser", () => {
     });
 
     expect(repository.revokeAllRefreshTokensByUserId).not.toHaveBeenCalled();
+  });
+});
+
+function fakeAvatarStorage(
+  overrides: Partial<AvatarStorage> = {},
+): AvatarStorage {
+  return {
+    saveAvatarFile: vi
+      .fn()
+      .mockResolvedValue({ url: "/uploads/avatars/novo.png" }),
+    deleteAvatarFile: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
+}
+
+describe("updateCurrentUserAvatar", () => {
+  it("lança UserNotFoundError quando o id não existe", async () => {
+    const repository = fakeUsersRepository();
+    const avatarStorage = fakeAvatarStorage();
+
+    await expect(
+      updateCurrentUserAvatar(repository, avatarStorage, {
+        userId: "id-inexistente",
+        buffer: Buffer.from("a"),
+        mimetype: "image/png",
+      }),
+    ).rejects.toThrow(UserNotFoundError);
+    expect(avatarStorage.saveAvatarFile).not.toHaveBeenCalled();
+  });
+
+  it("salva o arquivo novo, grava avatarUrl e apaga o arquivo antigo", async () => {
+    const user = {
+      id: "user-1",
+      email: "ana@example.com",
+      passwordHash: "hash",
+      name: "Ana",
+      avatarUrl: "/uploads/avatars/antigo.png",
+      createdAt: new Date("2026-08-29T00:00:00Z"),
+      updatedAt: new Date("2026-08-29T00:00:00Z"),
+    };
+    const updated = { ...user, avatarUrl: "/uploads/avatars/novo.png" };
+    const repository = fakeUsersRepository({
+      findUserById: vi.fn().mockResolvedValue(user),
+      updateUser: vi.fn().mockResolvedValue(updated),
+    });
+    const avatarStorage = fakeAvatarStorage();
+    const buffer = Buffer.from("conteúdo");
+
+    const result = await updateCurrentUserAvatar(repository, avatarStorage, {
+      userId: "user-1",
+      buffer,
+      mimetype: "image/png",
+    });
+
+    expect(avatarStorage.saveAvatarFile).toHaveBeenCalledWith(
+      buffer,
+      "image/png",
+    );
+    expect(repository.updateUser).toHaveBeenCalledWith("user-1", {
+      avatarUrl: "/uploads/avatars/novo.png",
+    });
+    expect(avatarStorage.deleteAvatarFile).toHaveBeenCalledWith(
+      "/uploads/avatars/antigo.png",
+    );
+    expect(result).toEqual(updated);
+  });
+
+  it("não tenta apagar nada quando o usuário ainda não tinha avatar", async () => {
+    const user = {
+      id: "user-1",
+      email: "ana@example.com",
+      passwordHash: "hash",
+      name: "Ana",
+      avatarUrl: null,
+      createdAt: new Date("2026-08-29T00:00:00Z"),
+      updatedAt: new Date("2026-08-29T00:00:00Z"),
+    };
+    const repository = fakeUsersRepository({
+      findUserById: vi.fn().mockResolvedValue(user),
+      updateUser: vi
+        .fn()
+        .mockResolvedValue({ ...user, avatarUrl: "/uploads/avatars/novo.png" }),
+    });
+    const avatarStorage = fakeAvatarStorage();
+
+    await updateCurrentUserAvatar(repository, avatarStorage, {
+      userId: "user-1",
+      buffer: Buffer.from("a"),
+      mimetype: "image/png",
+    });
+
+    expect(avatarStorage.deleteAvatarFile).not.toHaveBeenCalled();
+  });
+
+  it("propaga InvalidFileTypeError sem gravar nada no usuário", async () => {
+    const user = {
+      id: "user-1",
+      email: "ana@example.com",
+      passwordHash: "hash",
+      name: "Ana",
+      avatarUrl: null,
+      createdAt: new Date("2026-08-29T00:00:00Z"),
+      updatedAt: new Date("2026-08-29T00:00:00Z"),
+    };
+    const repository = fakeUsersRepository({
+      findUserById: vi.fn().mockResolvedValue(user),
+    });
+    const avatarStorage = fakeAvatarStorage({
+      saveAvatarFile: vi
+        .fn()
+        .mockRejectedValue(new InvalidFileTypeError("application/pdf")),
+    });
+
+    await expect(
+      updateCurrentUserAvatar(repository, avatarStorage, {
+        userId: "user-1",
+        buffer: Buffer.from("a"),
+        mimetype: "application/pdf",
+      }),
+    ).rejects.toThrow(InvalidFileTypeError);
+    expect(repository.updateUser).not.toHaveBeenCalled();
   });
 });

@@ -12,7 +12,9 @@
   "dependencies": {
     "@devlib/db": "*",
     "@fastify/cors": "^11.3.0",
+    "@fastify/multipart": "^10.1.1",
     "@fastify/rate-limit": "^11.2.0",
+    "@fastify/static": "^10.1.3",
     "@fastify/swagger": "^9.8.1",
     "@fastify/swagger-ui": "^6.1.1",
     "argon2": "^0.41.1",
