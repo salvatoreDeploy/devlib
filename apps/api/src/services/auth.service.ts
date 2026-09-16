@@ -190,3 +190,20 @@ export async function refreshSession(
 
   return { accessToken, refreshToken };
 }
+
+export type LogoutInput = {
+  refreshToken: string;
+};
+
+export async function logoutUser(
+  repository: RefreshRepository,
+  input: LogoutInput,
+): Promise<void> {
+  const stored = await repository.findRefreshTokenByHash(
+    hashToken(input.refreshToken),
+  );
+
+  if (stored && !stored.revokedAt) {
+    await repository.revokeRefreshToken(stored.id);
+  }
+}

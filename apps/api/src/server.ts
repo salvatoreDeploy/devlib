@@ -21,6 +21,7 @@ import {
 } from "./routes/register.route";
 import { loginRoute, type LoginRouteOptions } from "./routes/login.route";
 import { refreshRoute, type RefreshRouteOptions } from "./routes/refresh.route";
+import { logoutRoute, type LogoutRouteOptions } from "./routes/logout.route";
 import {
   projectsCreateRoute,
   type ProjectsCreateRouteOptions,
@@ -101,6 +102,7 @@ import {
 export type BuildServerDeps = RegisterRouteOptions &
   LoginRouteOptions &
   RefreshRouteOptions &
+  LogoutRouteOptions &
   ProjectsCreateRouteOptions &
   ProjectsListRouteOptions &
   ProjectsGetRouteOptions &
@@ -214,6 +216,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(registerRoute, deps);
   app.register(loginRoute, deps);
   app.register(refreshRoute, deps);
+  app.register(logoutRoute, deps);
   app.register(projectsCreateRoute, deps);
   app.register(projectsListRoute, deps);
   app.register(projectsGetRoute, deps);
