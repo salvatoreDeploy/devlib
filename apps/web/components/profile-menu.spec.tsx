@@ -68,6 +68,16 @@ describe("ProfileMenu", () => {
     expect(await screen.findByText("Ana Ribeiro")).not.toBeNull();
   });
 
+  it("mostra as iniciais do nome completo (não a inicial do e-mail) na identidade do dropdown", async () => {
+    const user = userEvent.setup();
+    vi.mocked(getCurrentUser).mockResolvedValue(fakeUser);
+    renderProfileMenu();
+
+    await user.click(screen.getByRole("button", { name: /ana@example.com/i }));
+
+    expect(await screen.findByText("AR")).not.toBeNull();
+  });
+
   it('tem o item "Editar perfil" linkando pra /profile', async () => {
     const user = userEvent.setup();
     vi.mocked(getCurrentUser).mockResolvedValue(fakeUser);

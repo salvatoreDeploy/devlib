@@ -14,6 +14,7 @@ import {
 import { getCurrentUser } from "@/lib/api/users";
 import { logout } from "@/lib/api/auth";
 import { clearTokens, getRefreshToken } from "@/lib/auth-storage";
+import { getInitials } from "@/lib/initials";
 import type { Session } from "@/lib/session";
 
 export type ProfileMenuProps = {
@@ -33,7 +34,7 @@ function ProfileIdentity({ session }: ProfileMenuProps) {
     <div className="flex items-center gap-2.5">
       <div className="flex size-[38px] shrink-0 items-center justify-center rounded-full border border-checkbox-border bg-track">
         <span className="text-[13px] font-semibold text-text-dim">
-          {email.charAt(0).toUpperCase()}
+          {getInitials(name, email)}
         </span>
       </div>
       <div className="flex flex-col gap-0.5">
