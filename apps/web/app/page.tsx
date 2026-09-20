@@ -2,17 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import {
-  BarChart3,
-  FolderKanban,
-  Plus,
-  Settings,
-  type LucideIcon,
-} from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { Header } from "@/components/header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ProjectCard } from "@/components/project-card";
 import {
   Table,
   TableBody,
@@ -22,38 +17,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  DeleteProjectError,
+  deleteProject,
+  GetProjectsOverviewError,
+  getProjectsOverview,
+} from "../lib/api/projects";
+import {
   getLibrariesOverview,
   GetLibrariesOverviewError,
 } from "../lib/api/libraries";
 import { getCategories } from "../lib/api/categories";
 import { useRequireAuth } from "../lib/use-require-auth";
 
-type NavCard = {
-  label: string;
-  description: string;
-  icon: LucideIcon;
-} & ({ href: string; disabled?: false } | { href?: undefined; disabled: true });
-
-const navCards: NavCard[] = [
-  {
-    label: "Projetos",
-    description: "Seus projetos e o que cada um usa",
-    icon: FolderKanban,
-    href: "/projects",
-  },
-  {
-    label: "Métricas",
-    description: "Em breve",
-    icon: BarChart3,
-    disabled: true,
-  },
-  {
-    label: "Configurações",
-    description: "Em breve",
-    icon: Settings,
-    disabled: true,
-  },
-];
+const PROJECTS_GRID_LIMIT = 4;
 
 function projectsCountLabel(count: number): string {
   if (count === 0) {
@@ -65,6 +41,21 @@ function projectsCountLabel(count: number): string {
 export default function Home() {
   const isAuthenticated = useRequireAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const projectsQuery = useQuery({
+    queryKey: ["projects-overview"],
+    queryFn: () => getProjectsOverview(),
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteProject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
+    },
+  });
 
   const librariesQuery = useQuery({
     queryKey: ["libraries-overview"],
@@ -90,60 +81,79 @@ export default function Home() {
     ]),
   );
 
+  const projects = projectsQuery.data?.slice(0, PROJECTS_GRID_LIMIT);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="px-10 py-[34px] pb-[60px]">
-        <h1 className="text-[21px] font-bold tracking-[-0.015em] text-foreground">
-          Seu catálogo de bibliotecas
-        </h1>
-        <p className="mt-1.5 text-[13px] text-muted-foreground">
-          Escolha por onde continuar.
-        </p>
-
-        <div className="mt-6 grid grid-cols-2 gap-5">
-          {navCards.map((card) => {
-            const Icon = card.icon;
-            const content = (
-              <>
-                <Icon className="size-5 text-primary" aria-hidden="true" />
-                <div>
-                  <p className="text-[15px] font-semibold text-foreground">
-                    {card.label}
-                  </p>
-                  <p className="mt-1 text-[13px] text-muted-foreground">
-                    {card.description}
-                  </p>
-                </div>
-              </>
-            );
-
-            if (card.disabled) {
-              return (
-                <span
-                  key={card.label}
-                  aria-disabled="true"
-                  className="flex cursor-not-allowed items-start gap-3 rounded-[11px] border border-border bg-card p-[18px] opacity-50"
-                >
-                  {content}
-                </span>
-              );
-            }
-
-            return (
+      <main className="flex flex-col gap-[22px] px-10 py-[34px] pb-[60px]">
+        <div>
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-[21px] font-bold tracking-[-0.015em] text-foreground">
+              Projetos
+            </h2>
+            <div className="flex items-center gap-4">
+              <Button asChild>
+                <Link href="/projects/new">
+                  <Plus />
+                  Criar projeto
+                </Link>
+              </Button>
               <Link
-                key={card.label}
-                href={card.href}
-                className="flex items-start gap-3 rounded-[11px] border border-border bg-card p-[18px] hover:border-checkbox-border"
+                href="/projects"
+                className="text-[12.5px] text-primary hover:underline"
               >
-                {content}
+                Ver todos os projetos
               </Link>
-            );
-          })}
+            </div>
+          </div>
+
+          {deleteMutation.isError && (
+            <p className="mb-4 text-[13px] text-destructive">
+              {deleteMutation.error instanceof DeleteProjectError
+                ? deleteMutation.error.message
+                : "Não foi possível excluir o projeto. Tente novamente."}
+            </p>
+          )}
+
+          {projectsQuery.isLoading && (
+            <p className="text-[13px] text-muted-foreground">carregando...</p>
+          )}
+
+          {projectsQuery.isError && (
+            <p className="text-[13px] text-destructive">
+              {projectsQuery.error instanceof GetProjectsOverviewError
+                ? projectsQuery.error.message
+                : "Não foi possível listar os projetos."}
+            </p>
+          )}
+
+          {projects && projects.length === 0 && (
+            <p className="text-[13px] text-muted-foreground">
+              Nenhum projeto ainda. Crie o primeiro pra começar a catalogar suas
+              bibliotecas.
+            </p>
+          )}
+
+          {projects && projects.length > 0 && (
+            <div className="grid grid-cols-2 gap-5">
+              {projects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onDelete={(id) => deleteMutation.mutate(id)}
+                  isDeleting={
+                    deleteMutation.isPending &&
+                    deleteMutation.variables === project.id
+                  }
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="mt-8">
+        <div>
           <div className="mb-5 flex items-center justify-between">
             <h2 className="text-[21px] font-bold tracking-[-0.015em] text-foreground">
               Bibliotecas

@@ -8,6 +8,8 @@ import {
   GetProjectError,
   getProjectLibraries,
   GetProjectLibrariesError,
+  getProjectsOverview,
+  GetProjectsOverviewError,
   listProjects,
   ListProjectsError,
   updateProject,
@@ -275,6 +277,60 @@ describe("getProjectLibraries", () => {
     );
     await expect(getProjectLibraries("project-x")).rejects.toBeInstanceOf(
       GetProjectLibrariesError,
+    );
+  });
+});
+
+describe("getProjectsOverview", () => {
+  afterEach(() => {
+    vi.mocked(authenticatedFetch).mockReset();
+  });
+
+  it("retorna os projetos do usuário com librariesCount e libraryNames", async () => {
+    const overview = {
+      id: "project-1",
+      userId: "user-1",
+      name: "DevLib",
+      description: "Catálogo pessoal",
+      createdAt: "2026-09-02T00:00:00.000Z",
+      updatedAt: "2026-09-02T00:00:00.000Z",
+      librariesCount: 3,
+      libraryNames: ["drizzle-orm", "fastify", "zod"],
+    };
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([overview]),
+    } as Response);
+
+    const result = await getProjectsOverview();
+
+    expect(result).toEqual([overview]);
+    expect(authenticatedFetch).toHaveBeenCalledWith("/projects/overview");
+  });
+
+  it("retorna array vazio quando o usuário não tem projetos", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
+
+    const result = await getProjectsOverview();
+
+    expect(result).toEqual([]);
+  });
+
+  it("lança GetProjectsOverviewError com a mensagem da API quando a busca falha", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      json: () =>
+        Promise.resolve({ error: "Não foi possível listar os projetos" }),
+    } as Response);
+
+    await expect(getProjectsOverview()).rejects.toThrow(
+      "Não foi possível listar os projetos",
+    );
+    await expect(getProjectsOverview()).rejects.toBeInstanceOf(
+      GetProjectsOverviewError,
     );
   });
 });
