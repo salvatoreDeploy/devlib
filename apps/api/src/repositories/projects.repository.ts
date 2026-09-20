@@ -1,5 +1,10 @@
-import { and, eq } from "drizzle-orm";
-import { projectLibraries, projects, type createDb } from "@devlib/db";
+import { and, count, desc, eq } from "drizzle-orm";
+import {
+  libraries,
+  projectLibraries,
+  projects,
+  type createDb,
+} from "@devlib/db";
 
 export type DbClient = ReturnType<typeof createDb>;
 
@@ -14,6 +19,10 @@ export type ProjectRecord = {
 
 export type LibraryProjectRecord = ProjectRecord & {
   version: string | null;
+};
+
+export type ProjectOverviewRecord = ProjectRecord & {
+  librariesCount: number;
 };
 
 export type ProjectsRepository = {
@@ -37,6 +46,7 @@ export type ProjectsRepository = {
     libraryId: string,
     userId: string,
   ): Promise<LibraryProjectRecord[]>;
+  findProjectsOverview(userId: string): Promise<ProjectOverviewRecord[]>;
 };
 
 export function createProjectsRepository(db: DbClient): ProjectsRepository {
@@ -107,6 +117,25 @@ export function createProjectsRepository(db: DbClient): ProjectsRepository {
             eq(projects.userId, userId),
           ),
         );
+    },
+
+    async findProjectsOverview(userId) {
+      return db
+        .select({
+          id: projects.id,
+          userId: projects.userId,
+          name: projects.name,
+          description: projects.description,
+          createdAt: projects.createdAt,
+          updatedAt: projects.updatedAt,
+          librariesCount: count(libraries.id),
+        })
+        .from(projects)
+        .leftJoin(projectLibraries, eq(projectLibraries.projectId, projects.id))
+        .leftJoin(libraries, eq(libraries.id, projectLibraries.libraryId))
+        .where(eq(projects.userId, userId))
+        .groupBy(projects.id)
+        .orderBy(desc(projects.createdAt));
     },
   };
 }

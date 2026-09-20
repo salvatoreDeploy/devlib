@@ -18,6 +18,27 @@ function fakeDbForSelectWithLimit(rows: unknown[]) {
   return { db: { select } as unknown as DbClient, select, from, where, limit };
 }
 
+function fakeDbForSelectProjectsOverview(rows: unknown[]) {
+  const orderBy = vi.fn().mockResolvedValue(rows);
+  const groupBy = vi.fn().mockReturnValue({ orderBy });
+  const where = vi.fn().mockReturnValue({ groupBy });
+  const secondLeftJoin = vi.fn().mockReturnValue({ where });
+  const firstLeftJoin = vi.fn().mockReturnValue({ leftJoin: secondLeftJoin });
+  const from = vi.fn().mockReturnValue({ leftJoin: firstLeftJoin });
+  const select = vi.fn().mockReturnValue({ from });
+
+  return {
+    db: { select } as unknown as DbClient,
+    select,
+    from,
+    firstLeftJoin,
+    secondLeftJoin,
+    where,
+    groupBy,
+    orderBy,
+  };
+}
+
 function fakeDbForInsert(row: unknown) {
   const returning = vi.fn().mockResolvedValue([row]);
   const values = vi.fn().mockReturnValue({ returning });
@@ -258,6 +279,42 @@ describe("createProjectsRepository", () => {
       );
 
       expect(result).toEqual([row]);
+    });
+  });
+
+  describe("findProjectsOverview", () => {
+    it("retorna os projetos do usuário com librariesCount", async () => {
+      const row = { ...project, librariesCount: 3 };
+      const { db, from, where, groupBy } = fakeDbForSelectProjectsOverview([
+        row,
+      ]);
+
+      const repository = createProjectsRepository(db);
+      const result = await repository.findProjectsOverview("user-1");
+
+      expect(result).toEqual([row]);
+      expect(from).toHaveBeenCalledOnce();
+      expect(where).toHaveBeenCalledOnce();
+      expect(groupBy).toHaveBeenCalledOnce();
+    });
+
+    it("retorna librariesCount 0 para projeto sem biblioteca associada", async () => {
+      const row = { ...project, librariesCount: 0 };
+      const { db } = fakeDbForSelectProjectsOverview([row]);
+
+      const repository = createProjectsRepository(db);
+      const result = await repository.findProjectsOverview("user-1");
+
+      expect(result).toEqual([row]);
+    });
+
+    it("retorna array vazio quando o usuário não tem projetos", async () => {
+      const { db } = fakeDbForSelectProjectsOverview([]);
+
+      const repository = createProjectsRepository(db);
+      const result = await repository.findProjectsOverview("user-1");
+
+      expect(result).toEqual([]);
     });
   });
 });
