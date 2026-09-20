@@ -6,8 +6,8 @@ import ProjectsPage from "./page";
 import {
   deleteProject,
   DeleteProjectError,
-  listProjects,
-  ListProjectsError,
+  getProjectsOverview,
+  GetProjectsOverviewError,
 } from "../../lib/api/projects";
 import { clearTokens, saveTokens } from "../../lib/auth-storage";
 
@@ -21,7 +21,11 @@ vi.mock("../../lib/api/projects", async () => {
   const actual = await vi.importActual<typeof import("../../lib/api/projects")>(
     "../../lib/api/projects",
   );
-  return { ...actual, listProjects: vi.fn(), deleteProject: vi.fn() };
+  return {
+    ...actual,
+    getProjectsOverview: vi.fn(),
+    deleteProject: vi.fn(),
+  };
 });
 
 const projectA = {
@@ -31,6 +35,8 @@ const projectA = {
   description: "Catálogo pessoal",
   createdAt: "2026-09-02T00:00:00.000Z",
   updatedAt: "2026-09-02T00:00:00.000Z",
+  librariesCount: 3,
+  libraryNames: ["drizzle-orm", "fastify", "zod"],
 };
 
 const projectB = {
@@ -40,6 +46,8 @@ const projectB = {
   description: null,
   createdAt: "2026-09-03T00:00:00.000Z",
   updatedAt: "2026-09-03T00:00:00.000Z",
+  librariesCount: 0,
+  libraryNames: [],
 };
 
 function renderProjectsPage() {
@@ -54,7 +62,7 @@ function renderProjectsPage() {
 describe("ProjectsPage", () => {
   beforeEach(() => {
     pushMock.mockClear();
-    vi.mocked(listProjects).mockReset();
+    vi.mocked(getProjectsOverview).mockReset();
     vi.mocked(deleteProject).mockReset();
     clearTokens();
     saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
@@ -70,7 +78,7 @@ describe("ProjectsPage", () => {
   });
 
   it("mostra o link para criar projeto", async () => {
-    vi.mocked(listProjects).mockResolvedValue([]);
+    vi.mocked(getProjectsOverview).mockResolvedValue([]);
     renderProjectsPage();
 
     const createLink = await screen.findByRole("link", {
@@ -80,24 +88,24 @@ describe("ProjectsPage", () => {
   });
 
   it("mostra mensagem de vazio quando o usuário não tem projetos", async () => {
-    vi.mocked(listProjects).mockResolvedValue([]);
+    vi.mocked(getProjectsOverview).mockResolvedValue([]);
     renderProjectsPage();
 
     expect(await screen.findByText(/nenhum projeto/i)).not.toBeNull();
   });
 
-  it("renderiza os projetos retornados por listProjects", async () => {
-    vi.mocked(listProjects).mockResolvedValue([projectA, projectB]);
+  it("renderiza os projetos retornados por getProjectsOverview", async () => {
+    vi.mocked(getProjectsOverview).mockResolvedValue([projectA, projectB]);
     renderProjectsPage();
 
     expect(await screen.findByRole("link", { name: "DevLib" })).not.toBeNull();
     expect(screen.getByRole("link", { name: "Outro projeto" })).not.toBeNull();
-    expect(vi.mocked(listProjects).mock.calls[0]).toEqual([]);
+    expect(vi.mocked(getProjectsOverview).mock.calls[0]).toEqual([]);
   });
 
   it("mostra mensagem de erro quando a listagem falha", async () => {
-    vi.mocked(listProjects).mockRejectedValue(
-      new ListProjectsError("Sessão expirada"),
+    vi.mocked(getProjectsOverview).mockRejectedValue(
+      new GetProjectsOverviewError("Sessão expirada"),
     );
     renderProjectsPage();
 
@@ -106,7 +114,7 @@ describe("ProjectsPage", () => {
 
   it("exclui um projeto após confirmação e atualiza a lista", async () => {
     const user = userEvent.setup();
-    vi.mocked(listProjects)
+    vi.mocked(getProjectsOverview)
       .mockResolvedValueOnce([projectA, projectB])
       .mockResolvedValueOnce([projectB]);
     vi.mocked(deleteProject).mockResolvedValue(undefined);
@@ -132,7 +140,7 @@ describe("ProjectsPage", () => {
 
   it("mostra mensagem de erro inline quando a exclusão falha", async () => {
     const user = userEvent.setup();
-    vi.mocked(listProjects).mockResolvedValue([projectA]);
+    vi.mocked(getProjectsOverview).mockResolvedValue([projectA]);
     vi.mocked(deleteProject).mockRejectedValue(
       new DeleteProjectError("Projeto não encontrado"),
     );

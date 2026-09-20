@@ -29,12 +29,18 @@ export type ProjectLibrary = {
   updatedAt: string;
 };
 
+export type ProjectOverview = Project & {
+  librariesCount: number;
+  libraryNames: string[];
+};
+
 export class CreateProjectError extends Error {}
 export class GetProjectError extends Error {}
 export class UpdateProjectError extends Error {}
 export class ListProjectsError extends Error {}
 export class DeleteProjectError extends Error {}
 export class GetProjectLibrariesError extends Error {}
+export class GetProjectsOverviewError extends Error {}
 
 export async function createProject(
   input: CreateProjectInput,
@@ -115,6 +121,20 @@ export async function getProjectLibraries(
   if (!response.ok) {
     throw new GetProjectLibrariesError(
       body.error ?? "Não foi possível buscar as bibliotecas do projeto",
+    );
+  }
+
+  return body;
+}
+
+export async function getProjectsOverview(): Promise<ProjectOverview[]> {
+  const response = await authenticatedFetch("/projects/overview");
+
+  const body = await response.json();
+
+  if (!response.ok) {
+    throw new GetProjectsOverviewError(
+      body.error ?? "Não foi possível listar os projetos",
     );
   }
 

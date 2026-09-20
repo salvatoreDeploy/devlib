@@ -184,6 +184,7 @@ Fica para depois do MVP (v1.1+):
 _Achados durante o desenvolvimento que não bloqueiam a subtask em andamento, mas precisam de uma subtask própria depois. Não remover daqui sem resolver ou mover pra dentro de um sprint._
 
 - [ ] Web: não existe fluxo de logout em nenhuma tela — usuário não tem como encerrar a sessão manualmente hoje, só esperando o access token expirar (15 min) ou limpando o `localStorage` à mão. Adicionar logout nas telas que precisam dele (provavelmente um botão/menu visível nas telas protegidas, chamando `clearTokens()` e redirecionando pra `/login`) — ver `docs/FRONTEND.md` se já existe um padrão de header/nav previsto pro protótipo antes de desenhar um novo.
+- [ ] Web/API: feed de atividade real nos cards de projeto (Home `/` e `/projects`) — o footer "você criou/atualizou o projeto X atrás" do `ProjectCard` (fiel ao "Project Card" do `devlib_design.pen`) hoje é mockado a partir de `createdAt`/`updatedAt` do próprio projeto (ator sempre "você", ação inferida por `createdAt === updatedAt`), não um evento real. Precisa de uma tabela de eventos/activity (quem fez o quê, quando — ex: adicionar/remover biblioteca, editar projeto) pra virar dado de verdade; o campo "quem" só faz sentido de fato com multiusuário (pós-MVP). Mesma lacuna afeta a "Atividade de bibliotecas" do `.pen` (Dashboard, já fora de escopo — ver `docs/FRONTEND.md`).
 
 ---
 

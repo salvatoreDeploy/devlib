@@ -9,8 +9,8 @@ import { ProjectCard } from "@/components/project-card";
 import {
   DeleteProjectError,
   deleteProject,
-  ListProjectsError,
-  listProjects,
+  GetProjectsOverviewError,
+  getProjectsOverview,
 } from "../../lib/api/projects";
 import { useRequireAuth } from "../../lib/use-require-auth";
 
@@ -19,8 +19,8 @@ export default function ProjectsPage() {
   const queryClient = useQueryClient();
 
   const projectsQuery = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => listProjects(),
+    queryKey: ["projects-overview"],
+    queryFn: () => getProjectsOverview(),
     enabled: isAuthenticated,
     retry: false,
   });
@@ -28,7 +28,7 @@ export default function ProjectsPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteProject(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
     },
   });
 
@@ -67,7 +67,7 @@ export default function ProjectsPage() {
 
         {projectsQuery.isError && (
           <p className="text-[13px] text-destructive">
-            {projectsQuery.error instanceof ListProjectsError
+            {projectsQuery.error instanceof GetProjectsOverviewError
               ? projectsQuery.error.message
               : "Não foi possível listar os projetos."}
           </p>

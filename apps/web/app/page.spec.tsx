@@ -1,8 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Home from "./page";
 import { clearTokens, saveTokens } from "../lib/auth-storage";
+import {
+  deleteProject,
+  DeleteProjectError,
+  getProjectsOverview,
+  GetProjectsOverviewError,
+} from "../lib/api/projects";
 import { getLibrariesOverview } from "../lib/api/libraries";
 import { getCategories } from "../lib/api/categories";
 
@@ -11,6 +18,17 @@ const pushMock = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
+
+vi.mock("../lib/api/projects", async () => {
+  const actual = await vi.importActual<typeof import("../lib/api/projects")>(
+    "../lib/api/projects",
+  );
+  return {
+    ...actual,
+    getProjectsOverview: vi.fn(),
+    deleteProject: vi.fn(),
+  };
+});
 
 vi.mock("../lib/api/libraries", async () => {
   const actual = await vi.importActual<typeof import("../lib/api/libraries")>(
@@ -33,6 +51,21 @@ const category = {
   createdAt: "2026-09-03T00:00:00.000Z",
 };
 
+const projectA = {
+  id: "project-1",
+  userId: "user-1",
+  name: "Projeto A",
+  description: null,
+  createdAt: "2026-09-05T00:00:00.000Z",
+  updatedAt: "2026-09-05T00:00:00.000Z",
+  librariesCount: 3,
+  libraryNames: ["drizzle-orm", "fastify", "zod"],
+};
+const projectB = { ...projectA, id: "project-2", name: "Projeto B" };
+const projectC = { ...projectA, id: "project-3", name: "Projeto C" };
+const projectD = { ...projectA, id: "project-4", name: "Projeto D" };
+const projectE = { ...projectA, id: "project-5", name: "Projeto E" };
+
 function renderHome() {
   const queryClient = new QueryClient();
   return render(
@@ -42,12 +75,19 @@ function renderHome() {
   );
 }
 
+function login() {
+  saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
+}
+
 describe("Home page", () => {
   beforeEach(() => {
     pushMock.mockClear();
     clearTokens();
+    vi.mocked(getProjectsOverview).mockReset();
+    vi.mocked(deleteProject).mockReset();
     vi.mocked(getLibrariesOverview).mockReset();
     vi.mocked(getCategories).mockReset();
+    vi.mocked(getProjectsOverview).mockResolvedValue([]);
     vi.mocked(getLibrariesOverview).mockResolvedValue([]);
     vi.mocked(getCategories).mockResolvedValue([category]);
   });
@@ -60,8 +100,8 @@ describe("Home page", () => {
     });
   });
 
-  it("mostra a marca e uma saudação quando autenticado", async () => {
-    saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
+  it("mostra a marca devlib.dev quando autenticado", async () => {
+    login();
     renderHome();
 
     await waitFor(() => {
@@ -69,34 +109,123 @@ describe("Home page", () => {
     });
   });
 
-  it("mostra o card Projetos linkando pra /projects", async () => {
-    saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
-    renderHome();
-
-    const link = await screen.findByRole("link", { name: /projetos/i });
-    expect(link.getAttribute("href")).toBe("/projects");
-  });
-
-  it("mostra Métricas e Configurações desabilitados, sem link", async () => {
-    saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
+  it("mostra o título Projetos e o botão Criar projeto linkando pra /projects/new", async () => {
+    login();
     renderHome();
 
     await screen.findByText("devlib.dev");
+    expect(screen.getByRole("heading", { name: "Projetos" })).not.toBeNull();
+    const createLink = screen.getByRole("link", { name: /criar projeto/i });
+    expect(createLink.getAttribute("href")).toBe("/projects/new");
+  });
 
-    expect(screen.queryByRole("link", { name: /métricas/i })).toBeNull();
-    expect(screen.queryByRole("link", { name: /configurações/i })).toBeNull();
+  it("mostra o link Ver todos os projetos linkando pra /projects", async () => {
+    login();
+    renderHome();
 
-    const metricas = screen.getByText("Métricas").closest("[aria-disabled]");
-    expect(metricas?.getAttribute("aria-disabled")).toBe("true");
+    const link = await screen.findByRole("link", {
+      name: /ver todos os projetos/i,
+    });
+    expect(link.getAttribute("href")).toBe("/projects");
+  });
 
-    const configuracoes = screen
-      .getByText("Configurações")
-      .closest("[aria-disabled]");
-    expect(configuracoes?.getAttribute("aria-disabled")).toBe("true");
+  it("renderiza os projetos retornados por getProjectsOverview", async () => {
+    login();
+    vi.mocked(getProjectsOverview).mockResolvedValue([projectA, projectB]);
+    renderHome();
+
+    expect(
+      await screen.findByRole("link", { name: "Projeto A" }),
+    ).not.toBeNull();
+    expect(screen.getByRole("link", { name: "Projeto B" })).not.toBeNull();
+    expect(vi.mocked(getProjectsOverview).mock.calls[0]).toEqual([]);
+  });
+
+  it("mostra no máximo 4 projetos, mesmo quando o usuário tem mais", async () => {
+    login();
+    vi.mocked(getProjectsOverview).mockResolvedValue([
+      projectA,
+      projectB,
+      projectC,
+      projectD,
+      projectE,
+    ]);
+    renderHome();
+
+    expect(
+      await screen.findByRole("link", { name: "Projeto D" }),
+    ).not.toBeNull();
+    expect(screen.queryByRole("link", { name: "Projeto E" })).toBeNull();
+  });
+
+  it("mostra mensagem de vazio quando o usuário não tem projetos", async () => {
+    login();
+    vi.mocked(getProjectsOverview).mockResolvedValue([]);
+    renderHome();
+
+    expect(await screen.findByText(/nenhum projeto/i)).not.toBeNull();
+  });
+
+  it("mostra mensagem de erro quando a listagem de projetos falha", async () => {
+    login();
+    vi.mocked(getProjectsOverview).mockRejectedValue(
+      new GetProjectsOverviewError("Sessão expirada"),
+    );
+    renderHome();
+
+    expect(await screen.findByText("Sessão expirada")).not.toBeNull();
+  });
+
+  it("exclui um projeto a partir do card e atualiza a lista", async () => {
+    const user = userEvent.setup();
+    login();
+    vi.mocked(getProjectsOverview)
+      .mockResolvedValueOnce([projectA, projectB])
+      .mockResolvedValueOnce([projectB]);
+    vi.mocked(deleteProject).mockResolvedValue(undefined);
+    renderHome();
+
+    await screen.findByRole("link", { name: "Projeto A" });
+    const cards = screen.getAllByRole("button", { name: "···" });
+    await user.click(cards[0]);
+    await user.click(screen.getByRole("menuitem", { name: /excluir/i }));
+    const dialog = await screen.findByRole("alertdialog");
+    await user.click(
+      screen
+        .getAllByRole("button", { name: /^excluir$/i })
+        .find((button) => dialog.contains(button))!,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole("link", { name: "Projeto A" })).toBeNull();
+    });
+    expect(vi.mocked(deleteProject).mock.calls[0]).toEqual(["project-1"]);
+  });
+
+  it("mostra mensagem de erro inline quando a exclusão de projeto falha", async () => {
+    const user = userEvent.setup();
+    login();
+    vi.mocked(getProjectsOverview).mockResolvedValue([projectA]);
+    vi.mocked(deleteProject).mockRejectedValue(
+      new DeleteProjectError("Projeto não encontrado"),
+    );
+    renderHome();
+
+    await screen.findByRole("link", { name: "Projeto A" });
+    await user.click(screen.getByRole("button", { name: "···" }));
+    await user.click(screen.getByRole("menuitem", { name: /excluir/i }));
+    const dialog = await screen.findByRole("alertdialog");
+    await user.click(
+      screen
+        .getAllByRole("button", { name: /^excluir$/i })
+        .find((button) => dialog.contains(button))!,
+    );
+
+    expect(await screen.findByText("Projeto não encontrado")).not.toBeNull();
   });
 
   it("mostra a seção Bibliotecas com ação '+ Nova biblioteca' pra /libraries/new", async () => {
-    saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
+    login();
     renderHome();
 
     await screen.findByText("Bibliotecas");
@@ -105,7 +234,7 @@ describe("Home page", () => {
   });
 
   it("mostra a tabela com nome, categoria resolvida, status e quantidade de projetos", async () => {
-    saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
+    login();
     vi.mocked(getLibrariesOverview).mockResolvedValue([
       {
         id: "library-1",
@@ -127,7 +256,7 @@ describe("Home page", () => {
   });
 
   it("mostra 'Sem categoria' quando a biblioteca não tem categoryId", async () => {
-    saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
+    login();
     vi.mocked(getLibrariesOverview).mockResolvedValue([
       {
         id: "library-1",
@@ -149,7 +278,7 @@ describe("Home page", () => {
   });
 
   it("mostra '1 projeto' no singular quando projectsCount é 1", async () => {
-    saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
+    login();
     vi.mocked(getLibrariesOverview).mockResolvedValue([
       {
         id: "library-1",
@@ -169,7 +298,7 @@ describe("Home page", () => {
   });
 
   it("mostra mensagem de estado vazio quando o catálogo não tem bibliotecas", async () => {
-    saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
+    login();
     vi.mocked(getLibrariesOverview).mockResolvedValue([]);
     renderHome();
 
@@ -181,7 +310,7 @@ describe("Home page", () => {
   });
 
   it("mostra mensagem de erro quando a busca do catálogo falha", async () => {
-    saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
+    login();
     const { GetLibrariesOverviewError } = await vi.importActual<
       typeof import("../lib/api/libraries")
     >("../lib/api/libraries");
@@ -198,7 +327,7 @@ describe("Home page", () => {
   });
 
   it("navega pro detalhe da biblioteca ao clicar na linha", async () => {
-    saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
+    login();
     vi.mocked(getLibrariesOverview).mockResolvedValue([
       {
         id: "library-1",
