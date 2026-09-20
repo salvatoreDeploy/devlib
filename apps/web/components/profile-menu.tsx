@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, LogOut, UserPen } from "lucide-react";
+import { LogOut, UserPen } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ProfileButton } from "@/components/profile-button";
 import { getCurrentUser } from "@/lib/api/users";
 import { logout } from "@/lib/api/auth";
 import { clearTokens, getRefreshToken } from "@/lib/auth-storage";
@@ -21,15 +22,13 @@ export type ProfileMenuProps = {
   session: Session;
 };
 
-function ProfileIdentity({ session }: ProfileMenuProps) {
-  const profileQuery = useQuery({
-    queryKey: ["currentUser"],
-    queryFn: getCurrentUser,
-  });
-
-  const name = profileQuery.data?.name;
-  const email = profileQuery.data?.email ?? session.email;
-
+function ProfileIdentity({
+  name,
+  email,
+}: {
+  name?: string | null;
+  email: string;
+}) {
   return (
     <div className="flex items-center gap-2.5">
       <div className="flex size-[38px] shrink-0 items-center justify-center rounded-full border border-checkbox-border bg-track">
@@ -51,6 +50,13 @@ function ProfileIdentity({ session }: ProfileMenuProps) {
 
 export function ProfileMenu({ session }: ProfileMenuProps) {
   const router = useRouter();
+  const profileQuery = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: getCurrentUser,
+  });
+
+  const name = profileQuery.data?.name;
+  const email = profileQuery.data?.email ?? session.email;
 
   async function handleLogout() {
     const refreshToken = getRefreshToken();
@@ -68,20 +74,11 @@ export function ProfileMenu({ session }: ProfileMenuProps) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-2.5 outline-none">
-        <span className="text-[13px] text-secondary-foreground">
-          {session.email}
-        </span>
-        <div className="flex size-[34px] items-center justify-center rounded-full border border-checkbox-border bg-track text-[13px] font-semibold text-foreground">
-          {session.email.charAt(0).toUpperCase()}
-        </div>
-        <ChevronDown
-          className="size-[15px] text-text-faint"
-          aria-hidden="true"
-        />
+      <DropdownMenuTrigger className="outline-none">
+        <ProfileButton name={name} email={email} />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="flex w-[360px] flex-col gap-3.5 rounded-[11px] p-3.5">
-        <ProfileIdentity session={session} />
+        <ProfileIdentity name={name} email={email} />
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link
