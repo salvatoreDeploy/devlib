@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Header } from "./header";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Header, type HeaderProps } from "./header";
 import { clearTokens, saveTokens } from "../lib/auth-storage";
+import { getCurrentUser } from "../lib/api/users";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
+
+vi.mock("../lib/api/users", () => ({ getCurrentUser: vi.fn() }));
 
 function base64Url(value: string): string {
   return btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -17,13 +21,23 @@ function buildAccessToken(payload: unknown): string {
   return `${header}.${body}.signature`;
 }
 
+function renderHeader(props?: HeaderProps) {
+  const queryClient = new QueryClient();
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <Header {...props} />
+    </QueryClientProvider>,
+  );
+}
+
 describe("Header", () => {
   beforeEach(() => {
     clearTokens();
+    vi.mocked(getCurrentUser).mockReturnValue(new Promise(() => {}));
   });
 
   it("renderiza a marca devlib.dev", () => {
-    render(<Header />);
+    renderHeader();
 
     expect(screen.getByText("devlib.dev")).not.toBeNull();
   });
@@ -37,7 +51,7 @@ describe("Header", () => {
       refreshToken: "refresh-token",
     });
 
-    render(<Header />);
+    renderHeader();
 
     expect(screen.getByText("ana@example.com")).not.toBeNull();
   });
@@ -51,34 +65,52 @@ describe("Header", () => {
       refreshToken: "refresh-token",
     });
 
-    render(<Header />);
+    renderHeader();
 
     expect(screen.getByText("A")).not.toBeNull();
   });
 
   it("não quebra e não mostra e-mail quando não há sessão válida", () => {
-    render(<Header />);
+    renderHeader();
 
     expect(screen.queryByText(/@/)).toBeNull();
   });
 
   it("a marca devlib.dev linka pra / (hub)", () => {
-    render(<Header />);
+    renderHeader();
 
     const brandLink = screen.getByRole("link", { name: /devlib\.dev/i });
     expect(brandLink.getAttribute("href")).toBe("/");
   });
 
   it("não mostra breadcrumb quando breadcrumbLabel não é informado", () => {
-    render(<Header />);
+    renderHeader();
 
     expect(screen.queryByText("/")).toBeNull();
   });
 
   it("mostra o breadcrumb quando breadcrumbLabel é informado (projeto ou biblioteca)", () => {
-    render(<Header breadcrumbLabel="DevLib" />);
+    renderHeader({ breadcrumbLabel: "DevLib" });
 
     expect(screen.getByText("DevLib")).not.toBeNull();
     expect(screen.getByText("/")).not.toBeNull();
+  });
+
+  it("mostra o badge BETA ao lado da marca", () => {
+    renderHeader();
+
+    expect(screen.getByText("BETA")).not.toBeNull();
+  });
+
+  it("mostra um avatar com as iniciais do breadcrumb quando breadcrumbLabel é informado", () => {
+    renderHeader({ breadcrumbLabel: "Acme Corp" });
+
+    expect(screen.getByText("AC")).not.toBeNull();
+  });
+
+  it("não mostra avatar de breadcrumb quando breadcrumbLabel não é informado", () => {
+    renderHeader();
+
+    expect(screen.queryByText("AC")).toBeNull();
   });
 });

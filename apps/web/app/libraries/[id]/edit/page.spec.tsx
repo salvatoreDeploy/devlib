@@ -108,9 +108,11 @@ describe("EditLibraryPage", () => {
       expect(screen.getByDisplayValue("drizzle-orm")).not.toBeNull();
     });
     expect(screen.getByDisplayValue("ORM leve")).not.toBeNull();
-    expect(
-      screen.getByRole("combobox", { name: /categoria/i }).textContent,
-    ).toContain("ORM");
+    await waitFor(() => {
+      expect(
+        screen.getByRole("combobox", { name: /categoria/i }).textContent,
+      ).toContain("ORM");
+    });
     expect(vi.mocked(getLibrary).mock.calls[0]).toEqual(["library-1"]);
   });
 

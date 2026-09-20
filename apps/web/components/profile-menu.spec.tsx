@@ -50,32 +50,40 @@ describe("ProfileMenu", () => {
     saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
   });
 
-  it("mostra o e-mail e a inicial do avatar no trigger, sem precisar abrir o menu", () => {
+  it("mostra só o e-mail do token no trigger enquanto o perfil completo ainda carrega", () => {
+    vi.mocked(getCurrentUser).mockReturnValue(new Promise(() => {}));
     renderProfileMenu();
 
     expect(screen.getByText("ana@example.com")).not.toBeNull();
-    expect(screen.getByText("A")).not.toBeNull();
-    expect(getCurrentUser).not.toHaveBeenCalled();
+    expect(screen.queryByText("Ana Ribeiro")).toBeNull();
+    expect(getCurrentUser).toHaveBeenCalled();
   });
 
-  it("ao abrir o menu, busca o perfil completo e mostra o nome na identidade", async () => {
-    const user = userEvent.setup();
+  it("busca o perfil completo ao montar e mostra nome + e-mail no trigger, sem precisar abrir o menu", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue(fakeUser);
     renderProfileMenu();
-
-    await user.click(screen.getByRole("button", { name: /ana@example.com/i }));
 
     expect(await screen.findByText("Ana Ribeiro")).not.toBeNull();
+    expect(screen.getByText("ana@example.com")).not.toBeNull();
   });
 
-  it("mostra as iniciais do nome completo (não a inicial do e-mail) na identidade do dropdown", async () => {
-    const user = userEvent.setup();
+  it("mostra as iniciais do nome completo (não a inicial do e-mail) no avatar do trigger", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue(fakeUser);
     renderProfileMenu();
 
+    expect(await screen.findByText("AR")).not.toBeNull();
+  });
+
+  it("mostra as iniciais do nome completo na identidade do dropdown ao abrir", async () => {
+    const user = userEvent.setup();
+    vi.mocked(getCurrentUser).mockResolvedValue(fakeUser);
+    renderProfileMenu();
+    await screen.findByText("Ana Ribeiro");
+
     await user.click(screen.getByRole("button", { name: /ana@example.com/i }));
 
-    expect(await screen.findByText("AR")).not.toBeNull();
+    const matches = await screen.findAllByText("AR");
+    expect(matches.length).toBeGreaterThan(0);
   });
 
   it('tem o item "Editar perfil" linkando pra /profile', async () => {
