@@ -1,13 +1,23 @@
 import type {
   ProjectRecord,
+  ProjectOverviewRecord,
   ProjectsRepository,
 } from "../repositories/projects.repository";
 import type { ProjectLibraryRecord } from "../repositories/libraries.repository";
 
-export type { ProjectRecord, ProjectsRepository, ProjectLibraryRecord };
+export type {
+  ProjectRecord,
+  ProjectsRepository,
+  ProjectLibraryRecord,
+  ProjectOverviewRecord,
+};
 
 export type ProjectLibrariesRepository = ProjectsRepository & {
   findLibrariesByProjectId(projectId: string): Promise<ProjectLibraryRecord[]>;
+};
+
+export type ProjectsOverviewRepository = {
+  findProjectsOverview(userId: string): Promise<ProjectOverviewRecord[]>;
 };
 
 export class ProjectNotFoundError extends Error {
@@ -116,4 +126,11 @@ export async function deleteProject(
 ): Promise<void> {
   await getProject(repository, { userId, projectId });
   await repository.deleteProject(projectId);
+}
+
+export async function listProjectsOverview(
+  repository: ProjectsOverviewRepository,
+  userId: string,
+): Promise<ProjectOverviewRecord[]> {
+  return repository.findProjectsOverview(userId);
 }

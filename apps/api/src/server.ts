@@ -31,6 +31,10 @@ import {
   type ProjectsListRouteOptions,
 } from "./routes/projects-list.route";
 import {
+  projectsOverviewRoute,
+  type ProjectsOverviewRouteOptions,
+} from "./routes/projects-overview.route";
+import {
   projectsGetRoute,
   type ProjectsGetRouteOptions,
 } from "./routes/projects-get.route";
@@ -105,6 +109,7 @@ export type BuildServerDeps = RegisterRouteOptions &
   LogoutRouteOptions &
   ProjectsCreateRouteOptions &
   ProjectsListRouteOptions &
+  ProjectsOverviewRouteOptions &
   ProjectsGetRouteOptions &
   ProjectsUpdateRouteOptions &
   ProjectsDeleteRouteOptions &
@@ -219,6 +224,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(logoutRoute, deps);
   app.register(projectsCreateRoute, deps);
   app.register(projectsListRoute, deps);
+  app.register(projectsOverviewRoute, deps);
   app.register(projectsGetRoute, deps);
   app.register(projectsUpdateRoute, deps);
   app.register(projectsDeleteRoute, deps);

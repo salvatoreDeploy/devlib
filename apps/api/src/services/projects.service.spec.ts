@@ -6,10 +6,12 @@ import {
   updateProject,
   deleteProject,
   listProjectLibraries,
+  listProjectsOverview,
   ProjectNotFoundError,
   ProjectNameAlreadyExistsError,
   type ProjectsRepository,
   type ProjectLibrariesRepository,
+  type ProjectsOverviewRepository,
 } from "./projects.service";
 
 const project = {
@@ -285,5 +287,40 @@ describe("deleteProject", () => {
       }),
     ).rejects.toThrow(ProjectNotFoundError);
     expect(repository.deleteProject).not.toHaveBeenCalled();
+  });
+});
+
+describe("listProjectsOverview", () => {
+  function fakeOverviewRepository(
+    overrides: Partial<ProjectsOverviewRepository> = {},
+  ): ProjectsOverviewRepository {
+    return {
+      findProjectsOverview: vi
+        .fn()
+        .mockResolvedValue([{ ...project, librariesCount: 0 }]),
+      ...overrides,
+    };
+  }
+
+  it("retorna os projetos do usuário informado, com librariesCount", async () => {
+    const overview = { ...project, librariesCount: 4 };
+    const repository = fakeOverviewRepository({
+      findProjectsOverview: vi.fn().mockResolvedValue([overview]),
+    });
+
+    const result = await listProjectsOverview(repository, "user-1");
+
+    expect(result).toEqual([overview]);
+    expect(repository.findProjectsOverview).toHaveBeenCalledWith("user-1");
+  });
+
+  it("retorna array vazio quando o usuário não tem projetos", async () => {
+    const repository = fakeOverviewRepository({
+      findProjectsOverview: vi.fn().mockResolvedValue([]),
+    });
+
+    const result = await listProjectsOverview(repository, "user-1");
+
+    expect(result).toEqual([]);
   });
 });
