@@ -30,7 +30,7 @@ function fakeProjectsOverviewRepository(
 }
 
 describe("GET /projects/overview", () => {
-  it("retorna 200 com os projetos do usuário autenticado e o librariesCount", async () => {
+  it("retorna 200 com os projetos do usuário autenticado, librariesCount e libraryNames", async () => {
     const overview = {
       id: "project-1",
       userId: "user-1",
@@ -39,6 +39,7 @@ describe("GET /projects/overview", () => {
       createdAt: new Date("2026-09-01T00:00:00Z"),
       updatedAt: new Date("2026-09-01T00:00:00Z"),
       librariesCount: 3,
+      libraryNames: ["drizzle-orm", "fastify", "zod"],
     };
     const app = buildServer({
       projectsOverviewRepository: fakeProjectsOverviewRepository({
@@ -55,7 +56,11 @@ describe("GET /projects/overview", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject([
-      { id: "project-1", librariesCount: 3 },
+      {
+        id: "project-1",
+        librariesCount: 3,
+        libraryNames: ["drizzle-orm", "fastify", "zod"],
+      },
     ]);
   });
 

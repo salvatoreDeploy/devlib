@@ -297,13 +297,19 @@ describe("listProjectsOverview", () => {
     return {
       findProjectsOverview: vi
         .fn()
-        .mockResolvedValue([{ ...project, librariesCount: 0 }]),
+        .mockResolvedValue([
+          { ...project, librariesCount: 0, libraryNames: [] },
+        ]),
       ...overrides,
     };
   }
 
-  it("retorna os projetos do usuário informado, com librariesCount", async () => {
-    const overview = { ...project, librariesCount: 4 };
+  it("retorna os projetos do usuário informado, com librariesCount e libraryNames", async () => {
+    const overview = {
+      ...project,
+      librariesCount: 4,
+      libraryNames: ["drizzle-orm", "fastify", "zod", "vitest"],
+    };
     const repository = fakeOverviewRepository({
       findProjectsOverview: vi.fn().mockResolvedValue([overview]),
     });

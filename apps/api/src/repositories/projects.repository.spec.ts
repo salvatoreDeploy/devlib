@@ -283,8 +283,12 @@ describe("createProjectsRepository", () => {
   });
 
   describe("findProjectsOverview", () => {
-    it("retorna os projetos do usuário com librariesCount", async () => {
-      const row = { ...project, librariesCount: 3 };
+    it("retorna os projetos do usuário com librariesCount e libraryNames", async () => {
+      const row = {
+        ...project,
+        librariesCount: 3,
+        libraryNames: ["drizzle-orm", "fastify", "zod"],
+      };
       const { db, from, where, groupBy } = fakeDbForSelectProjectsOverview([
         row,
       ]);
@@ -298,8 +302,8 @@ describe("createProjectsRepository", () => {
       expect(groupBy).toHaveBeenCalledOnce();
     });
 
-    it("retorna librariesCount 0 para projeto sem biblioteca associada", async () => {
-      const row = { ...project, librariesCount: 0 };
+    it("retorna librariesCount 0 e libraryNames vazio para projeto sem biblioteca associada", async () => {
+      const row = { ...project, librariesCount: 0, libraryNames: [] };
       const { db } = fakeDbForSelectProjectsOverview([row]);
 
       const repository = createProjectsRepository(db);

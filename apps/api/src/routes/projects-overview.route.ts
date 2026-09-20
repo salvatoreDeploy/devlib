@@ -25,6 +25,11 @@ const projectOverviewResponseSchema = z.object({
     .number()
     .int()
     .describe("Quantidade de bibliotecas associadas a esse projeto."),
+  libraryNames: z
+    .array(z.string())
+    .describe(
+      "Nomes das bibliotecas associadas a esse projeto, em nenhuma ordem garantida. Array vazio quando o projeto não tem nenhuma.",
+    ),
 });
 
 export type ProjectsOverviewRouteOptions = {

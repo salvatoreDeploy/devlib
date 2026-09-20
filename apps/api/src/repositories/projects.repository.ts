@@ -1,4 +1,4 @@
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import {
   libraries,
   projectLibraries,
@@ -23,6 +23,7 @@ export type LibraryProjectRecord = ProjectRecord & {
 
 export type ProjectOverviewRecord = ProjectRecord & {
   librariesCount: number;
+  libraryNames: string[];
 };
 
 export type ProjectsRepository = {
@@ -129,6 +130,9 @@ export function createProjectsRepository(db: DbClient): ProjectsRepository {
           createdAt: projects.createdAt,
           updatedAt: projects.updatedAt,
           librariesCount: count(libraries.id),
+          libraryNames: sql<
+            string[]
+          >`coalesce(array_agg(${libraries.name}) filter (where ${libraries.name} is not null), '{}')`,
         })
         .from(projects)
         .leftJoin(projectLibraries, eq(projectLibraries.projectId, projects.id))
