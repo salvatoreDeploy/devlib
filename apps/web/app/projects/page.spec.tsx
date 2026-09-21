@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ProjectsPage from "./page";
 import {
+  createProject,
   deleteProject,
   DeleteProjectError,
   getProjectsOverview,
@@ -25,6 +26,7 @@ vi.mock("../../lib/api/projects", async () => {
     ...actual,
     getProjectsOverview: vi.fn(),
     deleteProject: vi.fn(),
+    createProject: vi.fn(),
   };
 });
 
@@ -64,6 +66,7 @@ describe("ProjectsPage", () => {
     pushMock.mockClear();
     vi.mocked(getProjectsOverview).mockReset();
     vi.mocked(deleteProject).mockReset();
+    vi.mocked(createProject).mockReset();
     clearTokens();
     saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
   });
@@ -77,14 +80,41 @@ describe("ProjectsPage", () => {
     });
   });
 
-  it("mostra o link para criar projeto", async () => {
+  it("abre o drawer Criar projeto ao clicar no botão", async () => {
+    const user = userEvent.setup();
     vi.mocked(getProjectsOverview).mockResolvedValue([]);
     renderProjectsPage();
 
-    const createLink = await screen.findByRole("link", {
-      name: /criar projeto/i,
+    await user.click(
+      await screen.findByRole("button", { name: /criar projeto/i }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Criar projeto" }),
+    ).not.toBeNull();
+  });
+
+  it("cria um projeto pelo drawer, fecha e atualiza a lista", async () => {
+    const user = userEvent.setup();
+    vi.mocked(getProjectsOverview)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([projectA]);
+    vi.mocked(createProject).mockResolvedValue(projectA);
+    renderProjectsPage();
+
+    await user.click(
+      await screen.findByRole("button", { name: /criar projeto/i }),
+    );
+    await screen.findByRole("heading", { name: "Criar projeto" });
+    await user.type(screen.getByLabelText(/nome do projeto/i), "DevLib");
+    await user.click(screen.getByRole("button", { name: /salvar/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("heading", { name: "Criar projeto" }),
+      ).toBeNull();
     });
-    expect(createLink.getAttribute("href")).toBe("/projects/new");
+    expect(await screen.findByRole("link", { name: "DevLib" })).not.toBeNull();
   });
 
   it("mostra mensagem de vazio quando o usuário não tem projetos", async () => {

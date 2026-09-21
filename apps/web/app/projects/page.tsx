@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
+import { CreateProjectDrawer } from "@/components/create-project-drawer";
 import { ProjectCard } from "@/components/project-card";
 import {
   DeleteProjectError,
@@ -17,6 +18,7 @@ import { useRequireAuth } from "../../lib/use-require-auth";
 export default function ProjectsPage() {
   const isAuthenticated = useRequireAuth();
   const queryClient = useQueryClient();
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
 
   const projectsQuery = useQuery({
     queryKey: ["projects-overview"],
@@ -45,11 +47,9 @@ export default function ProjectsPage() {
           <h2 className="text-[21px] font-bold tracking-[-0.015em] text-foreground">
             Projetos
           </h2>
-          <Button asChild>
-            <Link href="/projects/new">
-              <Plus />
-              Criar projeto
-            </Link>
+          <Button onClick={() => setIsCreateProjectOpen(true)}>
+            <Plus />
+            Criar projeto
           </Button>
         </div>
 
@@ -96,6 +96,15 @@ export default function ProjectsPage() {
           </div>
         )}
       </main>
+
+      <CreateProjectDrawer
+        open={isCreateProjectOpen}
+        onOpenChange={setIsCreateProjectOpen}
+        onCreated={() => {
+          setIsCreateProjectOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
+        }}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Home from "./page";
 import { clearTokens, saveTokens } from "../lib/auth-storage";
 import {
+  createProject,
   deleteProject,
   DeleteProjectError,
   getProjectsOverview,
@@ -27,6 +28,7 @@ vi.mock("../lib/api/projects", async () => {
     ...actual,
     getProjectsOverview: vi.fn(),
     deleteProject: vi.fn(),
+    createProject: vi.fn(),
   };
 });
 
@@ -85,6 +87,7 @@ describe("Home page", () => {
     clearTokens();
     vi.mocked(getProjectsOverview).mockReset();
     vi.mocked(deleteProject).mockReset();
+    vi.mocked(createProject).mockReset();
     vi.mocked(getLibrariesOverview).mockReset();
     vi.mocked(getCategories).mockReset();
     vi.mocked(getProjectsOverview).mockResolvedValue([]);
@@ -109,14 +112,42 @@ describe("Home page", () => {
     });
   });
 
-  it("mostra o título Projetos e o botão Criar projeto linkando pra /projects/new", async () => {
+  it("mostra o título Projetos e abre o drawer Criar projeto ao clicar no botão", async () => {
+    const user = userEvent.setup();
     login();
     renderHome();
 
     await screen.findByText("devlib.dev");
     expect(screen.getByRole("heading", { name: "Projetos" })).not.toBeNull();
-    const createLink = screen.getByRole("link", { name: /criar projeto/i });
-    expect(createLink.getAttribute("href")).toBe("/projects/new");
+    await user.click(screen.getByRole("button", { name: /criar projeto/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Criar projeto" }),
+    ).not.toBeNull();
+  });
+
+  it("cria um projeto pelo drawer, fecha e atualiza a lista", async () => {
+    const user = userEvent.setup();
+    login();
+    vi.mocked(getProjectsOverview)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([projectA]);
+    vi.mocked(createProject).mockResolvedValue(projectA);
+    renderHome();
+
+    await user.click(screen.getByRole("button", { name: /criar projeto/i }));
+    await screen.findByRole("heading", { name: "Criar projeto" });
+    await user.type(screen.getByLabelText(/nome do projeto/i), "Projeto A");
+    await user.click(screen.getByRole("button", { name: /salvar/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("heading", { name: "Criar projeto" }),
+      ).toBeNull();
+    });
+    expect(
+      await screen.findByRole("link", { name: "Projeto A" }),
+    ).not.toBeNull();
   });
 
   it("mostra o link Ver todos os projetos linkando pra /projects", async () => {
