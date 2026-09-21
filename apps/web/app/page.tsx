@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Header } from "@/components/header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CreateProjectDrawer } from "@/components/create-project-drawer";
 import { ProjectCard } from "@/components/project-card";
 import {
   Table,
@@ -42,6 +44,7 @@ export default function Home() {
   const isAuthenticated = useRequireAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
 
   const projectsQuery = useQuery({
     queryKey: ["projects-overview"],
@@ -94,11 +97,9 @@ export default function Home() {
               Projetos
             </h2>
             <div className="flex items-center gap-4">
-              <Button asChild>
-                <Link href="/projects/new">
-                  <Plus />
-                  Criar projeto
-                </Link>
+              <Button onClick={() => setIsCreateProjectOpen(true)}>
+                <Plus />
+                Criar projeto
               </Button>
               <Link
                 href="/projects"
@@ -227,6 +228,15 @@ export default function Home() {
           )}
         </div>
       </main>
+
+      <CreateProjectDrawer
+        open={isCreateProjectOpen}
+        onOpenChange={setIsCreateProjectOpen}
+        onCreated={() => {
+          setIsCreateProjectOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
+        }}
+      />
     </div>
   );
 }
