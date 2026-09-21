@@ -126,7 +126,7 @@ Fica para depois do MVP (v1.1+):
   - [x] Web: Header alinhado ao Dashboard Header do `.pen`, com ProfileButton real (abre o Profile Dropdown)
   - [x] Web: Home (`/`) restilizada nos tokens/componentes novos, mantendo o hub de cards e a seção "Bibliotecas" (Sprint 3) — sem feed de atividade recente nem card de plano/billing (dependem de multiusuário, pós-MVP)
 - [ ] Fluxos de criação/detalhe migram de página pra drawer (web)
-  - [ ] Web: Drawer "Criar projeto" substitui /projects/new
+  - [x] Web: Drawer "Criar projeto" substitui /projects/new
   - [ ] Web: Drawer "Criar biblioteca" substitui /libraries/new
   - [ ] Web: Drawer "Detalhe da biblioteca" substitui /libraries/[id]
   - [ ] Web: atualizar links/redirects que apontavam pras páginas antigas

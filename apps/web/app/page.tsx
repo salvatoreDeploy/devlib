@@ -9,6 +9,7 @@ import { Header } from "@/components/header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CreateProjectDrawer } from "@/components/create-project-drawer";
+import { CreateLibraryDrawer } from "@/components/create-library-drawer";
 import { ProjectCard } from "@/components/project-card";
 import {
   Table,
@@ -45,6 +46,7 @@ export default function Home() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [isCreateLibraryOpen, setIsCreateLibraryOpen] = useState(false);
 
   const projectsQuery = useQuery({
     queryKey: ["projects-overview"],
@@ -159,11 +161,9 @@ export default function Home() {
             <h2 className="text-[21px] font-bold tracking-[-0.015em] text-foreground">
               Bibliotecas
             </h2>
-            <Button asChild>
-              <Link href="/libraries/new">
-                <Plus />
-                Nova biblioteca
-              </Link>
+            <Button onClick={() => setIsCreateLibraryOpen(true)}>
+              <Plus />
+              Nova biblioteca
             </Button>
           </div>
 
@@ -235,6 +235,14 @@ export default function Home() {
         onCreated={() => {
           setIsCreateProjectOpen(false);
           queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
+        }}
+      />
+      <CreateLibraryDrawer
+        open={isCreateLibraryOpen}
+        onOpenChange={setIsCreateLibraryOpen}
+        onCreated={() => {
+          setIsCreateLibraryOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
         }}
       />
     </div>

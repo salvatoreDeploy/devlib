@@ -11,7 +11,7 @@ import {
   getProjectsOverview,
   GetProjectsOverviewError,
 } from "../lib/api/projects";
-import { getLibrariesOverview } from "../lib/api/libraries";
+import { createLibrary, getLibrariesOverview } from "../lib/api/libraries";
 import { getCategories } from "../lib/api/categories";
 
 const pushMock = vi.fn();
@@ -36,7 +36,7 @@ vi.mock("../lib/api/libraries", async () => {
   const actual = await vi.importActual<typeof import("../lib/api/libraries")>(
     "../lib/api/libraries",
   );
-  return { ...actual, getLibrariesOverview: vi.fn() };
+  return { ...actual, getLibrariesOverview: vi.fn(), createLibrary: vi.fn() };
 });
 
 vi.mock("../lib/api/categories", async () => {
@@ -89,6 +89,7 @@ describe("Home page", () => {
     vi.mocked(deleteProject).mockReset();
     vi.mocked(createProject).mockReset();
     vi.mocked(getLibrariesOverview).mockReset();
+    vi.mocked(createLibrary).mockReset();
     vi.mocked(getCategories).mockReset();
     vi.mocked(getProjectsOverview).mockResolvedValue([]);
     vi.mocked(getLibrariesOverview).mockResolvedValue([]);
@@ -255,13 +256,60 @@ describe("Home page", () => {
     expect(await screen.findByText("Projeto não encontrado")).not.toBeNull();
   });
 
-  it("mostra a seção Bibliotecas com ação '+ Nova biblioteca' pra /libraries/new", async () => {
+  it("mostra a seção Bibliotecas e abre o drawer Criar biblioteca ao clicar em '+ Nova biblioteca'", async () => {
+    const user = userEvent.setup();
     login();
     renderHome();
 
     await screen.findByText("Bibliotecas");
-    const link = await screen.findByRole("link", { name: /nova biblioteca/i });
-    expect(link.getAttribute("href")).toBe("/libraries/new");
+    await user.click(screen.getByRole("button", { name: /nova biblioteca/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Criar biblioteca" }),
+    ).not.toBeNull();
+  });
+
+  it("cria uma biblioteca pelo drawer, fecha e atualiza a seção Bibliotecas", async () => {
+    const user = userEvent.setup();
+    login();
+    vi.mocked(getLibrariesOverview)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: "library-1",
+          name: "drizzle-orm",
+          categoryId: null,
+          notes: null,
+          createdAt: "2026-09-03T00:00:00.000Z",
+          updatedAt: "2026-09-03T00:00:00.000Z",
+          projectsCount: 0,
+        },
+      ]);
+    vi.mocked(createLibrary).mockResolvedValue({
+      id: "library-1",
+      name: "drizzle-orm",
+      categoryId: null,
+      notes: null,
+      createdAt: "2026-09-03T00:00:00.000Z",
+      updatedAt: "2026-09-03T00:00:00.000Z",
+    });
+    renderHome();
+
+    await screen.findByText("Bibliotecas");
+    await user.click(screen.getByRole("button", { name: /nova biblioteca/i }));
+    await screen.findByRole("heading", { name: "Criar biblioteca" });
+    await user.type(
+      screen.getByLabelText(/nome da biblioteca/i),
+      "drizzle-orm",
+    );
+    await user.click(screen.getByRole("button", { name: /salvar/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("heading", { name: "Criar biblioteca" }),
+      ).toBeNull();
+    });
+    expect(await screen.findByText("drizzle-orm")).not.toBeNull();
   });
 
   it("mostra a tabela com nome, categoria resolvida, status e quantidade de projetos", async () => {
