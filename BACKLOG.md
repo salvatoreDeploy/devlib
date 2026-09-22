@@ -127,7 +127,7 @@ Fica para depois do MVP (v1.1+):
   - [x] Web: Home (`/`) restilizada nos tokens/componentes novos, mantendo o hub de cards e a seção "Bibliotecas" (Sprint 3) — sem feed de atividade recente nem card de plano/billing (dependem de multiusuário, pós-MVP)
 - [ ] Fluxos de criação/detalhe migram de página pra drawer (web)
   - [x] Web: Drawer "Criar projeto" substitui /projects/new
-  - [ ] Web: Drawer "Criar biblioteca" substitui /libraries/new
+  - [x] Web: Drawer "Criar biblioteca" substitui /libraries/new
   - [ ] Web: Drawer "Detalhe da biblioteca" substitui /libraries/[id]
   - [ ] Web: atualizar links/redirects que apontavam pras páginas antigas
 - [ ] Aba Categorias do projeto (api + web)

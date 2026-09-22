@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
@@ -10,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CreateProjectDrawer } from "@/components/create-project-drawer";
 import { CreateLibraryDrawer } from "@/components/create-library-drawer";
+import { LibraryDetailDrawer } from "@/components/library-detail-drawer";
 import { ProjectCard } from "@/components/project-card";
 import {
   Table,
@@ -43,10 +43,12 @@ function projectsCountLabel(count: number): string {
 
 export default function Home() {
   const isAuthenticated = useRequireAuth();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isCreateLibraryOpen, setIsCreateLibraryOpen] = useState(false);
+  const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(
+    null,
+  );
 
   const projectsQuery = useQuery({
     queryKey: ["projects-overview"],
@@ -200,7 +202,7 @@ export default function Home() {
                   {librariesQuery.data.map((library) => (
                     <TableRow
                       key={library.id}
-                      onClick={() => router.push(`/libraries/${library.id}`)}
+                      onClick={() => setSelectedLibraryId(library.id)}
                       className="cursor-pointer hover:bg-surface-raised"
                     >
                       <TableCell className="font-medium">
@@ -243,6 +245,14 @@ export default function Home() {
         onCreated={() => {
           setIsCreateLibraryOpen(false);
           queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
+        }}
+      />
+      <LibraryDetailDrawer
+        libraryId={selectedLibraryId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedLibraryId(null);
+          }
         }}
       />
     </div>
