@@ -11,8 +11,14 @@ import {
   getProjectsOverview,
   GetProjectsOverviewError,
 } from "../lib/api/projects";
-import { createLibrary, getLibrariesOverview } from "../lib/api/libraries";
+import {
+  createLibrary,
+  getLibrariesOverview,
+  getLibrary,
+  getLibraryProjects,
+} from "../lib/api/libraries";
 import { getCategories } from "../lib/api/categories";
+import { listLibraryTags } from "../lib/api/tags";
 
 const pushMock = vi.fn();
 
@@ -36,7 +42,13 @@ vi.mock("../lib/api/libraries", async () => {
   const actual = await vi.importActual<typeof import("../lib/api/libraries")>(
     "../lib/api/libraries",
   );
-  return { ...actual, getLibrariesOverview: vi.fn(), createLibrary: vi.fn() };
+  return {
+    ...actual,
+    getLibrariesOverview: vi.fn(),
+    createLibrary: vi.fn(),
+    getLibrary: vi.fn(),
+    getLibraryProjects: vi.fn(),
+  };
 });
 
 vi.mock("../lib/api/categories", async () => {
@@ -44,6 +56,12 @@ vi.mock("../lib/api/categories", async () => {
     "../lib/api/categories",
   );
   return { ...actual, getCategories: vi.fn() };
+});
+
+vi.mock("../lib/api/tags", async () => {
+  const actual =
+    await vi.importActual<typeof import("../lib/api/tags")>("../lib/api/tags");
+  return { ...actual, listLibraryTags: vi.fn() };
 });
 
 const category = {
@@ -90,10 +108,14 @@ describe("Home page", () => {
     vi.mocked(createProject).mockReset();
     vi.mocked(getLibrariesOverview).mockReset();
     vi.mocked(createLibrary).mockReset();
+    vi.mocked(getLibrary).mockReset();
+    vi.mocked(getLibraryProjects).mockReset();
+    vi.mocked(listLibraryTags).mockReset();
     vi.mocked(getCategories).mockReset();
     vi.mocked(getProjectsOverview).mockResolvedValue([]);
     vi.mocked(getLibrariesOverview).mockResolvedValue([]);
     vi.mocked(getCategories).mockResolvedValue([category]);
+    vi.mocked(listLibraryTags).mockResolvedValue([]);
   });
 
   it("redireciona pra /login quando não há access token", async () => {
@@ -405,19 +427,28 @@ describe("Home page", () => {
     });
   });
 
-  it("navega pro detalhe da biblioteca ao clicar na linha", async () => {
+  it("abre o drawer de detalhe da biblioteca ao clicar na linha", async () => {
     login();
     vi.mocked(getLibrariesOverview).mockResolvedValue([
       {
         id: "library-1",
         name: "drizzle-orm",
         categoryId: null,
-        notes: null,
+        notes: "ORM leve",
         createdAt: "2026-09-03T00:00:00.000Z",
         updatedAt: "2026-09-03T00:00:00.000Z",
         projectsCount: 0,
       },
     ]);
+    vi.mocked(getLibrary).mockResolvedValue({
+      id: "library-1",
+      name: "drizzle-orm",
+      categoryId: null,
+      notes: "ORM leve",
+      createdAt: "2026-09-03T00:00:00.000Z",
+      updatedAt: "2026-09-03T00:00:00.000Z",
+    });
+    vi.mocked(getLibraryProjects).mockResolvedValue([]);
     renderHome();
 
     const row = await screen.findByText("drizzle-orm");
@@ -426,7 +457,8 @@ describe("Home page", () => {
       ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith("/libraries/library-1");
+      expect(screen.getByText("ORM leve")).not.toBeNull();
     });
+    expect(pushMock).not.toHaveBeenCalled();
   });
 });

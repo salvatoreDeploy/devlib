@@ -1,42 +1,34 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import LibraryDetailPage from "./page";
+import { LibraryDetailDrawer } from "./library-detail-drawer";
 import {
   getLibrary,
   GetLibraryError,
   getLibraryProjects,
   GetLibraryProjectsError,
-} from "../../../lib/api/libraries";
-import { getCategories } from "../../../lib/api/categories";
-import { listLibraryTags } from "../../../lib/api/tags";
-import { clearTokens, saveTokens } from "../../../lib/auth-storage";
+} from "../lib/api/libraries";
+import { getCategories } from "../lib/api/categories";
+import { listLibraryTags } from "../lib/api/tags";
 
-const pushMock = vi.fn();
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock }),
-  useParams: () => ({ id: "library-1" }),
-}));
-
-vi.mock("../../../lib/api/libraries", async () => {
-  const actual = await vi.importActual<
-    typeof import("../../../lib/api/libraries")
-  >("../../../lib/api/libraries");
+vi.mock("../lib/api/libraries", async () => {
+  const actual = await vi.importActual<typeof import("../lib/api/libraries")>(
+    "../lib/api/libraries",
+  );
   return { ...actual, getLibrary: vi.fn(), getLibraryProjects: vi.fn() };
 });
 
-vi.mock("../../../lib/api/categories", async () => {
-  const actual = await vi.importActual<
-    typeof import("../../../lib/api/categories")
-  >("../../../lib/api/categories");
+vi.mock("../lib/api/categories", async () => {
+  const actual = await vi.importActual<typeof import("../lib/api/categories")>(
+    "../lib/api/categories",
+  );
   return { ...actual, getCategories: vi.fn() };
 });
 
-vi.mock("../../../lib/api/tags", async () => {
-  const actual = await vi.importActual<typeof import("../../../lib/api/tags")>(
-    "../../../lib/api/tags",
-  );
+vi.mock("../lib/api/tags", async () => {
+  const actual =
+    await vi.importActual<typeof import("../lib/api/tags")>("../lib/api/tags");
   return { ...actual, listLibraryTags: vi.fn() };
 });
 
@@ -56,41 +48,44 @@ const category = {
   createdAt: "2026-09-03T00:00:00.000Z",
 };
 
-function renderLibraryDetailPage() {
+function renderDrawer(libraryId: string | null = "library-1") {
   const queryClient = new QueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <LibraryDetailPage />
-    </QueryClientProvider>,
-  );
+  const onOpenChange = vi.fn();
+  return {
+    onOpenChange,
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        <LibraryDetailDrawer
+          libraryId={libraryId}
+          onOpenChange={onOpenChange}
+        />
+      </QueryClientProvider>,
+    ),
+  };
 }
 
-describe("LibraryDetailPage", () => {
+describe("LibraryDetailDrawer", () => {
   beforeEach(() => {
-    pushMock.mockClear();
     vi.mocked(getLibrary).mockReset();
     vi.mocked(getLibraryProjects).mockReset();
     vi.mocked(getCategories).mockReset();
     vi.mocked(getCategories).mockResolvedValue([category]);
     vi.mocked(listLibraryTags).mockReset();
     vi.mocked(listLibraryTags).mockResolvedValue([]);
-    clearTokens();
-    saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
   });
 
-  it("redireciona pra /login quando não há access token", async () => {
-    clearTokens();
-    renderLibraryDetailPage();
+  it("não renderiza o conteúdo quando libraryId é null", () => {
+    vi.mocked(getLibrary).mockResolvedValue(library);
+    renderDrawer(null);
 
-    await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith("/login");
-    });
+    expect(screen.queryByText("drizzle-orm")).toBeNull();
+    expect(getLibrary).not.toHaveBeenCalled();
   });
 
   it("mostra o nome, a categoria e as notas da biblioteca quando carregada", async () => {
     vi.mocked(getLibrary).mockResolvedValue(library);
     vi.mocked(getLibraryProjects).mockResolvedValue([]);
-    renderLibraryDetailPage();
+    renderDrawer();
 
     await waitFor(() => {
       expect(screen.getAllByText("drizzle-orm").length).toBeGreaterThan(0);
@@ -102,7 +97,7 @@ describe("LibraryDetailPage", () => {
   it("mostra 'Sem categoria' quando a biblioteca não tem categoryId", async () => {
     vi.mocked(getLibrary).mockResolvedValue({ ...library, categoryId: null });
     vi.mocked(getLibraryProjects).mockResolvedValue([]);
-    renderLibraryDetailPage();
+    renderDrawer();
 
     await waitFor(() => {
       expect(screen.getByText("Sem categoria")).not.toBeNull();
@@ -112,7 +107,7 @@ describe("LibraryDetailPage", () => {
   it("mostra 'Sem notas' quando a biblioteca não tem notas", async () => {
     vi.mocked(getLibrary).mockResolvedValue({ ...library, notes: null });
     vi.mocked(getLibraryProjects).mockResolvedValue([]);
-    renderLibraryDetailPage();
+    renderDrawer();
 
     await waitFor(() => {
       expect(screen.getByText("Sem notas.")).not.toBeNull();
@@ -124,7 +119,7 @@ describe("LibraryDetailPage", () => {
       new GetLibraryError("Biblioteca não encontrada"),
     );
     vi.mocked(getLibraryProjects).mockResolvedValue([]);
-    renderLibraryDetailPage();
+    renderDrawer();
 
     await waitFor(() => {
       expect(screen.getByText("Biblioteca não encontrada")).not.toBeNull();
@@ -137,7 +132,7 @@ describe("LibraryDetailPage", () => {
     vi.mocked(listLibraryTags).mockResolvedValue([
       { id: "tag-1", name: "orm", createdAt: "2026-09-05T00:00:00.000Z" },
     ]);
-    renderLibraryDetailPage();
+    renderDrawer();
 
     await waitFor(() => {
       expect(screen.getByText("orm")).not.toBeNull();
@@ -148,7 +143,7 @@ describe("LibraryDetailPage", () => {
     vi.mocked(getLibrary).mockResolvedValue(library);
     vi.mocked(getLibraryProjects).mockResolvedValue([]);
     vi.mocked(listLibraryTags).mockResolvedValue([]);
-    renderLibraryDetailPage();
+    renderDrawer();
 
     await waitFor(() => {
       expect(screen.getByText(/nenhuma tag associada/i)).not.toBeNull();
@@ -168,7 +163,7 @@ describe("LibraryDetailPage", () => {
         updatedAt: "2026-09-01T00:00:00.000Z",
       },
     ]);
-    renderLibraryDetailPage();
+    renderDrawer();
 
     await waitFor(() => {
       expect(screen.getByText("DevLib")).not.toBeNull();
@@ -179,7 +174,7 @@ describe("LibraryDetailPage", () => {
   it("mostra mensagem de estado vazio quando a biblioteca não está associada a nenhum projeto", async () => {
     vi.mocked(getLibrary).mockResolvedValue(library);
     vi.mocked(getLibraryProjects).mockResolvedValue([]);
-    renderLibraryDetailPage();
+    renderDrawer();
 
     await waitFor(() => {
       expect(
@@ -193,10 +188,22 @@ describe("LibraryDetailPage", () => {
     vi.mocked(getLibraryProjects).mockRejectedValue(
       new GetLibraryProjectsError("Biblioteca não encontrada"),
     );
-    renderLibraryDetailPage();
+    renderDrawer();
 
     await waitFor(() => {
       expect(screen.getByText("Biblioteca não encontrada")).not.toBeNull();
     });
+  });
+
+  it("chama onOpenChange(false) ao clicar em Fechar", async () => {
+    const user = userEvent.setup();
+    vi.mocked(getLibrary).mockResolvedValue(library);
+    vi.mocked(getLibraryProjects).mockResolvedValue([]);
+    const { onOpenChange } = renderDrawer();
+
+    await screen.findByText("ORM leve, migrations explícitas");
+    await user.click(screen.getByRole("button", { name: /fechar/i }));
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 });
