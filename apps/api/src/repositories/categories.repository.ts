@@ -22,6 +22,7 @@ export type CategoriesRepository = {
     projectId: string;
     name: string;
   }): Promise<CategoryRecord>;
+  deleteCategory(id: string): Promise<void>;
 };
 
 export function createCategoriesRepository(db: DbClient): CategoriesRepository {
@@ -68,6 +69,10 @@ export function createCategoriesRepository(db: DbClient): CategoriesRepository {
         .returning();
 
       return rows[0];
+    },
+
+    async deleteCategory(id) {
+      await db.delete(categories).where(eq(categories.id, id));
     },
   };
 }

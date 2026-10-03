@@ -131,7 +131,7 @@ Fica para depois do MVP (v1.1+):
   - [x] Web: Drawer "Detalhe da biblioteca" substitui /libraries/[id]
   - [x] Web: atualizar links/redirects que apontavam pras páginas antigas
 - [ ] Aba Categorias do projeto (api + web)
-  - [ ] API: repositório + service de categorias (criar, listar globais+do projeto, bloquear nome duplicado no mesmo escopo)
+  - [x] API: repositório + service de categorias (criar, listar globais+do projeto, bloquear nome duplicado no mesmo escopo)
   - [ ] API: rotas REST de categorias com validação zod (POST/GET/DELETE /projects/:id/categories)
   - [ ] Web: tela "Categorias" (tabela + busca) na tab bar do projeto
   - [ ] Web: Drawer "Criar categoria"
