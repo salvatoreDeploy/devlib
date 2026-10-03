@@ -16,6 +16,7 @@ const pushMock = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
   useParams: () => ({ id: "project-1" }),
+  usePathname: () => "/projects/project-1",
 }));
 
 vi.mock("../../../lib/api/projects", async () => {
