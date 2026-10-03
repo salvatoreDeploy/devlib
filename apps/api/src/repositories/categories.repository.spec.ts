@@ -21,10 +21,25 @@ function fakeDbForSelectWithWhere(rows: unknown[]) {
   return { db: { select } as unknown as DbClient, select, from, where };
 }
 
+function fakeDbForInsert(row: unknown) {
+  const returning = vi.fn().mockResolvedValue([row]);
+  const values = vi.fn().mockReturnValue({ returning });
+  const insert = vi.fn().mockReturnValue({ values });
+
+  return { db: { insert } as unknown as DbClient, insert, values, returning };
+}
+
 const category = {
   id: "category-1",
   projectId: null,
   name: "Frontend",
+  createdAt: new Date("2026-09-03T00:00:00Z"),
+};
+
+const projectCategory = {
+  id: "category-2",
+  projectId: "project-1",
+  name: "Infra interna",
   createdAt: new Date("2026-09-03T00:00:00Z"),
 };
 
@@ -67,6 +82,74 @@ describe("createCategoriesRepository", () => {
       const result = await repository.findGlobalCategories();
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe("findCategoriesForProject", () => {
+    it("retorna as categorias globais e as do projeto combinadas", async () => {
+      const { db, where } = fakeDbForSelectWithWhere([
+        category,
+        projectCategory,
+      ]);
+
+      const repository = createCategoriesRepository(db);
+      const result = await repository.findCategoriesForProject("project-1");
+
+      expect(result).toEqual([category, projectCategory]);
+      expect(where).toHaveBeenCalledOnce();
+    });
+
+    it("retorna array vazio quando não há categorias globais nem do projeto", async () => {
+      const { db } = fakeDbForSelectWithWhere([]);
+
+      const repository = createCategoriesRepository(db);
+      const result = await repository.findCategoriesForProject("project-1");
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("findCategoryByProjectIdAndName", () => {
+    it("retorna a categoria quando já existe uma com esse nome no projeto", async () => {
+      const { db } = fakeDbForSelectWithLimit([projectCategory]);
+
+      const repository = createCategoriesRepository(db);
+      const result = await repository.findCategoryByProjectIdAndName(
+        "project-1",
+        "Infra interna",
+      );
+
+      expect(result).toEqual(projectCategory);
+    });
+
+    it("retorna undefined quando não há categoria com esse nome no projeto", async () => {
+      const { db } = fakeDbForSelectWithLimit([]);
+
+      const repository = createCategoriesRepository(db);
+      const result = await repository.findCategoryByProjectIdAndName(
+        "project-1",
+        "inexistente",
+      );
+
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe("insertCategory", () => {
+    it("insere e retorna a categoria criada, associada ao projeto", async () => {
+      const { db, values } = fakeDbForInsert(projectCategory);
+
+      const repository = createCategoriesRepository(db);
+      const result = await repository.insertCategory({
+        projectId: "project-1",
+        name: "Infra interna",
+      });
+
+      expect(result).toEqual(projectCategory);
+      expect(values).toHaveBeenCalledWith({
+        projectId: "project-1",
+        name: "Infra interna",
+      });
     });
   });
 });
