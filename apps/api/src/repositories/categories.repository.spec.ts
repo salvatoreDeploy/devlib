@@ -29,6 +29,13 @@ function fakeDbForInsert(row: unknown) {
   return { db: { insert } as unknown as DbClient, insert, values, returning };
 }
 
+function fakeDbForDelete() {
+  const where = vi.fn().mockResolvedValue(undefined);
+  const del = vi.fn().mockReturnValue({ where });
+
+  return { db: { delete: del } as unknown as DbClient, delete: del, where };
+}
+
 const category = {
   id: "category-1",
   projectId: null,
@@ -150,6 +157,18 @@ describe("createCategoriesRepository", () => {
         projectId: "project-1",
         name: "Infra interna",
       });
+    });
+  });
+
+  describe("deleteCategory", () => {
+    it("exclui a categoria pelo id", async () => {
+      const { db, delete: del, where } = fakeDbForDelete();
+
+      const repository = createCategoriesRepository(db);
+      await repository.deleteCategory("category-2");
+
+      expect(del).toHaveBeenCalledOnce();
+      expect(where).toHaveBeenCalledOnce();
     });
   });
 });

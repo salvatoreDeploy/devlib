@@ -71,6 +71,18 @@ import {
   type CategoriesListRouteOptions,
 } from "./routes/categories-list.route";
 import {
+  projectsCategoriesListRoute,
+  type ProjectsCategoriesListRouteOptions,
+} from "./routes/projects-categories-list.route";
+import {
+  projectsCategoriesCreateRoute,
+  type ProjectsCategoriesCreateRouteOptions,
+} from "./routes/projects-categories-create.route";
+import {
+  projectsCategoriesDeleteRoute,
+  type ProjectsCategoriesDeleteRouteOptions,
+} from "./routes/projects-categories-delete.route";
+import {
   librariesTagsCreateRoute,
   type LibrariesTagsCreateRouteOptions,
 } from "./routes/libraries-tags-create.route";
@@ -119,6 +131,9 @@ export type BuildServerDeps = RegisterRouteOptions &
   LibrariesUpdateRouteOptions &
   LibrariesDeleteRouteOptions &
   CategoriesListRouteOptions &
+  ProjectsCategoriesListRouteOptions &
+  ProjectsCategoriesCreateRouteOptions &
+  ProjectsCategoriesDeleteRouteOptions &
   LibrariesTagsCreateRouteOptions &
   LibrariesTagsListRouteOptions &
   ProjectsLibrariesListRouteOptions &
@@ -178,7 +193,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
         {
           name: "Categories",
           description:
-            "Leitura das categorias globais/predefinidas do catálogo. Sem CRUD ainda — categorias são seedadas, não criadas via API.",
+            "Categorias globais/predefinidas (seedadas, somente leitura via API) e categorias específicas de projeto (CRUD escopado a /projects/:id/categories, restrito ao dono do projeto).",
         },
         {
           name: "Tags",
@@ -235,6 +250,9 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(librariesUpdateRoute, deps);
   app.register(librariesDeleteRoute, deps);
   app.register(categoriesListRoute, deps);
+  app.register(projectsCategoriesListRoute, deps);
+  app.register(projectsCategoriesCreateRoute, deps);
+  app.register(projectsCategoriesDeleteRoute, deps);
   app.register(librariesTagsCreateRoute, deps);
   app.register(librariesTagsListRoute, deps);
   app.register(projectsLibrariesListRoute, deps);
