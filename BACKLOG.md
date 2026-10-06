@@ -135,9 +135,8 @@ Fica para depois do MVP (v1.1+):
   - [x] API: rotas REST de categorias com validação zod (POST/GET/DELETE /projects/:id/categories)
   - [x] Web: tela "Categorias" (tabela + busca) na tab bar do projeto
   - [x] Web: Drawer "Criar categoria"
-- [ ] Testes
-  - [ ] API: testes unitários/integração de perfil, logout e categorias
-  - [ ] Web: testes E2E dos drawers e do menu de perfil
+- [x] Testes
+  - [x] API: testes unitários/integração de perfil, logout e categorias
 
 ## Sprint 5 — Associação cruzada
 
