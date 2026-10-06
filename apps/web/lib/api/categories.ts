@@ -7,8 +7,13 @@ export type Category = {
   createdAt: string;
 };
 
+export type CreateProjectCategoryInput = {
+  name: string;
+};
+
 export class GetCategoriesError extends Error {}
 export class GetProjectCategoriesError extends Error {}
+export class CreateProjectCategoryError extends Error {}
 export class DeleteProjectCategoryError extends Error {}
 
 export async function getCategories(): Promise<Category[]> {
@@ -37,6 +42,30 @@ export async function getProjectCategories(
   if (!response.ok) {
     throw new GetProjectCategoriesError(
       body.error ?? "Não foi possível buscar as categorias do projeto",
+    );
+  }
+
+  return body;
+}
+
+export async function createProjectCategory(
+  projectId: string,
+  input: CreateProjectCategoryInput,
+): Promise<Category> {
+  const response = await authenticatedFetch(
+    `/projects/${projectId}/categories`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
+
+  const body = await response.json();
+
+  if (!response.ok) {
+    throw new CreateProjectCategoryError(
+      body.error ?? "Não foi possível criar a categoria",
     );
   }
 
