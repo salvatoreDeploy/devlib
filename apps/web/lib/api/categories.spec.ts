@@ -4,6 +4,8 @@ import {
   GetCategoriesError,
   getProjectCategories,
   GetProjectCategoriesError,
+  createProjectCategory,
+  CreateProjectCategoryError,
   deleteProjectCategory,
   DeleteProjectCategoryError,
 } from "./categories";
@@ -92,6 +94,59 @@ describe("getProjectCategories", () => {
     await expect(getProjectCategories("project-x")).rejects.toBeInstanceOf(
       GetProjectCategoriesError,
     );
+  });
+});
+
+describe("createProjectCategory", () => {
+  afterEach(() => {
+    vi.mocked(authenticatedFetch).mockReset();
+  });
+
+  it("envia o body e o método corretos e retorna a categoria criada", async () => {
+    const category = {
+      id: "category-2",
+      projectId: "project-1",
+      name: "Infra interna",
+      createdAt: "2026-09-03T00:00:00.000Z",
+    };
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(category),
+    } as Response);
+
+    const result = await createProjectCategory("project-1", {
+      name: "Infra interna",
+    });
+
+    expect(result).toEqual(category);
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/projects/project-1/categories",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Infra interna" }),
+      }),
+    );
+  });
+
+  it("lança CreateProjectCategoryError com a mensagem da API quando a criação falha", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      json: () =>
+        Promise.resolve({
+          error:
+            'Já existe uma categoria com o nome "Infra interna" nesse escopo',
+        }),
+    } as Response);
+
+    await expect(
+      createProjectCategory("project-1", { name: "Infra interna" }),
+    ).rejects.toThrow(
+      'Já existe uma categoria com o nome "Infra interna" nesse escopo',
+    );
+    await expect(
+      createProjectCategory("project-1", { name: "Infra interna" }),
+    ).rejects.toBeInstanceOf(CreateProjectCategoryError);
   });
 });
 

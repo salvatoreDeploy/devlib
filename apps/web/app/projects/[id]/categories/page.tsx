@@ -44,6 +44,7 @@ import {
   type Category,
 } from "../../../../lib/api/categories";
 import { useRequireAuth } from "../../../../lib/use-require-auth";
+import { CreateCategoryDrawer } from "@/components/create-category-drawer";
 
 function librariesCountLabel(count: number): string {
   return count === 1 ? "1 biblioteca" : `${count} bibliotecas`;
@@ -58,6 +59,7 @@ export default function ProjectCategoriesPage() {
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
     null,
   );
+  const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
 
   const projectQuery = useQuery({
     queryKey: ["project", id],
@@ -151,7 +153,7 @@ export default function ProjectCategoriesPage() {
             <h2 className="text-[21px] font-bold tracking-[-0.015em] text-foreground">
               Categorias
             </h2>
-            <Button>
+            <Button onClick={() => setIsCreateCategoryOpen(true)}>
               <Plus />
               Criar categoria
             </Button>
@@ -281,6 +283,18 @@ export default function ProjectCategoriesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateCategoryDrawer
+        projectId={id}
+        open={isCreateCategoryOpen}
+        onOpenChange={setIsCreateCategoryOpen}
+        onCreated={() => {
+          setIsCreateCategoryOpen(false);
+          queryClient.invalidateQueries({
+            queryKey: ["project-categories", id],
+          });
+        }}
+      />
     </div>
   );
 }

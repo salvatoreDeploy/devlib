@@ -11,6 +11,7 @@ import {
 import {
   getProjectCategories,
   GetProjectCategoriesError,
+  createProjectCategory,
   deleteProjectCategory,
 } from "../../../../lib/api/categories";
 import { clearTokens, saveTokens } from "../../../../lib/auth-storage";
@@ -37,6 +38,7 @@ vi.mock("../../../../lib/api/categories", async () => {
   return {
     ...actual,
     getProjectCategories: vi.fn(),
+    createProjectCategory: vi.fn(),
     deleteProjectCategory: vi.fn(),
   };
 });
@@ -92,6 +94,7 @@ describe("ProjectCategoriesPage", () => {
     vi.mocked(getProject).mockReset();
     vi.mocked(getProjectLibraries).mockReset();
     vi.mocked(getProjectCategories).mockReset();
+    vi.mocked(createProjectCategory).mockReset();
     vi.mocked(deleteProjectCategory).mockReset();
     vi.mocked(getProjectLibraries).mockResolvedValue([]);
     clearTokens();
@@ -242,6 +245,54 @@ describe("ProjectCategoriesPage", () => {
         "project-1",
         "category-2",
       );
+    });
+  });
+
+  it("abre o drawer 'Criar categoria' ao clicar no botão", async () => {
+    vi.mocked(getProject).mockResolvedValue(project);
+    vi.mocked(getProjectCategories).mockResolvedValue([]);
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("Nenhuma categoria ainda.")).not.toBeNull();
+    });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /criar categoria/i }),
+    );
+
+    expect(await screen.findByLabelText(/nome/i)).not.toBeNull();
+  });
+
+  it("cria a categoria, fecha o drawer e atualiza a lista", async () => {
+    vi.mocked(getProject).mockResolvedValue(project);
+    vi.mocked(getProjectCategories)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([projectCategory]);
+    vi.mocked(createProjectCategory).mockResolvedValue(projectCategory);
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("Nenhuma categoria ainda.")).not.toBeNull();
+    });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /criar categoria/i }),
+    );
+    await userEvent.type(
+      await screen.findByLabelText(/nome/i),
+      "Infra interna",
+    );
+    await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
+
+    await waitFor(() => {
+      expect(createProjectCategory).toHaveBeenCalledWith("project-1", {
+        name: "Infra interna",
+      });
+    });
+    expect(screen.queryByLabelText(/nome/i)).toBeNull();
+    await waitFor(() => {
+      expect(screen.getByText("Infra interna")).not.toBeNull();
     });
   });
 

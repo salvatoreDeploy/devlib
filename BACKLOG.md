@@ -133,7 +133,7 @@ Fica para depois do MVP (v1.1+):
 - [ ] Aba Categorias do projeto (api + web)
   - [x] API: repositório + service de categorias (criar, listar globais+do projeto, bloquear nome duplicado no mesmo escopo)
   - [x] API: rotas REST de categorias com validação zod (POST/GET/DELETE /projects/:id/categories)
-  - [ ] Web: tela "Categorias" (tabela + busca) na tab bar do projeto
+  - [x] Web: tela "Categorias" (tabela + busca) na tab bar do projeto
   - [ ] Web: Drawer "Criar categoria"
 - [ ] Testes
   - [ ] API: testes unitários/integração de perfil, logout e categorias
