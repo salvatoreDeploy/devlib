@@ -55,3 +55,10 @@ jobs:
 
       - name: Testes
         run: npm run test -- --filter=api...
+
+      # cria o banco _test se faltar, aplica as migrations de packages/db e
+      # roda os *.integration.spec.ts contra o Postgres do service acima
+      - name: Testes de integração (Postgres)
+        run: npm run test:integration -w api
+        env:
+          TEST_DATABASE_URL: postgresql://devlib:devlib@localhost:5432/devlib_test

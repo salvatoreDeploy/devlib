@@ -135,9 +135,14 @@ Fica para depois do MVP (v1.1+):
   - [x] API: rotas REST de categorias com validação zod (POST/GET/DELETE /projects/:id/categories)
   - [x] Web: tela "Categorias" (tabela + busca) na tab bar do projeto
   - [x] Web: Drawer "Criar categoria"
-- [ ] Testes
-  - [ ] API: testes unitários/integração de perfil, logout e categorias
-  - [ ] Web: testes E2E dos drawers e do menu de perfil
+- [x] Testes
+  - [x] API: testes unitários/integração de perfil, logout e categorias
+- [ ] Robustez de erros da API (achados da suíte de integração, PR #84)
+  - [ ] API: handler global de erro responde mensagem genérica em 5xx (hoje devolve `error.message`, que expõe o SQL da query em erros do Drizzle) — o erro real continua só no log
+  - [ ] API: `:id`/`:categoryId` que não é UUID retorna 404 em vez de 500 (traduzir `22P02` do Postgres num ponto central, sem trocar os params zod por `.uuid()`)
+  - [ ] API: corrida em `POST /projects/:id/categories` com mesmo nome retorna 409 em vez de 500 (traduzir `23505` em `CategoryNameAlreadyExistsError`)
+  - [ ] API: mesmo tratamento de `23505` em cadastro e `PATCH /users/me` (e-mail), bibliotecas e tags (nome)
+  - [ ] `packages/db`: migration `unique(user_id, name)` em `projects` + `23505` → 409 na criação/edição de projeto (hoje a unicidade é só no service — corrida gera projeto duplicado)
 
 ## Sprint 5 — Associação cruzada
 
