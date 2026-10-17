@@ -1,4 +1,7 @@
-import Fastify, { type FastifyError } from "fastify";
+import Fastify, {
+  type FastifyError,
+  type FastifyServerOptions,
+} from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
@@ -143,10 +146,14 @@ export type BuildServerDeps = RegisterRouteOptions &
   UsersMeUpdateRouteOptions &
   UsersMePhotoRouteOptions & {
     corsConfig?: CorsConfig;
+    logger?: FastifyServerOptions["logger"];
   };
 
 export function buildServer(deps: BuildServerDeps = {}) {
-  const app = Fastify().withTypeProvider<ZodTypeProvider>();
+  const app = Fastify({
+    logger: deps.logger ?? false,
+    disableRequestLogging: true,
+  }).withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
@@ -221,7 +228,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   });
   app.register(swaggerUi, { routePrefix: "/docs" });
 
-  app.setErrorHandler((error: FastifyError, _request, reply) => {
+  app.setErrorHandler((error: FastifyError, request, reply) => {
     if (hasZodFastifySchemaValidationErrors(error)) {
       const [firstIssue] = error.validation;
       return reply
@@ -229,7 +236,15 @@ export function buildServer(deps: BuildServerDeps = {}) {
         .send({ error: firstIssue?.message ?? "Erro de validação" });
     }
 
-    return reply.status(error.statusCode ?? 500).send({ error: error.message });
+    const status = error.statusCode ?? 500;
+    if (status >= 500) {
+      // error.message pode carregar detalhes internos (ex: SQL da query em
+      // erros do Drizzle) — o erro real fica só no log
+      request.log.error({ err: error }, "erro não tratado");
+      return reply.status(status).send({ error: "Erro interno do servidor" });
+    }
+
+    return reply.status(status).send({ error: error.message });
   });
 
   app.register(healthRoute);

@@ -124,3 +124,81 @@ describe("error handler global (validação zod)", () => {
     expect(body.error).not.toBe("Bad Request");
   });
 });
+
+describe("error handler global (5xx)", () => {
+  function buildServerWithLogCapture() {
+    const lines: string[] = [];
+    const app = buildServer({
+      logger: {
+        level: "error",
+        stream: { write: (line: string) => lines.push(line) },
+      },
+    });
+    return { app, lines };
+  }
+
+  it("responde mensagem genérica em 500 sem expor error.message (ex: SQL do Drizzle)", async () => {
+    const app = buildServer();
+    app.get("/__test-500__", async () => {
+      throw new Error('Failed query: select "id" from "projects" where "id" = $1');
+    });
+
+    const response = await app.inject({ method: "GET", url: "/__test-500__" });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toEqual({ error: "Erro interno do servidor" });
+    expect(response.body).not.toContain("Failed query");
+  });
+
+  it("mantém o status de um 5xx explícito, mas com a mensagem genérica", async () => {
+    const app = buildServer();
+    app.get("/__test-503__", async () => {
+      throw Object.assign(new Error("upstream detalhado indisponível"), {
+        statusCode: 503,
+      });
+    });
+
+    const response = await app.inject({ method: "GET", url: "/__test-503__" });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ error: "Erro interno do servidor" });
+  });
+
+  it("mantém a mensagem original em erros 4xx não tratados", async () => {
+    const app = buildServer();
+    app.get("/__test-4xx__", async () => {
+      throw Object.assign(new Error("Payload grande demais"), {
+        statusCode: 413,
+      });
+    });
+
+    const response = await app.inject({ method: "GET", url: "/__test-4xx__" });
+
+    expect(response.statusCode).toBe(413);
+    expect(response.json()).toEqual({ error: "Payload grande demais" });
+  });
+
+  it("registra o erro real no log em 5xx", async () => {
+    const { app, lines } = buildServerWithLogCapture();
+    app.get("/__test-500-log__", async () => {
+      throw new Error('Failed query: select "id" from "projects"');
+    });
+
+    await app.inject({ method: "GET", url: "/__test-500-log__" });
+
+    expect(lines.join("")).toContain("Failed query");
+  });
+
+  it("não registra erro no log em 4xx", async () => {
+    const { app, lines } = buildServerWithLogCapture();
+    app.get("/__test-4xx-log__", async () => {
+      throw Object.assign(new Error("Payload grande demais"), {
+        statusCode: 413,
+      });
+    });
+
+    await app.inject({ method: "GET", url: "/__test-4xx-log__" });
+
+    expect(lines).toEqual([]);
+  });
+});
