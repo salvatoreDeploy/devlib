@@ -202,3 +202,57 @@ describe("error handler global (5xx)", () => {
     expect(lines).toEqual([]);
   });
 });
+
+describe("error handler global (22P02 — id que não é UUID)", () => {
+  it("responde 404 genérico quando o Drizzle embrulha um 22P02 (error.cause.code), sem expor o SQL", async () => {
+    const app = buildServer();
+    app.get("/__test-22p02-cause__", async () => {
+      throw new Error('Failed query: select "id" from "projects" where "id" = $1', {
+        cause: Object.assign(
+          new Error('invalid input syntax for type uuid: "abc"'),
+          { code: "22P02" },
+        ),
+      });
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/__test-22p02-cause__",
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ error: "Recurso não encontrado" });
+    expect(response.body).not.toContain("Failed query");
+  });
+
+  it("responde 404 genérico quando o 22P02 vem direto do driver (error.code)", async () => {
+    const app = buildServer();
+    app.get("/__test-22p02-code__", async () => {
+      throw Object.assign(new Error("invalid input syntax for type uuid"), {
+        code: "22P02",
+      });
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/__test-22p02-code__",
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ error: "Recurso não encontrado" });
+  });
+
+  it("outros códigos do Postgres continuam caindo no 500 genérico", async () => {
+    const app = buildServer();
+    app.get("/__test-23505__", async () => {
+      throw new Error("Failed query: insert ...", {
+        cause: Object.assign(new Error("duplicate key"), { code: "23505" }),
+      });
+    });
+
+    const response = await app.inject({ method: "GET", url: "/__test-23505__" });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toEqual({ error: "Erro interno do servidor" });
+  });
+});

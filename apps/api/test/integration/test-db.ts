@@ -72,11 +72,7 @@ export async function closeTestDb(): Promise<void> {
 
 // drizzle-orm >= 0.44 embrulha o erro do driver em DrizzleQueryError
 // (código do Postgres fica em `cause`)
-export function pgErrorCode(error: unknown): string | undefined {
-  const candidate = error as { code?: string; cause?: { code?: string } };
-
-  return candidate?.code ?? candidate?.cause?.code;
-}
+export { pgErrorCode } from "../../src/repositories/pg-errors";
 
 export async function insertUser(email: string) {
   const [row] = await getTestDb()
