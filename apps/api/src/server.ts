@@ -11,6 +11,10 @@ import fastifyStatic from "@fastify/static";
 import { getCorsConfig, type CorsConfig } from "./config/env";
 import { DEFAULT_AVATAR_UPLOAD_DIR } from "./services/avatar-storage.service";
 import {
+  PG_INVALID_TEXT_REPRESENTATION,
+  pgErrorCode,
+} from "./repositories/pg-errors";
+import {
   hasZodFastifySchemaValidationErrors,
   jsonSchemaTransform,
   serializerCompiler,
@@ -234,6 +238,12 @@ export function buildServer(deps: BuildServerDeps = {}) {
       return reply
         .status(400)
         .send({ error: firstIssue?.message ?? "Erro de validação" });
+    }
+
+    // params como :id são z.string().min(1), sem .uuid() — um id malformado
+    // chega ao Postgres e falha no cast pra uuid; não existe recurso com esse id
+    if (pgErrorCode(error) === PG_INVALID_TEXT_REPRESENTATION) {
+      return reply.status(404).send({ error: "Recurso não encontrado" });
     }
 
     const status = error.statusCode ?? 500;
