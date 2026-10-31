@@ -330,3 +330,66 @@ describe("listProjectsOverview", () => {
     expect(result).toEqual([]);
   });
 });
+
+// formato do erro de unique violation do Drizzle: o erro do pg fica em cause
+function uniqueViolation() {
+  return new Error("Failed query: ...", {
+    cause: Object.assign(new Error("duplicate key"), { code: "23505" }),
+  });
+}
+
+function otherDbError() {
+  return Object.assign(new Error("connection terminated"), { code: "57P01" });
+}
+
+describe("createProject/updateProject (corrida, 23505)", () => {
+  it("createProject lança ProjectNameAlreadyExistsError quando o insert bate no unique (user_id, name)", async () => {
+    const repository = fakeRepository({
+      insertProject: vi.fn().mockRejectedValue(uniqueViolation()),
+    });
+
+    await expect(
+      createProject(repository, { userId: "user-1", name: "DevLib" }),
+    ).rejects.toThrow(ProjectNameAlreadyExistsError);
+  });
+
+  it("createProject relança sem alterar qualquer outro erro do insert", async () => {
+    const failure = otherDbError();
+    const repository = fakeRepository({
+      insertProject: vi.fn().mockRejectedValue(failure),
+    });
+
+    await expect(
+      createProject(repository, { userId: "user-1", name: "DevLib" }),
+    ).rejects.toBe(failure);
+  });
+
+  it("updateProject lança ProjectNameAlreadyExistsError quando o update bate no unique (user_id, name)", async () => {
+    const repository = fakeRepository({
+      updateProject: vi.fn().mockRejectedValue(uniqueViolation()),
+    });
+
+    await expect(
+      updateProject(repository, {
+        userId: "user-1",
+        projectId: "project-1",
+        data: { name: "Outro" },
+      }),
+    ).rejects.toThrow(ProjectNameAlreadyExistsError);
+  });
+
+  it("updateProject relança sem alterar qualquer outro erro do update", async () => {
+    const failure = otherDbError();
+    const repository = fakeRepository({
+      updateProject: vi.fn().mockRejectedValue(failure),
+    });
+
+    await expect(
+      updateProject(repository, {
+        userId: "user-1",
+        projectId: "project-1",
+        data: { name: "Outro" },
+      }),
+    ).rejects.toBe(failure);
+  });
+});
