@@ -6,6 +6,7 @@ import {
   hashToken,
 } from "./token.service";
 import type { AuthConfig } from "../config/env";
+import { PG_UNIQUE_VIOLATION, pgErrorCode } from "../repositories/pg-errors";
 
 export class EmailAlreadyInUseError extends Error {
   constructor(email: string) {
@@ -58,10 +59,16 @@ export async function registerUser(
   }
 
   const passwordHash = await argon2.hash(input.password);
-  const user = await repository.insertUser({
-    email: input.email,
-    passwordHash,
-  });
+  let user: Awaited<ReturnType<AuthRepository["insertUser"]>>;
+  try {
+    user = await repository.insertUser({ email: input.email, passwordHash });
+  } catch (error) {
+    // corrida: outro cadastro com o mesmo e-mail entre a checagem e o insert
+    if (pgErrorCode(error) === PG_UNIQUE_VIOLATION) {
+      throw new EmailAlreadyInUseError(input.email);
+    }
+    throw error;
+  }
 
   return { id: user.id, email: user.email, createdAt: user.createdAt };
 }

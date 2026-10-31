@@ -5,6 +5,7 @@ import type {
 } from "../repositories/users.repository";
 import { EmailAlreadyInUseError } from "./auth.service";
 import type { AvatarStorage } from "./avatar-storage.service";
+import { PG_UNIQUE_VIOLATION, pgErrorCode } from "../repositories/pg-errors";
 
 export type { UserRecord, UsersRepository, AvatarStorage };
 export { EmailAlreadyInUseError };
@@ -79,11 +80,20 @@ export async function updateCurrentUser(
     ? await argon2.hash(data.password)
     : undefined;
 
-  const updated = await repository.updateUser(userId, {
-    name: data.name,
-    email: data.email,
-    passwordHash,
-  });
+  let updated: Awaited<ReturnType<UpdateUserRepository["updateUser"]>>;
+  try {
+    updated = await repository.updateUser(userId, {
+      name: data.name,
+      email: data.email,
+      passwordHash,
+    });
+  } catch (error) {
+    // corrida: outro usuário assumiu o e-mail entre a checagem e o update
+    if (data.email && pgErrorCode(error) === PG_UNIQUE_VIOLATION) {
+      throw new EmailAlreadyInUseError(data.email);
+    }
+    throw error;
+  }
 
   if (!updated) {
     throw new UserNotFoundError();

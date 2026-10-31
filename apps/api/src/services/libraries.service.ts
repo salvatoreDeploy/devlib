@@ -5,6 +5,7 @@ import type {
 } from "../repositories/libraries.repository";
 import type { CategoryRecord } from "../repositories/categories.repository";
 import type { LibraryProjectRecord } from "../repositories/projects.repository";
+import { PG_UNIQUE_VIOLATION, pgErrorCode } from "../repositories/pg-errors";
 
 export type { LibraryRecord, LibraryProjectRecord, LibraryOverviewRecord };
 
@@ -64,7 +65,15 @@ export async function createLibrary(
     }
   }
 
-  return repository.insertLibrary(input);
+  try {
+    return await repository.insertLibrary(input);
+  } catch (error) {
+    // corrida: outra biblioteca com o mesmo nome entre a checagem e o insert
+    if (pgErrorCode(error) === PG_UNIQUE_VIOLATION) {
+      throw new LibraryNameAlreadyExistsError(input.name);
+    }
+    throw error;
+  }
 }
 
 export async function listLibraries(
@@ -115,7 +124,16 @@ export async function updateLibrary(
     }
   }
 
-  const updated = await repository.updateLibrary(id, data);
+  let updated: Awaited<ReturnType<LibrariesRepository["updateLibrary"]>>;
+  try {
+    updated = await repository.updateLibrary(id, data);
+  } catch (error) {
+    // corrida: outra biblioteca assumiu o nome entre a checagem e o update
+    if (data.name && pgErrorCode(error) === PG_UNIQUE_VIOLATION) {
+      throw new LibraryNameAlreadyExistsError(data.name);
+    }
+    throw error;
+  }
 
   if (!updated) {
     throw new LibraryNotFoundError();

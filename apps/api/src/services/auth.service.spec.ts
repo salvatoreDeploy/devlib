@@ -329,3 +329,43 @@ describe("logoutUser", () => {
     expect(repository.revokeRefreshToken).not.toHaveBeenCalled();
   });
 });
+
+// formato do erro de unique violation do Drizzle: o erro do pg fica em cause
+function uniqueViolation() {
+  return new Error("Failed query: ...", {
+    cause: Object.assign(new Error("duplicate key"), { code: "23505" }),
+  });
+}
+
+function otherDbError() {
+  return Object.assign(new Error("connection terminated"), { code: "57P01" });
+}
+
+describe("registerUser (corrida, 23505)", () => {
+  it("lança EmailAlreadyInUseError quando o insert bate no unique de email", async () => {
+    const repository = fakeRepository({
+      insertUser: vi.fn().mockRejectedValue(uniqueViolation()),
+    });
+
+    await expect(
+      registerUser(repository, {
+        email: "ana@example.com",
+        password: "senha1234",
+      }),
+    ).rejects.toThrow(EmailAlreadyInUseError);
+  });
+
+  it("relança sem alterar qualquer outro erro do insert", async () => {
+    const failure = otherDbError();
+    const repository = fakeRepository({
+      insertUser: vi.fn().mockRejectedValue(failure),
+    });
+
+    await expect(
+      registerUser(repository, {
+        email: "ana@example.com",
+        password: "senha1234",
+      }),
+    ).rejects.toBe(failure);
+  });
+});

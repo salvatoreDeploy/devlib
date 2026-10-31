@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { users } from "@devlib/db";
 import { eq } from "drizzle-orm";
 import { buildServer } from "../server";
+import { createUsersRepository } from "../repositories/users.repository";
+import { createRefreshTokensRepository } from "../repositories/refresh-tokens.repository";
 import { getTestDb } from "../../test/integration/test-db";
 import { bearer, signUp, login } from "../../test/integration/http";
 
@@ -106,6 +108,35 @@ describe("GET/PATCH /users/me (Postgres real)", () => {
     });
 
     expect(patch.statusCode).toBe(409);
+  });
+
+  it("corrida no PATCH do e-mail (checagem prévia não vê o outro usuário) retorna 409 via 23505, não 500", async () => {
+    const db = getTestDb();
+    // a checagem prévia nunca encontra o e-mail, então o update bate no
+    // unique real de users.email
+    const app = buildServer({
+      usersUpdateRepository: {
+        ...createUsersRepository(db),
+        ...createRefreshTokensRepository(db),
+        findUserByEmail: async () => undefined,
+      },
+    });
+    await signUp(app, "bia@example.com", PASSWORD);
+    const session = await signUp(app, "ana@example.com", PASSWORD);
+
+    const patch = await app.inject({
+      method: "PATCH",
+      url: "/users/me",
+      headers: bearer(session.accessToken),
+      payload: { email: "bia@example.com", currentPassword: PASSWORD },
+    });
+
+    expect(patch.statusCode).toBe(409);
+    const [ana] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, session.userId));
+    expect(ana.email).toBe("ana@example.com");
   });
 
   it("PATCH da senha grava hash argon2, revoga as sessões abertas e troca a senha válida no login", async () => {
