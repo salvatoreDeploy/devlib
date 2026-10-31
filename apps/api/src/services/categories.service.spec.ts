@@ -182,6 +182,41 @@ describe("createCategory", () => {
     expect(repository.insertCategory).not.toHaveBeenCalled();
   });
 
+  it("lança CategoryNameAlreadyExistsError quando o insert bate no unique do banco (corrida, 23505)", async () => {
+    const repository = fakeRepository({
+      insertCategory: vi.fn().mockRejectedValue(
+        new Error('Failed query: insert into "categories" ...', {
+          cause: Object.assign(new Error("duplicate key"), { code: "23505" }),
+        }),
+      ),
+    });
+
+    await expect(
+      createCategory(repository, {
+        userId: "user-1",
+        projectId: "project-1",
+        name: "Infra interna",
+      }),
+    ).rejects.toThrow(CategoryNameAlreadyExistsError);
+  });
+
+  it("relança sem alterar qualquer outro erro do insert", async () => {
+    const failure = Object.assign(new Error("connection terminated"), {
+      code: "57P01",
+    });
+    const repository = fakeRepository({
+      insertCategory: vi.fn().mockRejectedValue(failure),
+    });
+
+    await expect(
+      createCategory(repository, {
+        userId: "user-1",
+        projectId: "project-1",
+        name: "Infra interna",
+      }),
+    ).rejects.toBe(failure);
+  });
+
   it("não bloqueia quando uma categoria global tem o mesmo nome (escopos diferentes)", async () => {
     const repository = fakeRepository();
 

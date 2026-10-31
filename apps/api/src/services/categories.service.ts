@@ -3,6 +3,7 @@ import type {
   CategoriesRepository as CategoriesDataRepository,
 } from "../repositories/categories.repository";
 import type { ProjectRecord } from "../repositories/projects.repository";
+import { PG_UNIQUE_VIOLATION, pgErrorCode } from "../repositories/pg-errors";
 import { ProjectNotFoundError } from "./projects.service";
 
 export type { CategoryRecord };
@@ -94,10 +95,19 @@ export async function createCategory(
     throw new CategoryNameAlreadyExistsError(input.name);
   }
 
-  return repository.insertCategory({
-    projectId: input.projectId,
-    name: input.name,
-  });
+  try {
+    return await repository.insertCategory({
+      projectId: input.projectId,
+      name: input.name,
+    });
+  } catch (error) {
+    // corrida: outra requisição gravou o mesmo nome entre a checagem acima e
+    // o insert — o unique(project_id, name) do banco barra e vira o mesmo 409
+    if (pgErrorCode(error) === PG_UNIQUE_VIOLATION) {
+      throw new CategoryNameAlreadyExistsError(input.name);
+    }
+    throw error;
+  }
 }
 
 export type DeleteCategoryInput = {
