@@ -21,6 +21,11 @@ export type ProjectLibrariesRepository = {
     libraryId: string;
     version: string | null;
   }): Promise<ProjectLibraryRecord>;
+  updateProjectLibraryVersion(
+    projectId: string,
+    libraryId: string,
+    version: string | null,
+  ): Promise<ProjectLibraryRecord | undefined>;
   deleteProjectLibrary(projectId: string, libraryId: string): Promise<boolean>;
 };
 
@@ -49,6 +54,18 @@ export function createProjectLibrariesRepository(
       const rows = await db
         .insert(projectLibraries)
         .values({ projectId, libraryId, version })
+        .returning();
+
+      return rows[0];
+    },
+
+    // mesmo raciocínio do delete abaixo: sem linha no RETURNING, não havia
+    // associação — o 404 sai do próprio update
+    async updateProjectLibraryVersion(projectId, libraryId, version) {
+      const rows = await db
+        .update(projectLibraries)
+        .set({ version })
+        .where(byProjectAndLibrary(projectId, libraryId))
         .returning();
 
       return rows[0];

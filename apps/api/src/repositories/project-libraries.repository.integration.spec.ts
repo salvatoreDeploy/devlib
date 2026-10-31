@@ -94,6 +94,56 @@ describe("createProjectLibrariesRepository (Postgres real)", () => {
     expect(await getTestDb().select().from(projectLibraries)).toHaveLength(2);
   });
 
+  it("updateProjectLibraryVersion troca só a versão do par informado", async () => {
+    const { projectA, projectB, library } = await projectsAndLibrary();
+    const repository = createProjectLibrariesRepository(getTestDb());
+    const target = await repository.insertProjectLibrary({
+      projectId: projectA.id,
+      libraryId: library.id,
+      version: "18.3.1",
+    });
+    const other = await repository.insertProjectLibrary({
+      projectId: projectB.id,
+      libraryId: library.id,
+      version: "18.3.1",
+    });
+
+    const updated = await repository.updateProjectLibraryVersion(
+      projectA.id,
+      library.id,
+      "19.0.0",
+    );
+
+    expect(updated).toEqual({ ...target, version: "19.0.0" });
+    expect(
+      await repository.findProjectLibrary(projectB.id, library.id),
+    ).toEqual(other);
+  });
+
+  it("updateProjectLibraryVersion aceita null e retorna undefined sem associação", async () => {
+    const { projectA, projectB, library } = await projectsAndLibrary();
+    const repository = createProjectLibrariesRepository(getTestDb());
+    await repository.insertProjectLibrary({
+      projectId: projectA.id,
+      libraryId: library.id,
+      version: "18.3.1",
+    });
+
+    const cleared = await repository.updateProjectLibraryVersion(
+      projectA.id,
+      library.id,
+      null,
+    );
+    const missing = await repository.updateProjectLibraryVersion(
+      projectB.id,
+      library.id,
+      "19.0.0",
+    );
+
+    expect(cleared?.version).toBeNull();
+    expect(missing).toBeUndefined();
+  });
+
   it("deleteProjectLibrary remove só a associação informada e retorna true", async () => {
     const { projectA, projectB, library } = await projectsAndLibrary();
     const repository = createProjectLibrariesRepository(getTestDb());

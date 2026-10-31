@@ -33,6 +33,21 @@ function listProjectLibraries(app: App, token: string, projectId: string) {
   });
 }
 
+function updateVersion(
+  app: App,
+  token: string,
+  projectId: string,
+  libraryId: string,
+  version: string | null,
+) {
+  return app.inject({
+    method: "PATCH",
+    url: `/projects/${projectId}/libraries/${libraryId}`,
+    headers: bearer(token),
+    payload: { version },
+  });
+}
+
 function remove(app: App, token: string, projectId: string, libraryId: string) {
   return app.inject({
     method: "DELETE",
@@ -78,6 +93,79 @@ describe("associação biblioteca ↔ projeto (Postgres real)", () => {
 
     expect(removed.statusCode).toBe(204);
     expect(afterRemove.json()).toEqual([]);
+  });
+
+  it("PATCH troca a version (com trim), limpa com null e GET reflete a mudança", async () => {
+    const { app, ana, project, library } = await setup();
+    await associate(app, ana.accessToken, project.id, {
+      libraryId: library.id,
+      version: "18.3.1",
+    });
+
+    const updated = await updateVersion(
+      app,
+      ana.accessToken,
+      project.id,
+      library.id,
+      " 19.0.0 ",
+    );
+    const afterUpdate = await listProjectLibraries(
+      app,
+      ana.accessToken,
+      project.id,
+    );
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json()).toMatchObject({
+      projectId: project.id,
+      libraryId: library.id,
+      version: "19.0.0",
+    });
+    expect(afterUpdate.json()).toEqual([
+      expect.objectContaining({ id: library.id, version: "19.0.0" }),
+    ]);
+
+    const cleared = await updateVersion(
+      app,
+      ana.accessToken,
+      project.id,
+      library.id,
+      null,
+    );
+
+    expect(cleared.statusCode).toBe(200);
+    expect(cleared.json().version).toBeNull();
+  });
+
+  it("PATCH responde 404 com projeto de outro usuário ou biblioteca não associada, sem alterar nada", async () => {
+    const { app, ana, project, library } = await setup();
+    const bia = await signUp(app, "bia@example.com", PASSWORD);
+    const other = await insertLibrary("vue");
+    await associate(app, ana.accessToken, project.id, {
+      libraryId: library.id,
+      version: "18.3.1",
+    });
+
+    const foreign = await updateVersion(
+      app,
+      bia.accessToken,
+      project.id,
+      library.id,
+      "19.0.0",
+    );
+    const notAssociated = await updateVersion(
+      app,
+      ana.accessToken,
+      project.id,
+      other.id,
+      "3.0.0",
+    );
+
+    expect(foreign.statusCode).toBe(404);
+    expect(notAssociated.statusCode).toBe(404);
+    expect(await getTestDb().select().from(projectLibraries)).toEqual([
+      expect.objectContaining({ version: "18.3.1" }),
+    ]);
   });
 
   it("associar a mesma biblioteca de novo responde 409 e não troca a version", async () => {

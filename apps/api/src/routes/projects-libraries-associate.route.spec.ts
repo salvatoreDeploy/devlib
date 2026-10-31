@@ -54,6 +54,7 @@ function fakeRepository(
     findLibraryById: vi.fn().mockResolvedValue(library),
     findProjectLibrary: vi.fn().mockResolvedValue(undefined),
     insertProjectLibrary: vi.fn().mockResolvedValue(projectLibrary),
+    updateProjectLibraryVersion: vi.fn(),
     deleteProjectLibrary: vi.fn().mockResolvedValue(true),
     ...overrides,
   };

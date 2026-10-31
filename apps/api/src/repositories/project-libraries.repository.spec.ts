@@ -21,6 +21,21 @@ function fakeDbForInsert(row: unknown) {
   return { db: { insert } as unknown as DbClient, insert, values, returning };
 }
 
+function fakeDbForUpdateReturning(rows: unknown[]) {
+  const returning = vi.fn().mockResolvedValue(rows);
+  const where = vi.fn().mockReturnValue({ returning });
+  const set = vi.fn().mockReturnValue({ where });
+  const update = vi.fn().mockReturnValue({ set });
+
+  return {
+    db: { update } as unknown as DbClient,
+    update,
+    set,
+    where,
+    returning,
+  };
+}
+
 function fakeDbForDeleteReturning(rows: unknown[]) {
   const returning = vi.fn().mockResolvedValue(rows);
   const where = vi.fn().mockReturnValue({ returning });
@@ -108,6 +123,53 @@ describe("createProjectLibrariesRepository", () => {
         libraryId: "library-1",
         version: null,
       });
+    });
+  });
+
+  describe("updateProjectLibraryVersion", () => {
+    it("grava a versão nova e retorna a associação atualizada", async () => {
+      const updated = { ...projectLibrary, version: "19.0.0" };
+      const { db, set, where } = fakeDbForUpdateReturning([updated]);
+
+      const repository = createProjectLibrariesRepository(db);
+      const result = await repository.updateProjectLibraryVersion(
+        "project-1",
+        "library-1",
+        "19.0.0",
+      );
+
+      expect(result).toEqual(updated);
+      expect(set).toHaveBeenCalledWith({ version: "19.0.0" });
+      expect(where).toHaveBeenCalledOnce();
+    });
+
+    it("aceita version null (limpa a versão)", async () => {
+      const { db, set } = fakeDbForUpdateReturning([
+        { ...projectLibrary, version: null },
+      ]);
+
+      const repository = createProjectLibrariesRepository(db);
+      const result = await repository.updateProjectLibraryVersion(
+        "project-1",
+        "library-1",
+        null,
+      );
+
+      expect(result?.version).toBeNull();
+      expect(set).toHaveBeenCalledWith({ version: null });
+    });
+
+    it("retorna undefined quando a associação não existe", async () => {
+      const { db } = fakeDbForUpdateReturning([]);
+
+      const repository = createProjectLibrariesRepository(db);
+      const result = await repository.updateProjectLibraryVersion(
+        "project-1",
+        "library-inexistente",
+        "19.0.0",
+      );
+
+      expect(result).toBeUndefined();
     });
   });
 

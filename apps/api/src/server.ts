@@ -106,6 +106,10 @@ import {
   type ProjectsLibrariesAssociateRouteOptions,
 } from "./routes/projects-libraries-associate.route";
 import {
+  projectsLibrariesUpdateRoute,
+  type ProjectsLibrariesUpdateRouteOptions,
+} from "./routes/projects-libraries-update.route";
+import {
   projectsLibrariesRemoveRoute,
   type ProjectsLibrariesRemoveRouteOptions,
 } from "./routes/projects-libraries-remove.route";
@@ -153,6 +157,7 @@ export type BuildServerDeps = RegisterRouteOptions &
   LibrariesTagsListRouteOptions &
   ProjectsLibrariesListRouteOptions &
   ProjectsLibrariesAssociateRouteOptions &
+  ProjectsLibrariesUpdateRouteOptions &
   ProjectsLibrariesRemoveRouteOptions &
   LibrariesProjectsListRouteOptions &
   LibrariesOverviewRouteOptions &
@@ -292,6 +297,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(librariesTagsListRoute, deps);
   app.register(projectsLibrariesListRoute, deps);
   app.register(projectsLibrariesAssociateRoute, deps);
+  app.register(projectsLibrariesUpdateRoute, deps);
   app.register(projectsLibrariesRemoveRoute, deps);
   app.register(librariesProjectsListRoute, deps);
   app.register(usersMeGetRoute, deps);
