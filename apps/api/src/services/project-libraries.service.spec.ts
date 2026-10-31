@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   associateLibraryToProject,
   removeLibraryFromProject,
+  updateProjectLibraryVersion,
   LibraryNotFoundError,
   ProjectLibraryAlreadyExistsError,
   ProjectLibraryNotFoundError,
@@ -43,6 +44,9 @@ function fakeRepository(
     findLibraryById: vi.fn().mockResolvedValue(library),
     findProjectLibrary: vi.fn().mockResolvedValue(undefined),
     insertProjectLibrary: vi.fn().mockResolvedValue(projectLibrary),
+    updateProjectLibraryVersion: vi
+      .fn()
+      .mockResolvedValue({ ...projectLibrary, version: "19.0.0" }),
     deleteProjectLibrary: vi.fn().mockResolvedValue(true),
     ...overrides,
   };
@@ -233,6 +237,93 @@ describe("removeLibraryFromProject", () => {
         userId: "user-1",
         projectId: "project-1",
         libraryId: "library-1",
+      }),
+    ).rejects.toBeInstanceOf(ProjectLibraryNotFoundError);
+  });
+});
+
+describe("updateProjectLibraryVersion", () => {
+  it("troca a versão e retorna a associação atualizada", async () => {
+    const repository = fakeRepository();
+
+    const result = await updateProjectLibraryVersion(repository, {
+      userId: "user-1",
+      projectId: "project-1",
+      libraryId: "library-1",
+      version: "19.0.0",
+    });
+
+    expect(result.version).toBe("19.0.0");
+    expect(repository.updateProjectLibraryVersion).toHaveBeenCalledWith(
+      "project-1",
+      "library-1",
+      "19.0.0",
+    );
+  });
+
+  it("aceita version null (limpa a versão)", async () => {
+    const repository = fakeRepository({
+      updateProjectLibraryVersion: vi
+        .fn()
+        .mockResolvedValue({ ...projectLibrary, version: null }),
+    });
+
+    const result = await updateProjectLibraryVersion(repository, {
+      userId: "user-1",
+      projectId: "project-1",
+      libraryId: "library-1",
+      version: null,
+    });
+
+    expect(result.version).toBeNull();
+    expect(repository.updateProjectLibraryVersion).toHaveBeenCalledWith(
+      "project-1",
+      "library-1",
+      null,
+    );
+  });
+
+  it("lança ProjectNotFoundError quando o projeto é de outro usuário", async () => {
+    const repository = fakeRepository();
+
+    await expect(
+      updateProjectLibraryVersion(repository, {
+        userId: "user-2",
+        projectId: "project-1",
+        libraryId: "library-1",
+        version: "19.0.0",
+      }),
+    ).rejects.toBeInstanceOf(ProjectNotFoundError);
+    expect(repository.updateProjectLibraryVersion).not.toHaveBeenCalled();
+  });
+
+  it("lança ProjectNotFoundError quando o projeto não existe", async () => {
+    const repository = fakeRepository({
+      findProjectById: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(
+      updateProjectLibraryVersion(repository, {
+        userId: "user-1",
+        projectId: "project-inexistente",
+        libraryId: "library-1",
+        version: "19.0.0",
+      }),
+    ).rejects.toBeInstanceOf(ProjectNotFoundError);
+    expect(repository.updateProjectLibraryVersion).not.toHaveBeenCalled();
+  });
+
+  it("lança ProjectLibraryNotFoundError quando a biblioteca não está no projeto", async () => {
+    const repository = fakeRepository({
+      updateProjectLibraryVersion: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(
+      updateProjectLibraryVersion(repository, {
+        userId: "user-1",
+        projectId: "project-1",
+        libraryId: "library-1",
+        version: "19.0.0",
       }),
     ).rejects.toBeInstanceOf(ProjectLibraryNotFoundError);
   });

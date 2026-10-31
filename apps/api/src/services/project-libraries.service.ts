@@ -105,3 +105,29 @@ export async function removeLibraryFromProject(
     throw new ProjectLibraryNotFoundError();
   }
 }
+
+export type UpdateProjectLibraryVersionInput = {
+  userId: string;
+  projectId: string;
+  libraryId: string;
+  version: string | null;
+};
+
+export async function updateProjectLibraryVersion(
+  repository: ProjectLibrariesRepository,
+  { userId, projectId, libraryId, version }: UpdateProjectLibraryVersionInput,
+): Promise<ProjectLibraryRecord> {
+  await assertProjectOwnedByUser(repository, userId, projectId);
+
+  const updated = await repository.updateProjectLibraryVersion(
+    projectId,
+    libraryId,
+    version,
+  );
+
+  if (!updated) {
+    throw new ProjectLibraryNotFoundError();
+  }
+
+  return updated;
+}
