@@ -148,7 +148,7 @@ Fica para depois do MVP (v1.1+):
 
 - [ ] Associação biblioteca ↔ projeto (api)
   - [x] API: repositório + service de `project_libraries` (associar com `version` opcional, bloquear duplicado projeto+biblioteca, remover associação)
-  - [ ] API: rotas REST de associação (`POST /projects/:id/libraries`, `DELETE /projects/:id/libraries/:libraryId`) com validação zod
+  - [x] API: rotas REST de associação (`POST /projects/:id/libraries`, `DELETE /projects/:id/libraries/:libraryId`) com validação zod
   - [ ] API: `PATCH /projects/:id/libraries/:libraryId` pra editar a `version` de uma associação existente (repositório + service + rota com zod) — hoje só dá pra trocar removendo e associando de novo; fora do escopo da subtask de repositório/service por decisão do plano
 - [ ] Associar biblioteca a projeto (a partir da tela da biblioteca)
   - [ ] Web: seção "Associar a um projeto" (select de projeto + `version` opcional + botão "Associar") no Drawer Detalhe da Biblioteca
