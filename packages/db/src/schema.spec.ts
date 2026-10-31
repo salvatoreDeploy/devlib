@@ -169,6 +169,19 @@ describe("projects", () => {
 
     expect(columns.description.notNull).toBe(false);
   });
+
+  it("nome é único por usuário (constraint composta user_id+name)", () => {
+    const { uniqueConstraints } = getTableConfig(projects);
+
+    const composite = uniqueConstraints.find(
+      (constraint) =>
+        constraint.columns
+          .map((column) => column.name)
+          .sort()
+          .join(",") === "name,user_id",
+    );
+    expect(composite).toBeDefined();
+  });
 });
 
 describe("libraries", () => {

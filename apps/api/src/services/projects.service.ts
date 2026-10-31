@@ -4,6 +4,7 @@ import type {
   ProjectsRepository,
 } from "../repositories/projects.repository";
 import type { ProjectLibraryRecord } from "../repositories/libraries.repository";
+import { PG_UNIQUE_VIOLATION, pgErrorCode } from "../repositories/pg-errors";
 
 export type {
   ProjectRecord,
@@ -53,7 +54,16 @@ export async function createProject(
     throw new ProjectNameAlreadyExistsError(input.name);
   }
 
-  return repository.insertProject(input);
+  try {
+    return await repository.insertProject(input);
+  } catch (error) {
+    // corrida: outro projeto do mesmo usuário com o mesmo nome entre a
+    // checagem e o insert — o unique(user_id, name) do banco barra
+    if (pgErrorCode(error) === PG_UNIQUE_VIOLATION) {
+      throw new ProjectNameAlreadyExistsError(input.name);
+    }
+    throw error;
+  }
 }
 
 export async function listProjects(
@@ -102,7 +112,16 @@ export async function updateProject(
     }
   }
 
-  const updated = await repository.updateProject(projectId, data);
+  let updated: Awaited<ReturnType<ProjectsRepository["updateProject"]>>;
+  try {
+    updated = await repository.updateProject(projectId, data);
+  } catch (error) {
+    // corrida: outro projeto do usuário assumiu o nome entre a checagem e o update
+    if (data.name && pgErrorCode(error) === PG_UNIQUE_VIOLATION) {
+      throw new ProjectNameAlreadyExistsError(data.name);
+    }
+    throw error;
+  }
 
   if (!updated) {
     throw new ProjectNotFoundError();
