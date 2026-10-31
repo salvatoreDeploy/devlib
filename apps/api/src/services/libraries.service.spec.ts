@@ -306,3 +306,58 @@ describe("deleteLibrary", () => {
     expect(repository.deleteLibrary).not.toHaveBeenCalled();
   });
 });
+
+// formato do erro de unique violation do Drizzle: o erro do pg fica em cause
+function uniqueViolation() {
+  return new Error("Failed query: ...", {
+    cause: Object.assign(new Error("duplicate key"), { code: "23505" }),
+  });
+}
+
+function otherDbError() {
+  return Object.assign(new Error("connection terminated"), { code: "57P01" });
+}
+
+describe("createLibrary/updateLibrary (corrida, 23505)", () => {
+  it("createLibrary lança LibraryNameAlreadyExistsError quando o insert bate no unique de nome", async () => {
+    const repository = fakeRepository({
+      insertLibrary: vi.fn().mockRejectedValue(uniqueViolation()),
+    });
+
+    await expect(
+      createLibrary(repository, { name: "zod" }),
+    ).rejects.toThrow(LibraryNameAlreadyExistsError);
+  });
+
+  it("createLibrary relança sem alterar qualquer outro erro do insert", async () => {
+    const failure = otherDbError();
+    const repository = fakeRepository({
+      insertLibrary: vi.fn().mockRejectedValue(failure),
+    });
+
+    await expect(createLibrary(repository, { name: "zod" })).rejects.toBe(
+      failure,
+    );
+  });
+
+  it("updateLibrary lança LibraryNameAlreadyExistsError quando o update bate no unique de nome", async () => {
+    const repository = fakeRepository({
+      updateLibrary: vi.fn().mockRejectedValue(uniqueViolation()),
+    });
+
+    await expect(
+      updateLibrary(repository, library.id, { name: "zod" }),
+    ).rejects.toThrow(LibraryNameAlreadyExistsError);
+  });
+
+  it("updateLibrary relança sem alterar qualquer outro erro do update", async () => {
+    const failure = otherDbError();
+    const repository = fakeRepository({
+      updateLibrary: vi.fn().mockRejectedValue(failure),
+    });
+
+    await expect(
+      updateLibrary(repository, library.id, { name: "zod" }),
+    ).rejects.toBe(failure);
+  });
+});

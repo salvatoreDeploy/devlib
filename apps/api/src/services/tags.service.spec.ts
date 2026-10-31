@@ -123,3 +123,70 @@ describe("listLibraryTags", () => {
     expect(repository.findTagsByLibraryId).not.toHaveBeenCalled();
   });
 });
+
+// formato do erro de unique violation do Drizzle: o erro do pg fica em cause
+function uniqueViolation() {
+  return new Error("Failed query: ...", {
+    cause: Object.assign(new Error("duplicate key"), { code: "23505" }),
+  });
+}
+
+function otherDbError() {
+  return Object.assign(new Error("connection terminated"), { code: "57P01" });
+}
+
+describe("addTagToLibrary (corrida, 23505)", () => {
+  it("reaproveita a tag quando outra requisição a criou entre a busca e o insert", async () => {
+    const repository = fakeRepository({
+      findTagByName: vi
+        .fn()
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(tag),
+      insertTag: vi.fn().mockRejectedValue(uniqueViolation()),
+    });
+
+    const result = await addTagToLibrary(repository, "library-1", "react");
+
+    expect(result).toEqual(tag);
+    expect(repository.findTagByName).toHaveBeenCalledTimes(2);
+    expect(repository.insertLibraryTag).toHaveBeenCalledWith(
+      "library-1",
+      "tag-1",
+    );
+  });
+
+  it("relança sem alterar qualquer outro erro do insert da tag", async () => {
+    const failure = otherDbError();
+    const repository = fakeRepository({
+      insertTag: vi.fn().mockRejectedValue(failure),
+    });
+
+    await expect(
+      addTagToLibrary(repository, "library-1", "react"),
+    ).rejects.toBe(failure);
+    expect(repository.insertLibraryTag).not.toHaveBeenCalled();
+  });
+
+  it("lança TagAlreadyAssociatedError quando a associação bate na PK (library_id, tag_id)", async () => {
+    const repository = fakeRepository({
+      findTagByName: vi.fn().mockResolvedValue(tag),
+      insertLibraryTag: vi.fn().mockRejectedValue(uniqueViolation()),
+    });
+
+    await expect(
+      addTagToLibrary(repository, "library-1", "react"),
+    ).rejects.toThrow(TagAlreadyAssociatedError);
+  });
+
+  it("relança sem alterar qualquer outro erro da associação", async () => {
+    const failure = otherDbError();
+    const repository = fakeRepository({
+      findTagByName: vi.fn().mockResolvedValue(tag),
+      insertLibraryTag: vi.fn().mockRejectedValue(failure),
+    });
+
+    await expect(
+      addTagToLibrary(repository, "library-1", "react"),
+    ).rejects.toBe(failure);
+  });
+});

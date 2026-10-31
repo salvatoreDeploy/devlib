@@ -358,3 +358,57 @@ describe("updateCurrentUserAvatar", () => {
     expect(repository.updateUser).not.toHaveBeenCalled();
   });
 });
+
+// formato do erro de unique violation do Drizzle: o erro do pg fica em cause
+function uniqueViolation() {
+  return new Error("Failed query: ...", {
+    cause: Object.assign(new Error("duplicate key"), { code: "23505" }),
+  });
+}
+
+function otherDbError() {
+  return Object.assign(new Error("connection terminated"), { code: "57P01" });
+}
+
+describe("updateCurrentUser (corrida, 23505)", () => {
+  async function userWithPassword() {
+    return {
+      id: "user-1",
+      email: "ana@example.com",
+      passwordHash: await argon2.hash("senha1234"),
+      name: "Ana",
+      avatarUrl: null,
+      createdAt: new Date("2026-08-29T00:00:00Z"),
+      updatedAt: new Date("2026-08-29T00:00:00Z"),
+    };
+  }
+
+  it("lança EmailAlreadyInUseError quando o update bate no unique de email", async () => {
+    const repository = fakeUpdateUserRepository({
+      findUserById: vi.fn().mockResolvedValue(await userWithPassword()),
+      updateUser: vi.fn().mockRejectedValue(uniqueViolation()),
+    });
+
+    await expect(
+      updateCurrentUser(repository, {
+        userId: "user-1",
+        data: { email: "bia@example.com", currentPassword: "senha1234" },
+      }),
+    ).rejects.toThrow(EmailAlreadyInUseError);
+  });
+
+  it("relança sem alterar qualquer outro erro do update", async () => {
+    const failure = otherDbError();
+    const repository = fakeUpdateUserRepository({
+      findUserById: vi.fn().mockResolvedValue(await userWithPassword()),
+      updateUser: vi.fn().mockRejectedValue(failure),
+    });
+
+    await expect(
+      updateCurrentUser(repository, {
+        userId: "user-1",
+        data: { email: "bia@example.com", currentPassword: "senha1234" },
+      }),
+    ).rejects.toBe(failure);
+  });
+});
