@@ -1,7 +1,13 @@
 import { fileURLToPath } from "node:url";
 import { sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { categories, createDb, projects, users } from "@devlib/db";
+import {
+  categories,
+  createDb,
+  libraries,
+  projects,
+  users,
+} from "@devlib/db";
 import {
   getDatabaseName,
   getMaintenanceDatabaseUrl,
@@ -96,6 +102,15 @@ export async function insertGlobalCategory(name: string) {
   const [row] = await getTestDb()
     .insert(categories)
     .values({ projectId: null, name })
+    .returning();
+
+  return row;
+}
+
+export async function insertLibrary(name: string) {
+  const [row] = await getTestDb()
+    .insert(libraries)
+    .values({ name })
     .returning();
 
   return row;
