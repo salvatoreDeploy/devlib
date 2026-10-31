@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { categories } from "@devlib/db";
 import { buildServer } from "../server";
+import { createCategoriesRepository } from "../repositories/categories.repository";
+import { createProjectsRepository } from "../repositories/projects.repository";
 import {
   getTestDb,
   insertGlobalCategory,
@@ -107,6 +109,36 @@ describe("categorias de projeto (Postgres real)", () => {
 
     expect(duplicate.statusCode).toBe(409);
     expect(await getTestDb().select().from(categories)).toHaveLength(1);
+  });
+
+  it("corrida com o mesmo nome (os dois passam pela checagem do service) retorna 409 via 23505, não 500", async () => {
+    const db = getTestDb();
+    // simula a corrida de forma determinística: a checagem prévia nunca vê
+    // a outra categoria, então o segundo insert bate no unique real do banco
+    const app = buildServer({
+      projectsCategoriesRepository: {
+        ...createProjectsRepository(db),
+        ...createCategoriesRepository(db),
+        findCategoryByProjectIdAndName: async () => undefined,
+      },
+    });
+    const ana = await signUp(app, "ana@example.com", PASSWORD);
+    const project = await createProject(app, ana.accessToken, "DevLib");
+
+    const first = await createCategory(app, ana.accessToken, project.id, "Infra");
+    const second = await createCategory(
+      app,
+      ana.accessToken,
+      project.id,
+      "Infra",
+    );
+
+    expect(first.statusCode).toBe(201);
+    expect(second.statusCode).toBe(409);
+    expect(second.json()).toEqual({
+      error: 'Já existe uma categoria com o nome "Infra" nesse escopo',
+    });
+    expect(await db.select().from(categories)).toHaveLength(1);
   });
 
   it("aceita o mesmo nome de uma global e o mesmo nome em outro projeto do usuário", async () => {
