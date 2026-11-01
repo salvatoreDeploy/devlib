@@ -4,6 +4,8 @@ import {
   AssociateLibraryToProjectError,
   createProject,
   CreateProjectError,
+  removeLibraryFromProject,
+  RemoveLibraryFromProjectError,
   deleteProject,
   DeleteProjectError,
   getProject,
@@ -403,5 +405,43 @@ describe("associateLibraryToProject", () => {
     await expect(
       associateLibraryToProject("project-1", { libraryId: "library-1" }),
     ).rejects.toBeInstanceOf(AssociateLibraryToProjectError);
+  });
+});
+
+describe("removeLibraryFromProject", () => {
+  afterEach(() => {
+    vi.mocked(authenticatedFetch).mockReset();
+  });
+
+  it("envia DELETE pra associação, sem ler corpo quando a resposta é 204", async () => {
+    const json = vi.fn();
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      status: 204,
+      json,
+    } as unknown as Response);
+
+    await removeLibraryFromProject("project-1", "library-1");
+
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/projects/project-1/libraries/library-1",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(json).not.toHaveBeenCalled();
+  });
+
+  it("lança RemoveLibraryFromProjectError com a mensagem da API quando a remoção falha", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      json: () =>
+        Promise.resolve({ error: "Biblioteca não associada a esse projeto" }),
+    } as Response);
+
+    await expect(
+      removeLibraryFromProject("project-1", "library-1"),
+    ).rejects.toThrow("Biblioteca não associada a esse projeto");
+    await expect(
+      removeLibraryFromProject("project-1", "library-1"),
+    ).rejects.toBeInstanceOf(RemoveLibraryFromProjectError);
   });
 });

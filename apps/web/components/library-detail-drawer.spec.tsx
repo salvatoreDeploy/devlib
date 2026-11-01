@@ -15,6 +15,8 @@ import {
   associateLibraryToProject,
   AssociateLibraryToProjectError,
   listProjects,
+  removeLibraryFromProject,
+  RemoveLibraryFromProjectError,
 } from "../lib/api/projects";
 
 vi.mock("../lib/api/libraries", async () => {
@@ -45,6 +47,7 @@ vi.mock("../lib/api/projects", async () => {
     ...actual,
     listProjects: vi.fn(),
     associateLibraryToProject: vi.fn(),
+    removeLibraryFromProject: vi.fn(),
   };
 });
 
@@ -91,6 +94,7 @@ describe("LibraryDetailDrawer", () => {
     vi.mocked(listProjects).mockReset();
     vi.mocked(listProjects).mockResolvedValue([]);
     vi.mocked(associateLibraryToProject).mockReset();
+    vi.mocked(removeLibraryFromProject).mockReset();
   });
 
   it("não renderiza o conteúdo quando libraryId é null", () => {
@@ -391,6 +395,111 @@ describe("LibraryDetailDrawer", () => {
         await screen.findByText(/já associada a todos os seus projetos/i),
       ).not.toBeNull();
       expect(screen.queryByRole("combobox", { name: /projeto/i })).toBeNull();
+    });
+  });
+
+  describe("ação Remover na lista 'Usada em'", () => {
+    const usedIn = [
+      {
+        id: "project-1",
+        userId: "user-1",
+        name: "DevLib",
+        description: null,
+        version: "1.2.3",
+        createdAt: "2026-09-01T00:00:00.000Z",
+        updatedAt: "2026-09-01T00:00:00.000Z",
+      },
+      {
+        id: "project-2",
+        userId: "user-1",
+        name: "API Gateway",
+        description: null,
+        version: null,
+        createdAt: "2026-09-01T00:00:00.000Z",
+        updatedAt: "2026-09-01T00:00:00.000Z",
+      },
+    ];
+
+    function setup() {
+      vi.mocked(getLibrary).mockResolvedValue(library);
+      vi.mocked(getLibraryProjects).mockResolvedValue(usedIn);
+      return userEvent.setup();
+    }
+
+    it("mostra um botão Remover por projeto da lista", async () => {
+      setup();
+      renderDrawer();
+
+      expect(
+        await screen.findByRole("button", { name: "Remover de DevLib" }),
+      ).not.toBeNull();
+      expect(
+        screen.getByRole("button", { name: "Remover de API Gateway" }),
+      ).not.toBeNull();
+    });
+
+    it("pede confirmação e não chama a API ao cancelar", async () => {
+      const user = setup();
+      renderDrawer();
+
+      await user.click(
+        await screen.findByRole("button", { name: "Remover de DevLib" }),
+      );
+      const dialog = await screen.findByRole("alertdialog");
+
+      expect(dialog.textContent).toMatch(/drizzle-orm/);
+      expect(dialog.textContent).toMatch(/DevLib/);
+      await user.click(screen.getByRole("button", { name: "Cancelar" }));
+
+      await waitFor(() => {
+        expect(screen.queryByRole("alertdialog")).toBeNull();
+      });
+      expect(removeLibraryFromProject).not.toHaveBeenCalled();
+    });
+
+    it("remove a associação ao confirmar e recarrega a lista 'Usada em'", async () => {
+      const user = setup();
+      vi.mocked(removeLibraryFromProject).mockResolvedValue(undefined);
+      renderDrawer();
+
+      await user.click(
+        await screen.findByRole("button", { name: "Remover de DevLib" }),
+      );
+      await screen.findByRole("alertdialog");
+      await user.click(screen.getByRole("button", { name: "Remover" }));
+
+      await waitFor(() => {
+        expect(removeLibraryFromProject).toHaveBeenCalledWith(
+          "project-1",
+          "library-1",
+        );
+      });
+      await waitFor(() => {
+        expect(getLibraryProjects).toHaveBeenCalledTimes(2);
+      });
+      await waitFor(() => {
+        expect(screen.queryByRole("alertdialog")).toBeNull();
+      });
+    });
+
+    it("mostra inline a mensagem de erro da API quando a remoção falha", async () => {
+      const user = setup();
+      vi.mocked(removeLibraryFromProject).mockRejectedValue(
+        new RemoveLibraryFromProjectError(
+          "Biblioteca não associada a esse projeto",
+        ),
+      );
+      renderDrawer();
+
+      await user.click(
+        await screen.findByRole("button", { name: "Remover de DevLib" }),
+      );
+      await screen.findByRole("alertdialog");
+      await user.click(screen.getByRole("button", { name: "Remover" }));
+
+      expect(
+        await screen.findByText("Biblioteca não associada a esse projeto"),
+      ).not.toBeNull();
     });
   });
 });

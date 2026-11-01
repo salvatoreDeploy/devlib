@@ -152,7 +152,7 @@ Fica para depois do MVP (v1.1+):
   - [x] API: `PATCH /projects/:id/libraries/:libraryId` pra editar a `version` de uma associação existente (repositório + service + rota com zod) — hoje só dá pra trocar removendo e associando de novo; fora do escopo da subtask de repositório/service por decisão do plano
 - [ ] Associar biblioteca a projeto (a partir da tela da biblioteca)
   - [x] Web: seção "Associar a um projeto" (select de projeto + `version` opcional + botão "Associar") no Drawer Detalhe da Biblioteca
-  - [ ] Web: ação "Remover" na lista "Usada em" do mesmo drawer
+  - [x] Web: ação "Remover" na lista "Usada em" do mesmo drawer
   - [ ] Web: ação "Editar" no rodapé do Drawer Detalhe da Biblioteca, linkando pra `/libraries/[id]/edit` — a página já existe e funciona, mas hoje não tem nenhum ponto de entrada na UI (achado da validação manual)
 - [ ] Adicionar biblioteca a projeto (a partir da tela do projeto)
   - [ ] Web: botão "Adicionar biblioteca" na aba Bibliotecas do projeto, abrindo o `CreateLibraryDrawer` estendido com busca de biblioteca existente no catálogo (associa direto) além da criação de uma nova (associa ao salvar)

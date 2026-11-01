@@ -1,11 +1,22 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
+import { X } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -40,6 +51,8 @@ import {
   AssociateLibraryToProjectError,
   listProjects,
   ListProjectsError,
+  removeLibraryFromProject,
+  RemoveLibraryFromProjectError,
 } from "../lib/api/projects";
 import { getCategories } from "../lib/api/categories";
 import { listLibraryTags } from "../lib/api/tags";
@@ -54,6 +67,10 @@ export function LibraryDetailDrawer({
   onOpenChange,
 }: LibraryDetailDrawerProps) {
   const open = libraryId !== null;
+  const queryClient = useQueryClient();
+  const [projectToRemove, setProjectToRemove] = useState<LibraryProject | null>(
+    null,
+  );
 
   const libraryQuery = useQuery({
     queryKey: ["library", libraryId],
@@ -87,6 +104,22 @@ export function LibraryDetailDrawer({
       category.name,
     ]),
   );
+
+  const removeMutation = useMutation({
+    mutationFn: (projectId: string) =>
+      removeLibraryFromProject(projectId, libraryId as string),
+    onSuccess: (_, projectId) => {
+      queryClient.invalidateQueries({
+        queryKey: ["library-projects", libraryId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["project-libraries", projectId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
+      queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
+    },
+    onSettled: () => setProjectToRemove(null),
+  });
 
   const library = libraryQuery.data;
 
@@ -190,6 +223,7 @@ export function LibraryDetailDrawer({
                       <TableRow>
                         <TableHead>Nome</TableHead>
                         <TableHead>Versão</TableHead>
+                        <TableHead className="w-8" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -201,11 +235,33 @@ export function LibraryDetailDrawer({
                           <TableCell className="font-mono text-muted-foreground">
                             {project.version ?? "—"}
                           </TableCell>
+                          <TableCell className="w-8 py-1.5 pr-2">
+                            <button
+                              type="button"
+                              aria-label={`Remover de ${project.name}`}
+                              disabled={removeMutation.isPending}
+                              onClick={() => {
+                                removeMutation.reset();
+                                setProjectToRemove(project);
+                              }}
+                              className="flex size-6 items-center justify-center rounded-[6px] text-text-fainter hover:bg-chip hover:text-destructive disabled:opacity-50"
+                            >
+                              <X className="size-3.5" />
+                            </button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
+              )}
+
+              {removeMutation.isError && (
+                <p className="text-xs text-destructive">
+                  {removeMutation.error instanceof RemoveLibraryFromProjectError
+                    ? removeMutation.error.message
+                    : "Não foi possível remover a biblioteca do projeto. Tente novamente."}
+                </p>
               )}
             </div>
 
@@ -227,6 +283,38 @@ export function LibraryDetailDrawer({
           </>
         )}
       </SheetContent>
+
+      <AlertDialog
+        open={projectToRemove !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setProjectToRemove(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>Remover do projeto</AlertDialogTitle>
+          <AlertDialogDescription>
+            Remover &quot;{library?.name}&quot; de &quot;
+            {projectToRemove?.name}&quot;? A versão registrada nessa associação
+            será perdida — a biblioteca continua no catálogo.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={removeMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                if (projectToRemove) {
+                  removeMutation.mutate(projectToRemove.id);
+                }
+              }}
+            >
+              {removeMutation.isPending ? "removendo..." : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }
