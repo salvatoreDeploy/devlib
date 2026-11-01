@@ -11,6 +11,11 @@ import {
 } from "../lib/api/libraries";
 import { getCategories } from "../lib/api/categories";
 import { listLibraryTags } from "../lib/api/tags";
+import {
+  associateLibraryToProject,
+  AssociateLibraryToProjectError,
+  listProjects,
+} from "../lib/api/projects";
 
 vi.mock("../lib/api/libraries", async () => {
   const actual = await vi.importActual<typeof import("../lib/api/libraries")>(
@@ -30,6 +35,17 @@ vi.mock("../lib/api/tags", async () => {
   const actual =
     await vi.importActual<typeof import("../lib/api/tags")>("../lib/api/tags");
   return { ...actual, listLibraryTags: vi.fn() };
+});
+
+vi.mock("../lib/api/projects", async () => {
+  const actual = await vi.importActual<typeof import("../lib/api/projects")>(
+    "../lib/api/projects",
+  );
+  return {
+    ...actual,
+    listProjects: vi.fn(),
+    associateLibraryToProject: vi.fn(),
+  };
 });
 
 const library = {
@@ -72,6 +88,9 @@ describe("LibraryDetailDrawer", () => {
     vi.mocked(getCategories).mockResolvedValue([category]);
     vi.mocked(listLibraryTags).mockReset();
     vi.mocked(listLibraryTags).mockResolvedValue([]);
+    vi.mocked(listProjects).mockReset();
+    vi.mocked(listProjects).mockResolvedValue([]);
+    vi.mocked(associateLibraryToProject).mockReset();
   });
 
   it("não renderiza o conteúdo quando libraryId é null", () => {
@@ -205,5 +224,173 @@ describe("LibraryDetailDrawer", () => {
     await user.click(screen.getByRole("button", { name: /fechar/i }));
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  describe("seção Associar a um projeto", () => {
+    const project = (id: string, name: string) => ({
+      id,
+      userId: "user-1",
+      name,
+      description: null,
+      createdAt: "2026-09-01T00:00:00.000Z",
+      updatedAt: "2026-09-01T00:00:00.000Z",
+    });
+
+    const devlib = project("project-1", "DevLib");
+    const gateway = project("project-2", "API Gateway");
+    const estudo = project("project-3", "Estudo RN");
+
+    const association = {
+      id: "project-library-1",
+      projectId: "project-2",
+      libraryId: "library-1",
+      version: "18.3.1",
+      createdAt: "2026-10-31T00:00:00.000Z",
+    };
+
+    function setup() {
+      vi.mocked(getLibrary).mockResolvedValue(library);
+      vi.mocked(getLibraryProjects).mockResolvedValue([
+        { ...devlib, version: "1.2.3" },
+      ]);
+      vi.mocked(listProjects).mockResolvedValue([devlib, gateway, estudo]);
+      return userEvent.setup();
+    }
+
+    async function selectProject(
+      user: ReturnType<typeof userEvent.setup>,
+      name: string,
+    ) {
+      await user.click(
+        await screen.findByRole("combobox", { name: /projeto/i }),
+      );
+      await user.click(await screen.findByRole("option", { name }));
+    }
+
+    it("lista no select só os projetos do usuário que ainda não usam a biblioteca", async () => {
+      const user = setup();
+      renderDrawer();
+
+      await user.click(
+        await screen.findByRole("combobox", { name: /projeto/i }),
+      );
+
+      expect(
+        (await screen.findAllByRole("option")).map((o) => o.textContent),
+      ).toEqual(["API Gateway", "Estudo RN"]);
+    });
+
+    it("desabilita o botão Associar enquanto nenhum projeto é selecionado", async () => {
+      setup();
+      renderDrawer();
+
+      const button = await screen.findByRole("button", { name: /associar/i });
+
+      expect((button as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it("associa com a versão sem espaços nas pontas e recarrega a lista 'Usada em'", async () => {
+      const user = setup();
+      vi.mocked(associateLibraryToProject).mockResolvedValue(association);
+      renderDrawer();
+
+      await selectProject(user, "API Gateway");
+      await user.type(
+        screen.getByRole("textbox", { name: /versão/i }),
+        "  18.3.1  ",
+      );
+      await user.click(screen.getByRole("button", { name: /associar/i }));
+
+      await waitFor(() => {
+        expect(associateLibraryToProject).toHaveBeenCalledWith("project-2", {
+          libraryId: "library-1",
+          version: "18.3.1",
+        });
+      });
+      await waitFor(() => {
+        expect(getLibraryProjects).toHaveBeenCalledTimes(2);
+      });
+      expect(
+        (screen.getByRole("textbox", { name: /versão/i }) as HTMLInputElement)
+          .value,
+      ).toBe("");
+    });
+
+    it("associa sem versão omitindo o campo quando ele fica vazio", async () => {
+      const user = setup();
+      vi.mocked(associateLibraryToProject).mockResolvedValue({
+        ...association,
+        version: null,
+      });
+      renderDrawer();
+
+      await selectProject(user, "Estudo RN");
+      await user.type(screen.getByRole("textbox", { name: /versão/i }), "   ");
+      await user.click(screen.getByRole("button", { name: /associar/i }));
+
+      await waitFor(() => {
+        expect(associateLibraryToProject).toHaveBeenCalledWith("project-3", {
+          libraryId: "library-1",
+        });
+      });
+    });
+
+    it("mostra erro de validação e não chama a API quando a versão passa de 100 caracteres", async () => {
+      const user = setup();
+      renderDrawer();
+
+      await selectProject(user, "API Gateway");
+      await user.type(
+        screen.getByRole("textbox", { name: /versão/i }),
+        "1".repeat(101),
+      );
+      await user.click(screen.getByRole("button", { name: /associar/i }));
+
+      expect(await screen.findByText(/no máximo 100/i)).not.toBeNull();
+      expect(associateLibraryToProject).not.toHaveBeenCalled();
+    });
+
+    it("mostra inline a mensagem de erro da API", async () => {
+      const user = setup();
+      vi.mocked(associateLibraryToProject).mockRejectedValue(
+        new AssociateLibraryToProjectError(
+          "Essa biblioteca já está associada ao projeto",
+        ),
+      );
+      renderDrawer();
+
+      await selectProject(user, "API Gateway");
+      await user.click(screen.getByRole("button", { name: /associar/i }));
+
+      expect(
+        await screen.findByText("Essa biblioteca já está associada ao projeto"),
+      ).not.toBeNull();
+    });
+
+    it("mostra estado vazio quando o usuário não tem projetos", async () => {
+      vi.mocked(getLibrary).mockResolvedValue(library);
+      vi.mocked(getLibraryProjects).mockResolvedValue([]);
+      vi.mocked(listProjects).mockResolvedValue([]);
+      renderDrawer();
+
+      expect(
+        await screen.findByText(/você ainda não tem projetos/i),
+      ).not.toBeNull();
+      expect(screen.queryByRole("combobox", { name: /projeto/i })).toBeNull();
+    });
+
+    it("mostra estado vazio quando a biblioteca já está em todos os projetos do usuário", async () => {
+      vi.mocked(getLibrary).mockResolvedValue(library);
+      vi.mocked(getLibraryProjects).mockResolvedValue([
+        { ...devlib, version: "1.2.3" },
+      ]);
+      vi.mocked(listProjects).mockResolvedValue([devlib]);
+      renderDrawer();
+
+      expect(
+        await screen.findByText(/já associada a todos os seus projetos/i),
+      ).not.toBeNull();
+      expect(screen.queryByRole("combobox", { name: /projeto/i })).toBeNull();
+    });
   });
 });

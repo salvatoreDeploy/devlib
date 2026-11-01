@@ -1,7 +1,18 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -22,7 +33,14 @@ import {
   GetLibraryError,
   getLibraryProjects,
   GetLibraryProjectsError,
+  type LibraryProject,
 } from "../lib/api/libraries";
+import {
+  associateLibraryToProject,
+  AssociateLibraryToProjectError,
+  listProjects,
+  ListProjectsError,
+} from "../lib/api/projects";
 import { getCategories } from "../lib/api/categories";
 import { listLibraryTags } from "../lib/api/tags";
 
@@ -191,6 +209,14 @@ export function LibraryDetailDrawer({
               )}
             </div>
 
+            {projectsQuery.data && (
+              <AssociateProjectSection
+                key={library.id}
+                libraryId={library.id}
+                usedIn={projectsQuery.data}
+              />
+            )}
+
             <div className="mt-auto flex justify-end gap-2.25 pt-0.5">
               <SheetClose asChild>
                 <Button type="button" variant="outline">
@@ -202,5 +228,166 @@ export function LibraryDetailDrawer({
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+const associateProjectFormSchema = z.object({
+  projectId: z.string().min(1, "Selecione um projeto"),
+  version: z
+    .string()
+    .trim()
+    .max(100, "A versão deve ter no máximo 100 caracteres"),
+});
+
+type AssociateProjectFormValues = z.infer<typeof associateProjectFormSchema>;
+
+type AssociateProjectSectionProps = {
+  libraryId: string;
+  usedIn: LibraryProject[];
+};
+
+function AssociateProjectSection({
+  libraryId,
+  usedIn,
+}: AssociateProjectSectionProps) {
+  const queryClient = useQueryClient();
+
+  const userProjectsQuery = useQuery({
+    queryKey: ["projects"],
+    queryFn: () => listProjects(),
+  });
+
+  const {
+    control,
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<AssociateProjectFormValues>({
+    resolver: zodResolver(associateProjectFormSchema),
+    defaultValues: { projectId: "", version: "" },
+  });
+
+  const mutation = useMutation({
+    // a API rejeita version "" — campo vazio vira ausência da chave
+    mutationFn: ({ projectId, version }: AssociateProjectFormValues) =>
+      associateLibraryToProject(projectId, {
+        libraryId,
+        ...(version ? { version } : {}),
+      }),
+    onSuccess: (association) => {
+      reset();
+      queryClient.invalidateQueries({
+        queryKey: ["library-projects", libraryId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["project-libraries", association.projectId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
+      queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
+    },
+  });
+
+  // projetos que já usam a biblioteca saem do select — associar de novo só
+  // daria 409
+  const usedInIds = new Set(usedIn.map((project) => project.id));
+  const availableProjects = (userProjectsQuery.data ?? []).filter(
+    (project) => !usedInIds.has(project.id),
+  );
+
+  return (
+    <div className="flex flex-col gap-[7px]">
+      <h3 className="text-[12.5px] font-medium text-secondary-foreground">
+        Associar a um projeto
+      </h3>
+
+      {userProjectsQuery.isLoading && (
+        <p className="text-[13px] text-muted-foreground">carregando...</p>
+      )}
+
+      {userProjectsQuery.isError && (
+        <p className="text-[13px] text-destructive">
+          {userProjectsQuery.error instanceof ListProjectsError
+            ? userProjectsQuery.error.message
+            : "Não foi possível carregar seus projetos."}
+        </p>
+      )}
+
+      {userProjectsQuery.data && userProjectsQuery.data.length === 0 && (
+        <p className="text-[13px] text-muted-foreground">
+          Você ainda não tem projetos.
+        </p>
+      )}
+
+      {userProjectsQuery.data &&
+        userProjectsQuery.data.length > 0 &&
+        availableProjects.length === 0 && (
+          <p className="text-[13px] text-muted-foreground">
+            Já associada a todos os seus projetos.
+          </p>
+        )}
+
+      {availableProjects.length > 0 && (
+        <form
+          className="flex flex-col gap-2"
+          noValidate
+          onSubmit={handleSubmit((data) => mutation.mutate(data))}
+        >
+          <div className="flex gap-2">
+            <Controller
+              control={control}
+              name="projectId"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger
+                    aria-label="Projeto"
+                    className="h-10 flex-1 rounded-lg border-input bg-surface-input px-2.5 text-[13.5px] text-foreground"
+                  >
+                    <SelectValue placeholder="Selecione um projeto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableProjects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <Input
+              type="text"
+              aria-label="Versão"
+              placeholder="versão (opcional)"
+              aria-invalid={errors.version ? true : undefined}
+              className="w-[132px]"
+              {...register("version")}
+            />
+          </div>
+
+          {errors.version && (
+            <p className="text-xs text-destructive">{errors.version.message}</p>
+          )}
+
+          {mutation.isError && (
+            <p className="text-xs text-destructive">
+              {mutation.error instanceof AssociateLibraryToProjectError
+                ? mutation.error.message
+                : "Não foi possível associar a biblioteca. Tente novamente."}
+            </p>
+          )}
+
+          <div className="flex justify-end">
+            <Button
+              type="submit"
+              disabled={!watch("projectId") || mutation.isPending}
+            >
+              {mutation.isPending ? "associando..." : "Associar"}
+            </Button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 }
