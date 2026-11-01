@@ -55,6 +55,7 @@ export class DeleteProjectError extends Error {}
 export class GetProjectLibrariesError extends Error {}
 export class GetProjectsOverviewError extends Error {}
 export class AssociateLibraryToProjectError extends Error {}
+export class RemoveLibraryFromProjectError extends Error {}
 
 export async function createProject(
   input: CreateProjectInput,
@@ -190,4 +191,21 @@ export async function associateLibraryToProject(
   }
 
   return body;
+}
+
+export async function removeLibraryFromProject(
+  projectId: string,
+  libraryId: string,
+): Promise<void> {
+  const response = await authenticatedFetch(
+    `/projects/${projectId}/libraries/${libraryId}`,
+    { method: "DELETE" },
+  );
+
+  if (!response.ok) {
+    const body = await response.json();
+    throw new RemoveLibraryFromProjectError(
+      body.error ?? "Não foi possível remover a biblioteca do projeto",
+    );
+  }
 }
