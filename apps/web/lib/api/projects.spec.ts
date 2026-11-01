@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  associateLibraryToProject,
+  AssociateLibraryToProjectError,
   createProject,
   CreateProjectError,
   deleteProject,
@@ -332,5 +334,74 @@ describe("getProjectsOverview", () => {
     await expect(getProjectsOverview()).rejects.toBeInstanceOf(
       GetProjectsOverviewError,
     );
+  });
+});
+
+describe("associateLibraryToProject", () => {
+  afterEach(() => {
+    vi.mocked(authenticatedFetch).mockReset();
+  });
+
+  const association = {
+    id: "project-library-1",
+    projectId: "project-1",
+    libraryId: "library-1",
+    version: "18.3.1",
+    createdAt: "2026-10-31T00:00:00.000Z",
+  };
+
+  it("envia POST com libraryId e version e retorna a associação criada", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(association),
+    } as Response);
+
+    const result = await associateLibraryToProject("project-1", {
+      libraryId: "library-1",
+      version: "18.3.1",
+    });
+
+    expect(result).toEqual(association);
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/projects/project-1/libraries",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ libraryId: "library-1", version: "18.3.1" }),
+      }),
+    );
+  });
+
+  it("não envia a chave version quando ela não é informada", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ ...association, version: null }),
+    } as Response);
+
+    await associateLibraryToProject("project-1", { libraryId: "library-1" });
+
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/projects/project-1/libraries",
+      expect.objectContaining({
+        body: JSON.stringify({ libraryId: "library-1" }),
+      }),
+    );
+  });
+
+  it("lança AssociateLibraryToProjectError com a mensagem da API quando a associação falha", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      json: () =>
+        Promise.resolve({
+          error: "Essa biblioteca já está associada ao projeto",
+        }),
+    } as Response);
+
+    await expect(
+      associateLibraryToProject("project-1", { libraryId: "library-1" }),
+    ).rejects.toThrow("Essa biblioteca já está associada ao projeto");
+    await expect(
+      associateLibraryToProject("project-1", { libraryId: "library-1" }),
+    ).rejects.toBeInstanceOf(AssociateLibraryToProjectError);
   });
 });

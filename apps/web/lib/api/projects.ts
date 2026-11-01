@@ -29,6 +29,19 @@ export type ProjectLibrary = {
   updatedAt: string;
 };
 
+export type AssociateLibraryToProjectInput = {
+  libraryId: string;
+  version?: string;
+};
+
+export type ProjectLibraryAssociation = {
+  id: string;
+  projectId: string;
+  libraryId: string;
+  version: string | null;
+  createdAt: string;
+};
+
 export type ProjectOverview = Project & {
   librariesCount: number;
   libraryNames: string[];
@@ -41,6 +54,7 @@ export class ListProjectsError extends Error {}
 export class DeleteProjectError extends Error {}
 export class GetProjectLibrariesError extends Error {}
 export class GetProjectsOverviewError extends Error {}
+export class AssociateLibraryToProjectError extends Error {}
 
 export async function createProject(
   input: CreateProjectInput,
@@ -152,4 +166,28 @@ export async function deleteProject(id: string): Promise<void> {
       body.error ?? "Não foi possível excluir o projeto",
     );
   }
+}
+
+export async function associateLibraryToProject(
+  projectId: string,
+  input: AssociateLibraryToProjectInput,
+): Promise<ProjectLibraryAssociation> {
+  const response = await authenticatedFetch(
+    `/projects/${projectId}/libraries`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
+
+  const body = await response.json();
+
+  if (!response.ok) {
+    throw new AssociateLibraryToProjectError(
+      body.error ?? "Não foi possível associar a biblioteca ao projeto",
+    );
+  }
+
+  return body;
 }
