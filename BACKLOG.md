@@ -154,9 +154,16 @@ Fica para depois do MVP (v1.1+):
   - [x] Web: seção "Associar a um projeto" (select de projeto + `version` opcional + botão "Associar") no Drawer Detalhe da Biblioteca
   - [x] Web: ação "Remover" na lista "Usada em" do mesmo drawer
   - [x] Web: ação "Editar" no rodapé do Drawer Detalhe da Biblioteca, linkando pra `/libraries/[id]/edit` — a página já existe e funciona, mas hoje não tem nenhum ponto de entrada na UI (achado da validação manual)
+- [ ] Categoria da biblioteca dentro do projeto (api + web)
+  > Adicionado em 2026-11-01 revisando o fluxo: categorias de projeto (Sprint 4) não tinham onde ser usadas, e gravar uma categoria de projeto em `libraries.categoryId` (biblioteca é catálogo global) vazaria a categoria pra outros projetos/usuários e quebraria a exclusão do projeto dono (FK `NO ACTION` → 500) — hoje a API já aceita isso num `PATCH /libraries/:id` direto, inclusive com categoria de projeto de outro usuário (0 casos no banco local). Decisão: categoria passa a ser **por associação** (`project_libraries.category_id`), com a categoria global da biblioteca como padrão — reverte a decisão de 2026-09-02 (registrar em `docs/DECISIONS.md`). Fora de escopo: editar a categoria global da biblioteca de dentro do projeto, edição em massa, promover categoria de projeto a global.
+  - [ ] API: `POST/PATCH /libraries` só aceitam categoria global em `categoryId` — categoria de projeto responde 404 como inexistente (fecha vazamento entre projetos/usuários e o 500 ao excluir projeto); teste de integração do cenário
+  - [ ] `packages/db`: `project_libraries.category_id` nulável (FK → `categories`, `onDelete: set null`) + migration
+  - [ ] API: `PATCH /projects/:id/libraries/:libraryId` aceita `categoryId` (global ou do próprio projeto, senão 404; `null` volta ao padrão da biblioteca) além de `version`; `GET /projects/:id/libraries` devolve `projectCategoryId`
+  - [ ] Web: ação "Editar" por linha na aba Bibliotecas do projeto, abrindo drawer "Editar no projeto" (categoria — padrão da biblioteca, globais e do projeto — + versão), desenhado antes no `.pen`
+  - [ ] Web: abas Bibliotecas e Categorias do projeto usam a categoria efetiva (do projeto, senão a global) no chip e na contagem
 - [ ] Adicionar biblioteca a projeto (a partir da tela do projeto)
   - [ ] Web: botão "Adicionar biblioteca" na aba Bibliotecas do projeto, abrindo o `CreateLibraryDrawer` estendido com busca de biblioteca existente no catálogo (associa direto) além da criação de uma nova (associa ao salvar)
-  - [ ] Web: `CreateLibraryDrawer`, quando aberto de dentro de um projeto, usa `GET /projects/:id/categories` (globais+do projeto) no select de categoria em vez de só `GET /categories`
+  - [ ] Web: `CreateLibraryDrawer`, quando aberto de dentro de um projeto, oferece a categoria **da associação** (globais+do projeto, via `GET /projects/:id/categories`) gravada em `project_libraries.category_id` — a categoria da biblioteca nova em si continua só global
   - [ ] Web: ação "Remover" na tabela de bibliotecas do projeto
 
 ## Sprint 6 — Integrações (pós-MVP)
