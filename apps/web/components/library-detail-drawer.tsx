@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -44,6 +45,7 @@ import {
   GetLibraryError,
   getLibraryProjects,
   GetLibraryProjectsError,
+  type Library,
   type LibraryProject,
 } from "../lib/api/libraries";
 import {
@@ -67,10 +69,6 @@ export function LibraryDetailDrawer({
   onOpenChange,
 }: LibraryDetailDrawerProps) {
   const open = libraryId !== null;
-  const queryClient = useQueryClient();
-  const [projectToRemove, setProjectToRemove] = useState<LibraryProject | null>(
-    null,
-  );
 
   const libraryQuery = useQuery({
     queryKey: ["library", libraryId],
@@ -79,49 +77,19 @@ export function LibraryDetailDrawer({
     retry: false,
   });
 
+  // categorias buscadas em paralelo com a biblioteca (não dentro do
+  // conteúdo), pro chip já nascer com o nome
   const categoriesQuery = useQuery({
     queryKey: ["categories"],
     queryFn: () => getCategories(),
     enabled: open,
   });
 
-  const tagsQuery = useQuery({
-    queryKey: ["library-tags", libraryId],
-    queryFn: () => listLibraryTags(libraryId as string),
-    enabled: open,
-  });
-
-  const projectsQuery = useQuery({
-    queryKey: ["library-projects", libraryId],
-    queryFn: () => getLibraryProjects(libraryId as string),
-    enabled: open,
-    retry: false,
-  });
-
-  const categoryNameById = new Map(
-    (categoriesQuery.data ?? []).map((category) => [
-      category.id,
-      category.name,
-    ]),
-  );
-
-  const removeMutation = useMutation({
-    mutationFn: (projectId: string) =>
-      removeLibraryFromProject(projectId, libraryId as string),
-    onSuccess: (_, projectId) => {
-      queryClient.invalidateQueries({
-        queryKey: ["library-projects", libraryId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["project-libraries", projectId],
-      });
-      queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
-      queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
-    },
-    onSettled: () => setProjectToRemove(null),
-  });
-
   const library = libraryQuery.data;
+  const categoryName = library?.categoryId
+    ? (categoriesQuery.data?.find((c) => c.id === library.categoryId)?.name ??
+      "Categoria")
+    : "Sem categoria";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -138,151 +106,208 @@ export function LibraryDetailDrawer({
           </p>
         )}
 
-        {library && (
-          <>
-            <SheetHeader>
-              <div className="flex items-center gap-2.5">
-                <SheetTitle>{library.name}</SheetTitle>
-                <span className="rounded-[6px] border border-input bg-secondary px-[9px] py-[3px] text-[12px] text-muted-foreground">
-                  {library.categoryId
-                    ? (categoryNameById.get(library.categoryId) ?? "Categoria")
-                    : "Sem categoria"}
-                </span>
-              </div>
-            </SheetHeader>
-
-            <div className="flex flex-col gap-2">
-              <h3 className="text-[12.5px] font-medium text-secondary-foreground">
-                Notas
-              </h3>
-              <p className="text-[13px] text-muted-foreground">
-                {library.notes ?? "Sem notas."}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <h3 className="text-[12.5px] font-medium text-secondary-foreground">
-                Tags
-              </h3>
-
-              {tagsQuery.isLoading && (
-                <p className="text-[13px] text-muted-foreground">
-                  carregando...
-                </p>
-              )}
-
-              {tagsQuery.data && tagsQuery.data.length === 0 && (
-                <p className="text-[13px] text-muted-foreground">
-                  Nenhuma tag associada a esta biblioteca ainda.
-                </p>
-              )}
-
-              {tagsQuery.data && tagsQuery.data.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {tagsQuery.data.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="inline-flex items-center gap-1 rounded-full border border-input bg-secondary px-2.5 py-1 text-xs text-secondary-foreground"
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <h3 className="text-[12.5px] font-medium text-secondary-foreground">
-                Usada em
-              </h3>
-
-              {projectsQuery.isLoading && (
-                <p className="text-[13px] text-muted-foreground">
-                  carregando...
-                </p>
-              )}
-
-              {projectsQuery.isError && (
-                <p className="text-[13px] text-destructive">
-                  {projectsQuery.error instanceof GetLibraryProjectsError
-                    ? projectsQuery.error.message
-                    : "Não foi possível carregar os projetos da biblioteca."}
-                </p>
-              )}
-
-              {projectsQuery.data && projectsQuery.data.length === 0 && (
-                <p className="text-[13px] text-muted-foreground">
-                  Esta biblioteca ainda não está associada a nenhum projeto.
-                </p>
-              )}
-
-              {projectsQuery.data && projectsQuery.data.length > 0 && (
-                <div className="rounded-[8px] border border-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Versão</TableHead>
-                        <TableHead className="w-8" />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {projectsQuery.data.map((project) => (
-                        <TableRow key={project.id}>
-                          <TableCell className="font-medium">
-                            {project.name}
-                          </TableCell>
-                          <TableCell className="font-mono text-muted-foreground">
-                            {project.version ?? "—"}
-                          </TableCell>
-                          <TableCell className="w-8 py-1.5 pr-2">
-                            <button
-                              type="button"
-                              aria-label={`Remover de ${project.name}`}
-                              disabled={removeMutation.isPending}
-                              onClick={() => {
-                                removeMutation.reset();
-                                setProjectToRemove(project);
-                              }}
-                              className="flex size-6 items-center justify-center rounded-[6px] text-text-fainter hover:bg-chip hover:text-destructive disabled:opacity-50"
-                            >
-                              <X className="size-3.5" />
-                            </button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-
-              {removeMutation.isError && (
-                <p className="text-xs text-destructive">
-                  {removeMutation.error instanceof RemoveLibraryFromProjectError
-                    ? removeMutation.error.message
-                    : "Não foi possível remover a biblioteca do projeto. Tente novamente."}
-                </p>
-              )}
-            </div>
-
-            {projectsQuery.data && (
-              <AssociateProjectSection
-                key={library.id}
-                libraryId={library.id}
-                usedIn={projectsQuery.data}
-              />
-            )}
-
-            <div className="mt-auto flex justify-end gap-2.25 pt-0.5">
-              <SheetClose asChild>
-                <Button type="button" variant="outline">
-                  Fechar
-                </Button>
-              </SheetClose>
-            </div>
-          </>
+        {/* key: form de associar e confirmação de remoção recomeçam do zero
+            ao trocar de biblioteca */}
+        {library && open && (
+          <LibraryDetailContent
+            key={library.id}
+            library={library}
+            categoryName={categoryName}
+          />
         )}
       </SheetContent>
+    </Sheet>
+  );
+}
+
+type LibraryDetailContentProps = {
+  library: Library;
+  categoryName: string;
+};
+
+function LibraryDetailContent({
+  library,
+  categoryName,
+}: LibraryDetailContentProps) {
+  const libraryId = library.id;
+  const queryClient = useQueryClient();
+  const [projectToRemove, setProjectToRemove] = useState<LibraryProject | null>(
+    null,
+  );
+
+  const tagsQuery = useQuery({
+    queryKey: ["library-tags", libraryId],
+    queryFn: () => listLibraryTags(libraryId),
+  });
+
+  const projectsQuery = useQuery({
+    queryKey: ["library-projects", libraryId],
+    queryFn: () => getLibraryProjects(libraryId),
+    retry: false,
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (projectId: string) =>
+      removeLibraryFromProject(projectId, libraryId),
+    onSuccess: (_, projectId) => {
+      queryClient.invalidateQueries({
+        queryKey: ["library-projects", libraryId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["project-libraries", projectId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
+      queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
+    },
+    onSettled: () => setProjectToRemove(null),
+  });
+
+  const associate = useAssociateProject(libraryId, projectsQuery.data);
+
+  return (
+    <>
+      <SheetHeader>
+        <div className="flex items-center gap-2.5">
+          <SheetTitle>{library.name}</SheetTitle>
+          <span className="rounded-[6px] border border-input bg-secondary px-[9px] py-[3px] text-[12px] text-muted-foreground">
+            {categoryName}
+          </span>
+        </div>
+      </SheetHeader>
+
+      <div className="flex flex-col gap-2">
+        <h3 className="text-[12.5px] font-medium text-secondary-foreground">
+          Notas
+        </h3>
+        <p className="text-[13px] text-muted-foreground">
+          {library.notes ?? "Sem notas."}
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <h3 className="text-[12.5px] font-medium text-secondary-foreground">
+          Tags
+        </h3>
+
+        {tagsQuery.isLoading && (
+          <p className="text-[13px] text-muted-foreground">carregando...</p>
+        )}
+
+        {tagsQuery.data && tagsQuery.data.length === 0 && (
+          <p className="text-[13px] text-muted-foreground">
+            Nenhuma tag associada a esta biblioteca ainda.
+          </p>
+        )}
+
+        {tagsQuery.data && tagsQuery.data.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {tagsQuery.data.map((tag) => (
+              <span
+                key={tag.id}
+                className="inline-flex items-center gap-1 rounded-full border border-input bg-secondary px-2.5 py-1 text-xs text-secondary-foreground"
+              >
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <h3 className="text-[12.5px] font-medium text-secondary-foreground">
+          Usada em
+        </h3>
+
+        {projectsQuery.isLoading && (
+          <p className="text-[13px] text-muted-foreground">carregando...</p>
+        )}
+
+        {projectsQuery.isError && (
+          <p className="text-[13px] text-destructive">
+            {projectsQuery.error instanceof GetLibraryProjectsError
+              ? projectsQuery.error.message
+              : "Não foi possível carregar os projetos da biblioteca."}
+          </p>
+        )}
+
+        {projectsQuery.data && projectsQuery.data.length === 0 && (
+          <p className="text-[13px] text-muted-foreground">
+            Esta biblioteca ainda não está associada a nenhum projeto.
+          </p>
+        )}
+
+        {projectsQuery.data && projectsQuery.data.length > 0 && (
+          <div className="rounded-[8px] border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Versão</TableHead>
+                  <TableHead className="w-8" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {projectsQuery.data.map((project) => (
+                  <TableRow key={project.id}>
+                    <TableCell className="font-medium">
+                      {project.name}
+                    </TableCell>
+                    <TableCell className="font-mono text-muted-foreground">
+                      {project.version ?? "—"}
+                    </TableCell>
+                    <TableCell className="w-8 py-1.5 pr-2">
+                      <button
+                        type="button"
+                        aria-label={`Remover de ${project.name}`}
+                        disabled={removeMutation.isPending}
+                        onClick={() => {
+                          removeMutation.reset();
+                          setProjectToRemove(project);
+                        }}
+                        className="flex size-6 items-center justify-center rounded-[6px] text-text-fainter hover:bg-chip hover:text-destructive disabled:opacity-50"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {removeMutation.isError && (
+          <p className="text-xs text-destructive">
+            {removeMutation.error instanceof RemoveLibraryFromProjectError
+              ? removeMutation.error.message
+              : "Não foi possível remover a biblioteca do projeto. Tente novamente."}
+          </p>
+        )}
+      </div>
+
+      {projectsQuery.data && <AssociateProjectSection {...associate} />}
+
+      <div className="mt-auto flex items-center justify-end gap-2.25 pt-0.5">
+        {associate.availableProjects.length > 0 && (
+          <Button
+            type="submit"
+            form={ASSOCIATE_FORM_ID}
+            disabled={
+              !associate.form.watch("projectId") || associate.mutation.isPending
+            }
+          >
+            {associate.mutation.isPending ? "associando..." : "Associar"}
+          </Button>
+        )}
+        <Button asChild variant="outline">
+          <Link href={`/libraries/${library.id}/edit`}>Editar</Link>
+        </Button>
+        <SheetClose asChild>
+          <Button type="button" variant="outline">
+            Fechar
+          </Button>
+        </SheetClose>
+      </div>
 
       <AlertDialog
         open={projectToRemove !== null}
@@ -295,7 +320,7 @@ export function LibraryDetailDrawer({
         <AlertDialogContent>
           <AlertDialogTitle>Remover do projeto</AlertDialogTitle>
           <AlertDialogDescription>
-            Remover &quot;{library?.name}&quot; de &quot;
+            Remover &quot;{library.name}&quot; de &quot;
             {projectToRemove?.name}&quot;? A versão registrada nessa associação
             será perdida — a biblioteca continua no catálogo.
           </AlertDialogDescription>
@@ -315,7 +340,7 @@ export function LibraryDetailDrawer({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Sheet>
+    </>
   );
 }
 
@@ -329,15 +354,11 @@ const associateProjectFormSchema = z.object({
 
 type AssociateProjectFormValues = z.infer<typeof associateProjectFormSchema>;
 
-type AssociateProjectSectionProps = {
-  libraryId: string;
-  usedIn: LibraryProject[];
-};
+const ASSOCIATE_FORM_ID = "associate-project-form";
 
-function AssociateProjectSection({
-  libraryId,
-  usedIn,
-}: AssociateProjectSectionProps) {
+// estado do form vive aqui (e não na seção) porque o botão "Associar" fica no
+// rodapé do drawer, fora do <form> — ligado a ele pelo atributo form=
+function useAssociateProject(libraryId: string, usedIn?: LibraryProject[]) {
   const queryClient = useQueryClient();
 
   const userProjectsQuery = useQuery({
@@ -345,14 +366,7 @@ function AssociateProjectSection({
     queryFn: () => listProjects(),
   });
 
-  const {
-    control,
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors },
-  } = useForm<AssociateProjectFormValues>({
+  const form = useForm<AssociateProjectFormValues>({
     resolver: zodResolver(associateProjectFormSchema),
     defaultValues: { projectId: "", version: "" },
   });
@@ -365,7 +379,7 @@ function AssociateProjectSection({
         ...(version ? { version } : {}),
       }),
     onSuccess: (association) => {
-      reset();
+      form.reset();
       queryClient.invalidateQueries({
         queryKey: ["library-projects", libraryId],
       });
@@ -379,11 +393,27 @@ function AssociateProjectSection({
 
   // projetos que já usam a biblioteca saem do select — associar de novo só
   // daria 409
-  const usedInIds = new Set(usedIn.map((project) => project.id));
-  const availableProjects = (userProjectsQuery.data ?? []).filter(
-    (project) => !usedInIds.has(project.id),
-  );
+  const usedInIds = new Set((usedIn ?? []).map((project) => project.id));
+  const availableProjects = usedIn
+    ? (userProjectsQuery.data ?? []).filter(
+        (project) => !usedInIds.has(project.id),
+      )
+    : [];
 
+  return { userProjectsQuery, form, mutation, availableProjects };
+}
+
+function AssociateProjectSection({
+  userProjectsQuery,
+  form: {
+    control,
+    register,
+    handleSubmit,
+    formState: { errors },
+  },
+  mutation,
+  availableProjects,
+}: ReturnType<typeof useAssociateProject>) {
   return (
     <div className="flex flex-col gap-[7px]">
       <h3 className="text-[12.5px] font-medium text-secondary-foreground">
@@ -418,6 +448,7 @@ function AssociateProjectSection({
 
       {availableProjects.length > 0 && (
         <form
+          id={ASSOCIATE_FORM_ID}
           className="flex flex-col gap-2"
           noValidate
           onSubmit={handleSubmit((data) => mutation.mutate(data))}
@@ -465,15 +496,6 @@ function AssociateProjectSection({
                 : "Não foi possível associar a biblioteca. Tente novamente."}
             </p>
           )}
-
-          <div className="flex justify-end">
-            <Button
-              type="submit"
-              disabled={!watch("projectId") || mutation.isPending}
-            >
-              {mutation.isPending ? "associando..." : "Associar"}
-            </Button>
-          </div>
         </form>
       )}
     </div>

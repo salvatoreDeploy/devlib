@@ -150,10 +150,10 @@ Fica para depois do MVP (v1.1+):
   - [x] API: repositório + service de `project_libraries` (associar com `version` opcional, bloquear duplicado projeto+biblioteca, remover associação)
   - [x] API: rotas REST de associação (`POST /projects/:id/libraries`, `DELETE /projects/:id/libraries/:libraryId`) com validação zod
   - [x] API: `PATCH /projects/:id/libraries/:libraryId` pra editar a `version` de uma associação existente (repositório + service + rota com zod) — hoje só dá pra trocar removendo e associando de novo; fora do escopo da subtask de repositório/service por decisão do plano
-- [ ] Associar biblioteca a projeto (a partir da tela da biblioteca)
+- [x] Associar biblioteca a projeto (a partir da tela da biblioteca)
   - [x] Web: seção "Associar a um projeto" (select de projeto + `version` opcional + botão "Associar") no Drawer Detalhe da Biblioteca
   - [x] Web: ação "Remover" na lista "Usada em" do mesmo drawer
-  - [ ] Web: ação "Editar" no rodapé do Drawer Detalhe da Biblioteca, linkando pra `/libraries/[id]/edit` — a página já existe e funciona, mas hoje não tem nenhum ponto de entrada na UI (achado da validação manual)
+  - [x] Web: ação "Editar" no rodapé do Drawer Detalhe da Biblioteca, linkando pra `/libraries/[id]/edit` — a página já existe e funciona, mas hoje não tem nenhum ponto de entrada na UI (achado da validação manual)
 - [ ] Adicionar biblioteca a projeto (a partir da tela do projeto)
   - [ ] Web: botão "Adicionar biblioteca" na aba Bibliotecas do projeto, abrindo o `CreateLibraryDrawer` estendido com busca de biblioteca existente no catálogo (associa direto) além da criação de uma nova (associa ao salvar)
   - [ ] Web: `CreateLibraryDrawer`, quando aberto de dentro de um projeto, usa `GET /projects/:id/categories` (globais+do projeto) no select de categoria em vez de só `GET /categories`

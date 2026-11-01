@@ -230,6 +230,16 @@ describe("LibraryDetailDrawer", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it("mostra no rodapé o link Editar apontando pra página de edição da biblioteca", async () => {
+    vi.mocked(getLibrary).mockResolvedValue(library);
+    vi.mocked(getLibraryProjects).mockResolvedValue([]);
+    renderDrawer();
+
+    const edit = await screen.findByRole("link", { name: "Editar" });
+
+    expect(edit.getAttribute("href")).toBe("/libraries/library-1/edit");
+  });
+
   describe("seção Associar a um projeto", () => {
     const project = (id: string, name: string) => ({
       id,
@@ -282,6 +292,23 @@ describe("LibraryDetailDrawer", () => {
       expect(
         (await screen.findAllByRole("option")).map((o) => o.textContent),
       ).toEqual(["API Gateway", "Estudo RN"]);
+    });
+
+    it("coloca o botão Associar no rodapé, na mesma linha de Editar e Fechar", async () => {
+      setup();
+      renderDrawer();
+
+      const associate = await screen.findByRole("button", {
+        name: /associar/i,
+      });
+      const footer = associate.parentElement as HTMLElement;
+
+      expect(
+        footer.contains(screen.getByRole("link", { name: "Editar" })),
+      ).toBe(true);
+      expect(
+        footer.contains(screen.getByRole("button", { name: /fechar/i })),
+      ).toBe(true);
     });
 
     it("desabilita o botão Associar enquanto nenhum projeto é selecionado", async () => {
@@ -381,6 +408,7 @@ describe("LibraryDetailDrawer", () => {
         await screen.findByText(/você ainda não tem projetos/i),
       ).not.toBeNull();
       expect(screen.queryByRole("combobox", { name: /projeto/i })).toBeNull();
+      expect(screen.queryByRole("button", { name: /associar/i })).toBeNull();
     });
 
     it("mostra estado vazio quando a biblioteca já está em todos os projetos do usuário", async () => {
@@ -395,6 +423,7 @@ describe("LibraryDetailDrawer", () => {
         await screen.findByText(/já associada a todos os seus projetos/i),
       ).not.toBeNull();
       expect(screen.queryByRole("combobox", { name: /projeto/i })).toBeNull();
+      expect(screen.queryByRole("button", { name: /associar/i })).toBeNull();
     });
   });
 
