@@ -115,6 +115,12 @@ export const projectLibraries = pgTable(
       .notNull()
       .references(() => libraries.id, { onDelete: "cascade" }),
     version: text("version"),
+    // categoria da biblioteca dentro deste projeto (global ou do próprio
+    // projeto); null = usa a categoria global da biblioteca. set null: excluir
+    // a categoria do projeto volta a lib pro padrão em vez de travar o delete
+    categoryId: uuid("category_id").references(() => categories.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

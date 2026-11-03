@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { libraries, projectLibraries, projects } from "@devlib/db";
+import { categories, libraries, projectLibraries, projects } from "@devlib/db";
 import { eq } from "drizzle-orm";
 import { createProjectLibrariesRepository } from "./project-libraries.repository";
 import {
@@ -197,5 +197,32 @@ describe("createProjectLibrariesRepository (Postgres real)", () => {
 
     await getTestDb().delete(libraries).where(eq(libraries.id, library.id));
     expect(await getTestDb().select().from(projectLibraries)).toHaveLength(0);
+  });
+
+  it("excluir a categoria do projeto usada numa associação zera category_id (set null) sem apagar a associação", async () => {
+    const { projectA, library } = await projectsAndLibrary();
+    const db = getTestDb();
+    const [category] = await db
+      .insert(categories)
+      .values({ projectId: projectA.id, name: "Infra interna" })
+      .returning();
+    // o repositório ainda não grava categoryId — vem na subtask da rota
+    const [association] = await db
+      .insert(projectLibraries)
+      .values({
+        projectId: projectA.id,
+        libraryId: library.id,
+        categoryId: category.id,
+      })
+      .returning();
+
+    await db.delete(categories).where(eq(categories.id, category.id));
+
+    const [after] = await db
+      .select()
+      .from(projectLibraries)
+      .where(eq(projectLibraries.id, association.id));
+    expect(after).toBeDefined();
+    expect(after.categoryId).toBeNull();
   });
 });
