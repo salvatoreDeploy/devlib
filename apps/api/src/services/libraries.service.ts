@@ -41,6 +41,20 @@ export class CategoryNotFoundError extends Error {
   }
 }
 
+// biblioteca é catálogo global: categoria de projeto aqui vazaria pra outros
+// projetos/usuários e travaria a exclusão do projeto dono (FK NO ACTION). Mesmo
+// erro de categoria inexistente — não confirma que a de outro usuário existe
+async function assertGlobalCategory(
+  repository: LibrariesRepository,
+  categoryId: string,
+): Promise<void> {
+  const category = await repository.findCategoryById(categoryId);
+
+  if (!category || category.projectId !== null) {
+    throw new CategoryNotFoundError();
+  }
+}
+
 export type CreateLibraryInput = {
   name: string;
   categoryId?: string;
@@ -58,11 +72,7 @@ export async function createLibrary(
   }
 
   if (input.categoryId) {
-    const category = await repository.findCategoryById(input.categoryId);
-
-    if (!category) {
-      throw new CategoryNotFoundError();
-    }
+    await assertGlobalCategory(repository, input.categoryId);
   }
 
   try {
@@ -117,11 +127,7 @@ export async function updateLibrary(
   }
 
   if (data.categoryId) {
-    const category = await repository.findCategoryById(data.categoryId);
-
-    if (!category) {
-      throw new CategoryNotFoundError();
-    }
+    await assertGlobalCategory(repository, data.categoryId);
   }
 
   let updated: Awaited<ReturnType<LibrariesRepository["updateLibrary"]>>;

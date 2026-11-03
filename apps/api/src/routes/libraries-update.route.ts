@@ -30,7 +30,7 @@ const updateLibraryBodySchema = z.object({
     .min(1)
     .optional()
     .describe(
-      "Novo identificador (UUID) da categoria. Opcional (omitir mantém a atual).",
+      "Novo identificador (UUID) de uma categoria global (predefinida). Opcional (omitir mantém a atual). Categorias de projeto não são aceitas aqui.",
     ),
   notes: z
     .string()
@@ -91,14 +91,14 @@ export const librariesUpdateRoute: FastifyPluginAsyncZod<
         tags: ["Libraries"],
         summary: "Atualiza uma biblioteca (parcial)",
         description:
-          "Atualiza nome, categoria e/ou notas de uma biblioteca do catálogo global. Campos omitidos no corpo não são alterados. Responde 404 se a biblioteca não existir ou se o novo `categoryId` não existir; responde 409 se o novo nome já for usado por outra biblioteca (renomear pro próprio nome atual não gera conflito).",
+          "Atualiza nome, categoria e/ou notas de uma biblioteca do catálogo global. Campos omitidos no corpo não são alterados. Responde 404 se a biblioteca não existir ou se o novo `categoryId` não existir ou não for uma categoria global (categoria de projeto é tratada como inexistente); responde 409 se o novo nome já for usado por outra biblioteca (renomear pro próprio nome atual não gera conflito).",
         security: [{ bearerAuth: [] }],
         params: libraryParamsSchema,
         body: updateLibraryBodySchema,
         response: {
           200: libraryResponseSchema.describe("Biblioteca atualizada."),
           404: errorResponseSchema.describe(
-            "Biblioteca não encontrada, ou o `categoryId` informado não existe.",
+            "Biblioteca não encontrada, ou o `categoryId` informado não é uma categoria global existente.",
           ),
           409: errorResponseSchema.describe(
             "O novo nome já é usado por outra biblioteca do catálogo.",
