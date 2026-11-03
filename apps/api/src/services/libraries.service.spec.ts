@@ -30,6 +30,15 @@ const category = {
   createdAt: new Date("2026-09-03T00:00:00Z"),
 };
 
+// categoria custom de um projeto — não pode ir pra libraries.categoryId, que é
+// de um catálogo global
+const projectCategory = {
+  id: "category-2",
+  projectId: "project-9",
+  name: "Infra interna",
+  createdAt: new Date("2026-09-03T00:00:00Z"),
+};
+
 const project = {
   id: "project-1",
   userId: "user-1",
@@ -106,6 +115,20 @@ describe("createLibrary", () => {
       createLibrary(repository, {
         name: "drizzle-orm",
         categoryId: "category-x",
+      }),
+    ).rejects.toThrow(CategoryNotFoundError);
+    expect(repository.insertLibrary).not.toHaveBeenCalled();
+  });
+
+  it("lança CategoryNotFoundError quando categoryId é uma categoria de projeto", async () => {
+    const repository = fakeRepository({
+      findCategoryById: vi.fn().mockResolvedValue(projectCategory),
+    });
+
+    await expect(
+      createLibrary(repository, {
+        name: "drizzle-orm",
+        categoryId: "category-2",
       }),
     ).rejects.toThrow(CategoryNotFoundError);
     expect(repository.insertLibrary).not.toHaveBeenCalled();
@@ -249,6 +272,17 @@ describe("updateLibrary", () => {
     ).rejects.toThrow(CategoryNotFoundError);
     expect(repository.updateLibrary).not.toHaveBeenCalled();
   });
+
+  it("lança CategoryNotFoundError quando o novo categoryId é uma categoria de projeto", async () => {
+    const repository = fakeRepository({
+      findCategoryById: vi.fn().mockResolvedValue(projectCategory),
+    });
+
+    await expect(
+      updateLibrary(repository, "library-1", { categoryId: "category-2" }),
+    ).rejects.toThrow(CategoryNotFoundError);
+    expect(repository.updateLibrary).not.toHaveBeenCalled();
+  });
 });
 
 describe("listLibrariesOverview", () => {
@@ -324,9 +358,9 @@ describe("createLibrary/updateLibrary (corrida, 23505)", () => {
       insertLibrary: vi.fn().mockRejectedValue(uniqueViolation()),
     });
 
-    await expect(
-      createLibrary(repository, { name: "zod" }),
-    ).rejects.toThrow(LibraryNameAlreadyExistsError);
+    await expect(createLibrary(repository, { name: "zod" })).rejects.toThrow(
+      LibraryNameAlreadyExistsError,
+    );
   });
 
   it("createLibrary relança sem alterar qualquer outro erro do insert", async () => {

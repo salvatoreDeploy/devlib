@@ -23,7 +23,9 @@ const createLibraryBodySchema = z.object({
     .string()
     .min(1)
     .optional()
-    .describe("Identificador (UUID) da categoria. Opcional."),
+    .describe(
+      "Identificador (UUID) de uma categoria global (predefinida). Opcional. Categorias de projeto não são aceitas aqui.",
+    ),
   notes: z.string().min(1).optional().describe("Notas livres. Opcional."),
 });
 
@@ -79,13 +81,13 @@ export const librariesCreateRoute: FastifyPluginAsyncZod<
         tags: ["Libraries"],
         summary: "Cria uma biblioteca",
         description:
-          "Cria uma biblioteca no catálogo global (compartilhado por todos os usuários autenticados). Retorna 409 se já existir uma biblioteca com o mesmo nome, e 404 se o `categoryId` informado não existir.",
+          "Cria uma biblioteca no catálogo global (compartilhado por todos os usuários autenticados). Retorna 409 se já existir uma biblioteca com o mesmo nome, e 404 se o `categoryId` informado não existir ou não for uma categoria global (categoria de projeto é tratada como inexistente — a biblioteca é compartilhada entre projetos e usuários).",
         security: [{ bearerAuth: [] }],
         body: createLibraryBodySchema,
         response: {
           201: libraryResponseSchema.describe("Biblioteca criada com sucesso."),
           404: errorResponseSchema.describe(
-            "O `categoryId` informado não corresponde a nenhuma categoria existente.",
+            "O `categoryId` informado não corresponde a nenhuma categoria global.",
           ),
           409: errorResponseSchema.describe(
             "Já existe uma biblioteca com esse nome no catálogo.",
