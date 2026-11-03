@@ -1,0 +1,2 @@
+ALTER TABLE "project_libraries" ADD COLUMN "category_id" uuid;--> statement-breakpoint
+ALTER TABLE "project_libraries" ADD CONSTRAINT "project_libraries_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE set null ON UPDATE no action;

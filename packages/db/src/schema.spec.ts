@@ -242,6 +242,30 @@ describe("projectLibraries", () => {
 
     expect(columns.version.notNull).toBe(false);
   });
+
+  it("categoryId é opcional (null = usa a categoria global da biblioteca)", () => {
+    const columns = getTableColumns(projectLibraries);
+
+    expect(columns.categoryId).toBeDefined();
+    expect(columns.categoryId.name).toBe("category_id");
+    expect(columns.categoryId.notNull).toBe(false);
+  });
+
+  it("categoryId referencia categories com onDelete set null", () => {
+    const { foreignKeys } = getTableConfig(projectLibraries);
+
+    const categoryFk = foreignKeys.find((fk) =>
+      fk
+        .reference()
+        .columns.map((column) => column.name)
+        .includes("category_id"),
+    );
+    expect(categoryFk).toBeDefined();
+    expect(getTableConfig(categoryFk!.reference().foreignTable).name).toBe(
+      "categories",
+    );
+    expect(categoryFk?.onDelete).toBe("set null");
+  });
 });
 
 describe("libraryTags", () => {

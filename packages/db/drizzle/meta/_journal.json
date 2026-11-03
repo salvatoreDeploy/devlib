@@ -50,6 +50,13 @@
       "when": 1793452634570,
       "tag": "0006_worried_virginia_dare",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793668309396,
+      "tag": "0007_volatile_blacklash",
+      "breakpoints": true
     }
   ]
 }
