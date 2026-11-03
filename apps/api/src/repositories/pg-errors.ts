@@ -1,5 +1,6 @@
 export const PG_INVALID_TEXT_REPRESENTATION = "22P02";
 export const PG_UNIQUE_VIOLATION = "23505";
+export const PG_FOREIGN_KEY_VIOLATION = "23503";
 
 // o driver pg expõe o código em error.code; o Drizzle embrulha esse erro num
 // DrizzleQueryError e o original fica em error.cause

@@ -2,11 +2,12 @@ import { describe, it, expect, vi } from "vitest";
 import {
   associateLibraryToProject,
   removeLibraryFromProject,
-  updateProjectLibraryVersion,
+  updateProjectLibrary,
   LibraryNotFoundError,
   ProjectLibraryAlreadyExistsError,
   ProjectLibraryNotFoundError,
   ProjectNotFoundError,
+  CategoryNotFoundError,
   type ProjectLibrariesRepository,
 } from "./project-libraries.service";
 
@@ -33,6 +34,28 @@ const projectLibrary = {
   projectId: "project-1",
   libraryId: "library-1",
   version: "18.3.1",
+  categoryId: null,
+  createdAt: new Date("2026-10-31T00:00:00Z"),
+};
+
+const globalCategory = {
+  id: "category-global",
+  projectId: null,
+  name: "Frontend",
+  createdAt: new Date("2026-10-31T00:00:00Z"),
+};
+
+const ownProjectCategory = {
+  id: "category-own",
+  projectId: "project-1",
+  name: "Infra interna",
+  createdAt: new Date("2026-10-31T00:00:00Z"),
+};
+
+const otherProjectCategory = {
+  id: "category-other",
+  projectId: "project-9",
+  name: "Infra de outro projeto",
   createdAt: new Date("2026-10-31T00:00:00Z"),
 };
 
@@ -44,9 +67,10 @@ function fakeRepository(
     findLibraryById: vi.fn().mockResolvedValue(library),
     findProjectLibrary: vi.fn().mockResolvedValue(undefined),
     insertProjectLibrary: vi.fn().mockResolvedValue(projectLibrary),
-    updateProjectLibraryVersion: vi
+    updateProjectLibrary: vi
       .fn()
       .mockResolvedValue({ ...projectLibrary, version: "19.0.0" }),
+    findCategoryById: vi.fn().mockResolvedValue(undefined),
     deleteProjectLibrary: vi.fn().mockResolvedValue(true),
     ...overrides,
   };
@@ -242,11 +266,11 @@ describe("removeLibraryFromProject", () => {
   });
 });
 
-describe("updateProjectLibraryVersion", () => {
+describe("updateProjectLibrary", () => {
   it("troca a versão e retorna a associação atualizada", async () => {
     const repository = fakeRepository();
 
-    const result = await updateProjectLibraryVersion(repository, {
+    const result = await updateProjectLibrary(repository, {
       userId: "user-1",
       projectId: "project-1",
       libraryId: "library-1",
@@ -254,21 +278,21 @@ describe("updateProjectLibraryVersion", () => {
     });
 
     expect(result.version).toBe("19.0.0");
-    expect(repository.updateProjectLibraryVersion).toHaveBeenCalledWith(
+    expect(repository.updateProjectLibrary).toHaveBeenCalledWith(
       "project-1",
       "library-1",
-      "19.0.0",
+      { version: "19.0.0" },
     );
   });
 
   it("aceita version null (limpa a versão)", async () => {
     const repository = fakeRepository({
-      updateProjectLibraryVersion: vi
+      updateProjectLibrary: vi
         .fn()
         .mockResolvedValue({ ...projectLibrary, version: null }),
     });
 
-    const result = await updateProjectLibraryVersion(repository, {
+    const result = await updateProjectLibrary(repository, {
       userId: "user-1",
       projectId: "project-1",
       libraryId: "library-1",
@@ -276,10 +300,10 @@ describe("updateProjectLibraryVersion", () => {
     });
 
     expect(result.version).toBeNull();
-    expect(repository.updateProjectLibraryVersion).toHaveBeenCalledWith(
+    expect(repository.updateProjectLibrary).toHaveBeenCalledWith(
       "project-1",
       "library-1",
-      null,
+      { version: null },
     );
   });
 
@@ -287,14 +311,14 @@ describe("updateProjectLibraryVersion", () => {
     const repository = fakeRepository();
 
     await expect(
-      updateProjectLibraryVersion(repository, {
+      updateProjectLibrary(repository, {
         userId: "user-2",
         projectId: "project-1",
         libraryId: "library-1",
         version: "19.0.0",
       }),
     ).rejects.toBeInstanceOf(ProjectNotFoundError);
-    expect(repository.updateProjectLibraryVersion).not.toHaveBeenCalled();
+    expect(repository.updateProjectLibrary).not.toHaveBeenCalled();
   });
 
   it("lança ProjectNotFoundError quando o projeto não existe", async () => {
@@ -303,28 +327,123 @@ describe("updateProjectLibraryVersion", () => {
     });
 
     await expect(
-      updateProjectLibraryVersion(repository, {
+      updateProjectLibrary(repository, {
         userId: "user-1",
         projectId: "project-inexistente",
         libraryId: "library-1",
         version: "19.0.0",
       }),
     ).rejects.toBeInstanceOf(ProjectNotFoundError);
-    expect(repository.updateProjectLibraryVersion).not.toHaveBeenCalled();
+    expect(repository.updateProjectLibrary).not.toHaveBeenCalled();
   });
 
   it("lança ProjectLibraryNotFoundError quando a biblioteca não está no projeto", async () => {
     const repository = fakeRepository({
-      updateProjectLibraryVersion: vi.fn().mockResolvedValue(undefined),
+      updateProjectLibrary: vi.fn().mockResolvedValue(undefined),
     });
 
     await expect(
-      updateProjectLibraryVersion(repository, {
+      updateProjectLibrary(repository, {
         userId: "user-1",
         projectId: "project-1",
         libraryId: "library-1",
         version: "19.0.0",
       }),
     ).rejects.toBeInstanceOf(ProjectLibraryNotFoundError);
+  });
+});
+
+describe("updateProjectLibrary — categoria da associação", () => {
+  const input = {
+    userId: "user-1",
+    projectId: "project-1",
+    libraryId: "library-1",
+  };
+
+  it("aceita categoria global e repassa só o campo informado", async () => {
+    const repository = fakeRepository({
+      findCategoryById: vi.fn().mockResolvedValue(globalCategory),
+    });
+
+    await updateProjectLibrary(repository, {
+      ...input,
+      categoryId: "category-global",
+    });
+
+    expect(repository.updateProjectLibrary).toHaveBeenCalledWith(
+      "project-1",
+      "library-1",
+      { categoryId: "category-global" },
+    );
+  });
+
+  it("aceita categoria do próprio projeto", async () => {
+    const repository = fakeRepository({
+      findCategoryById: vi.fn().mockResolvedValue(ownProjectCategory),
+    });
+
+    await updateProjectLibrary(repository, {
+      ...input,
+      categoryId: "category-own",
+      version: "19.0.0",
+    });
+
+    expect(repository.updateProjectLibrary).toHaveBeenCalledWith(
+      "project-1",
+      "library-1",
+      { categoryId: "category-own", version: "19.0.0" },
+    );
+  });
+
+  it("categoryId null volta ao padrão da biblioteca sem buscar categoria", async () => {
+    const repository = fakeRepository();
+
+    await updateProjectLibrary(repository, { ...input, categoryId: null });
+
+    expect(repository.findCategoryById).not.toHaveBeenCalled();
+    expect(repository.updateProjectLibrary).toHaveBeenCalledWith(
+      "project-1",
+      "library-1",
+      { categoryId: null },
+    );
+  });
+
+  it("lança CategoryNotFoundError quando a categoria é de outro projeto", async () => {
+    const repository = fakeRepository({
+      findCategoryById: vi.fn().mockResolvedValue(otherProjectCategory),
+    });
+
+    await expect(
+      updateProjectLibrary(repository, {
+        ...input,
+        categoryId: "category-other",
+      }),
+    ).rejects.toBeInstanceOf(CategoryNotFoundError);
+    expect(repository.updateProjectLibrary).not.toHaveBeenCalled();
+  });
+
+  it("lança CategoryNotFoundError quando a categoria não existe", async () => {
+    const repository = fakeRepository();
+
+    await expect(
+      updateProjectLibrary(repository, { ...input, categoryId: "category-x" }),
+    ).rejects.toBeInstanceOf(CategoryNotFoundError);
+    expect(repository.updateProjectLibrary).not.toHaveBeenCalled();
+  });
+
+  it("traduz foreign key violation (23503) da corrida em CategoryNotFoundError", async () => {
+    const repository = fakeRepository({
+      findCategoryById: vi.fn().mockResolvedValue(ownProjectCategory),
+      updateProjectLibrary: vi
+        .fn()
+        .mockRejectedValue({ cause: { code: "23503" } }),
+    });
+
+    await expect(
+      updateProjectLibrary(repository, {
+        ...input,
+        categoryId: "category-own",
+      }),
+    ).rejects.toBeInstanceOf(CategoryNotFoundError);
   });
 });
