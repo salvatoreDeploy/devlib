@@ -242,6 +242,18 @@ describe("createLibrariesRepository", () => {
       expect(where).toHaveBeenCalledOnce();
     });
 
+    it("seleciona a categoria da associação como projectCategoryId, separada do categoryId global da biblioteca", async () => {
+      const { db, select } = fakeDbForSelectJoinWhere([]);
+
+      const repository = createLibrariesRepository(db);
+      await repository.findLibrariesByProjectId("project-1");
+
+      const fields = select.mock.calls[0][0] as Record<string, unknown>;
+      expect(Object.keys(fields)).toEqual(
+        expect.arrayContaining(["categoryId", "projectCategoryId", "version"]),
+      );
+    });
+
     it("retorna array vazio quando o projeto não tem bibliotecas associadas", async () => {
       const { db } = fakeDbForSelectJoinWhere([]);
 

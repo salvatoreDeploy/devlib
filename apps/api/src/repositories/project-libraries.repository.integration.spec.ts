@@ -94,7 +94,7 @@ describe("createProjectLibrariesRepository (Postgres real)", () => {
     expect(await getTestDb().select().from(projectLibraries)).toHaveLength(2);
   });
 
-  it("updateProjectLibraryVersion troca só a versão do par informado", async () => {
+  it("updateProjectLibrary troca só a versão do par informado", async () => {
     const { projectA, projectB, library } = await projectsAndLibrary();
     const repository = createProjectLibrariesRepository(getTestDb());
     const target = await repository.insertProjectLibrary({
@@ -108,10 +108,10 @@ describe("createProjectLibrariesRepository (Postgres real)", () => {
       version: "18.3.1",
     });
 
-    const updated = await repository.updateProjectLibraryVersion(
+    const updated = await repository.updateProjectLibrary(
       projectA.id,
       library.id,
-      "19.0.0",
+      { version: "19.0.0" },
     );
 
     expect(updated).toEqual({ ...target, version: "19.0.0" });
@@ -120,7 +120,7 @@ describe("createProjectLibrariesRepository (Postgres real)", () => {
     ).toEqual(other);
   });
 
-  it("updateProjectLibraryVersion aceita null e retorna undefined sem associação", async () => {
+  it("updateProjectLibrary aceita null e retorna undefined sem associação", async () => {
     const { projectA, projectB, library } = await projectsAndLibrary();
     const repository = createProjectLibrariesRepository(getTestDb());
     await repository.insertProjectLibrary({
@@ -129,15 +129,15 @@ describe("createProjectLibrariesRepository (Postgres real)", () => {
       version: "18.3.1",
     });
 
-    const cleared = await repository.updateProjectLibraryVersion(
+    const cleared = await repository.updateProjectLibrary(
       projectA.id,
       library.id,
-      null,
+      { version: null },
     );
-    const missing = await repository.updateProjectLibraryVersion(
+    const missing = await repository.updateProjectLibrary(
       projectB.id,
       library.id,
-      "19.0.0",
+      { version: "19.0.0" },
     );
 
     expect(cleared?.version).toBeNull();
@@ -224,5 +224,37 @@ describe("createProjectLibrariesRepository (Postgres real)", () => {
       .where(eq(projectLibraries.id, association.id));
     expect(after).toBeDefined();
     expect(after.categoryId).toBeNull();
+  });
+
+  it("updateProjectLibrary troca a categoria sem mexer na versão, e null volta ao padrão", async () => {
+    const { projectA, library } = await projectsAndLibrary();
+    const db = getTestDb();
+    const [category] = await db
+      .insert(categories)
+      .values({ projectId: projectA.id, name: "Infra interna" })
+      .returning();
+    const repository = createProjectLibrariesRepository(db);
+    await repository.insertProjectLibrary({
+      projectId: projectA.id,
+      libraryId: library.id,
+      version: "18.3.1",
+    });
+
+    const withCategory = await repository.updateProjectLibrary(
+      projectA.id,
+      library.id,
+      { categoryId: category.id },
+    );
+    const cleared = await repository.updateProjectLibrary(
+      projectA.id,
+      library.id,
+      { categoryId: null },
+    );
+
+    expect(withCategory).toMatchObject({
+      categoryId: category.id,
+      version: "18.3.1",
+    });
+    expect(cleared).toMatchObject({ categoryId: null, version: "18.3.1" });
   });
 });

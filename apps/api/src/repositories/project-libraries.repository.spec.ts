@@ -54,6 +54,7 @@ const projectLibrary = {
   projectId: "project-1",
   libraryId: "library-1",
   version: "18.3.1",
+  categoryId: null,
   createdAt: new Date("2026-10-31T00:00:00Z"),
 };
 
@@ -126,16 +127,16 @@ describe("createProjectLibrariesRepository", () => {
     });
   });
 
-  describe("updateProjectLibraryVersion", () => {
+  describe("updateProjectLibrary", () => {
     it("grava a versão nova e retorna a associação atualizada", async () => {
       const updated = { ...projectLibrary, version: "19.0.0" };
       const { db, set, where } = fakeDbForUpdateReturning([updated]);
 
       const repository = createProjectLibrariesRepository(db);
-      const result = await repository.updateProjectLibraryVersion(
+      const result = await repository.updateProjectLibrary(
         "project-1",
         "library-1",
-        "19.0.0",
+        { version: "19.0.0" },
       );
 
       expect(result).toEqual(updated);
@@ -149,10 +150,10 @@ describe("createProjectLibrariesRepository", () => {
       ]);
 
       const repository = createProjectLibrariesRepository(db);
-      const result = await repository.updateProjectLibraryVersion(
+      const result = await repository.updateProjectLibrary(
         "project-1",
         "library-1",
-        null,
+        { version: null },
       );
 
       expect(result?.version).toBeNull();
@@ -163,13 +164,42 @@ describe("createProjectLibrariesRepository", () => {
       const { db } = fakeDbForUpdateReturning([]);
 
       const repository = createProjectLibrariesRepository(db);
-      const result = await repository.updateProjectLibraryVersion(
+      const result = await repository.updateProjectLibrary(
         "project-1",
         "library-inexistente",
-        "19.0.0",
+        { version: "19.0.0" },
       );
 
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe("updateProjectLibrary — atualização parcial", () => {
+    it("grava só a categoria quando só categoryId é informado", async () => {
+      const updated = { ...projectLibrary, categoryId: "category-2" };
+      const { db, set } = fakeDbForUpdateReturning([updated]);
+
+      const repository = createProjectLibrariesRepository(db);
+      const result = await repository.updateProjectLibrary(
+        "project-1",
+        "library-1",
+        { categoryId: "category-2" },
+      );
+
+      expect(result).toEqual(updated);
+      expect(set).toHaveBeenCalledWith({ categoryId: "category-2" });
+    });
+
+    it("grava versão e categoria juntas", async () => {
+      const { db, set } = fakeDbForUpdateReturning([projectLibrary]);
+
+      const repository = createProjectLibrariesRepository(db);
+      await repository.updateProjectLibrary("project-1", "library-1", {
+        version: "19.0.0",
+        categoryId: null,
+      });
+
+      expect(set).toHaveBeenCalledWith({ version: "19.0.0", categoryId: null });
     });
   });
 

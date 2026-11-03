@@ -4,16 +4,23 @@ import type {
 } from "../repositories/project-libraries.repository";
 import type { ProjectRecord } from "../repositories/projects.repository";
 import type { LibraryRecord } from "../repositories/libraries.repository";
-import { PG_UNIQUE_VIOLATION, pgErrorCode } from "../repositories/pg-errors";
+import type { CategoryRecord } from "../repositories/categories.repository";
+import {
+  PG_FOREIGN_KEY_VIOLATION,
+  PG_UNIQUE_VIOLATION,
+  pgErrorCode,
+} from "../repositories/pg-errors";
 import { ProjectNotFoundError } from "./projects.service";
 import { LibraryNotFoundError } from "./libraries.service";
+import { CategoryNotFoundError } from "./categories.service";
 
 export type { ProjectLibraryRecord };
-export { ProjectNotFoundError, LibraryNotFoundError };
+export { ProjectNotFoundError, LibraryNotFoundError, CategoryNotFoundError };
 
 export type ProjectLibrariesRepository = ProjectLibrariesDataRepository & {
   findProjectById(id: string): Promise<ProjectRecord | undefined>;
   findLibraryById(id: string): Promise<LibraryRecord | undefined>;
+  findCategoryById(id: string): Promise<CategoryRecord | undefined>;
 };
 
 export class ProjectLibraryAlreadyExistsError extends Error {
@@ -106,24 +113,48 @@ export async function removeLibraryFromProject(
   }
 }
 
-export type UpdateProjectLibraryVersionInput = {
+export type UpdateProjectLibraryInput = {
   userId: string;
   projectId: string;
   libraryId: string;
-  version: string | null;
+  version?: string | null;
+  categoryId?: string | null;
 };
 
-export async function updateProjectLibraryVersion(
+export async function updateProjectLibrary(
   repository: ProjectLibrariesRepository,
-  { userId, projectId, libraryId, version }: UpdateProjectLibraryVersionInput,
+  { userId, projectId, libraryId, ...changes }: UpdateProjectLibraryInput,
 ): Promise<ProjectLibraryRecord> {
   await assertProjectOwnedByUser(repository, userId, projectId);
 
-  const updated = await repository.updateProjectLibraryVersion(
-    projectId,
-    libraryId,
-    version,
+  if (changes.categoryId) {
+    // só global ou do próprio projeto — de outro projeto é tratada como
+    // inexistente, pra não confirmar categoria de outro usuário
+    const category = await repository.findCategoryById(changes.categoryId);
+
+    if (
+      !category ||
+      (category.projectId !== null && category.projectId !== projectId)
+    ) {
+      throw new CategoryNotFoundError();
+    }
+  }
+
+  // só as chaves presentes no input vão pro SET — omitida não mexe no campo
+  const data = Object.fromEntries(
+    Object.entries(changes).filter(([, value]) => value !== undefined),
   );
+
+  let updated: ProjectLibraryRecord | undefined;
+  try {
+    updated = await repository.updateProjectLibrary(projectId, libraryId, data);
+  } catch (error) {
+    // corrida: a categoria foi excluída entre a checagem acima e o update
+    if (pgErrorCode(error) === PG_FOREIGN_KEY_VIOLATION) {
+      throw new CategoryNotFoundError();
+    }
+    throw error;
+  }
 
   if (!updated) {
     throw new ProjectLibraryNotFoundError();

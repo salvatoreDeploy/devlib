@@ -35,6 +35,7 @@ const libraryAssociation = {
   categoryId: "category-1",
   notes: null,
   version: "1.2.3",
+  projectCategoryId: "category-own",
   createdAt: new Date("2026-09-03T00:00:00Z"),
   updatedAt: new Date("2026-09-03T00:00:00Z"),
 };
@@ -69,7 +70,13 @@ describe("GET /projects/:id/libraries", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject([
-      { id: "library-1", name: "drizzle-orm", version: "1.2.3" },
+      {
+        id: "library-1",
+        name: "drizzle-orm",
+        categoryId: "category-1",
+        version: "1.2.3",
+        projectCategoryId: "category-own",
+      },
     ]);
   });
 

@@ -43,6 +43,7 @@ const projectLibrary = {
   projectId: "project-1",
   libraryId: "library-1",
   version: "18.3.1",
+  categoryId: null,
   createdAt: new Date("2026-10-31T00:00:00Z"),
 };
 
@@ -54,7 +55,8 @@ function fakeRepository(
     findLibraryById: vi.fn().mockResolvedValue(library),
     findProjectLibrary: vi.fn().mockResolvedValue(undefined),
     insertProjectLibrary: vi.fn().mockResolvedValue(projectLibrary),
-    updateProjectLibraryVersion: vi.fn(),
+    updateProjectLibrary: vi.fn(),
+    findCategoryById: vi.fn().mockResolvedValue(undefined),
     deleteProjectLibrary: vi.fn().mockResolvedValue(true),
     ...overrides,
   };

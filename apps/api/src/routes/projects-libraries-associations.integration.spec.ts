@@ -4,6 +4,7 @@ import { buildServer } from "../server";
 import { createProjectsRepository } from "../repositories/projects.repository";
 import { createLibrariesRepository } from "../repositories/libraries.repository";
 import { createProjectLibrariesRepository } from "../repositories/project-libraries.repository";
+import { createCategoriesRepository } from "../repositories/categories.repository";
 import { getTestDb, insertLibrary } from "../../test/integration/test-db";
 import { bearer, createProject, signUp } from "../../test/integration/http";
 
@@ -195,6 +196,7 @@ describe("associação biblioteca ↔ projeto (Postgres real)", () => {
         ...createProjectsRepository(db),
         ...createLibrariesRepository(db),
         ...createProjectLibrariesRepository(db),
+        ...createCategoriesRepository(db),
         findProjectLibrary: async () => undefined,
       },
     });
@@ -239,5 +241,121 @@ describe("associação biblioteca ↔ projeto (Postgres real)", () => {
 
     expect(post.statusCode).toBe(404);
     expect(del.statusCode).toBe(404);
+  });
+
+  describe("categoria da associação", () => {
+    function patch(
+      app: App,
+      token: string,
+      projectId: string,
+      libraryId: string,
+      payload: Record<string, unknown>,
+    ) {
+      return app.inject({
+        method: "PATCH",
+        url: `/projects/${projectId}/libraries/${libraryId}`,
+        headers: bearer(token),
+        payload,
+      });
+    }
+
+    function createCategory(
+      app: App,
+      token: string,
+      projectId: string,
+      name: string,
+    ) {
+      return app.inject({
+        method: "POST",
+        url: `/projects/${projectId}/categories`,
+        headers: bearer(token),
+        payload: { name },
+      });
+    }
+
+    it("PATCH com categoria do projeto aparece como projectCategoryId no GET, sem mexer na versão nem no categoryId global; null limpa", async () => {
+      const { app, ana, project, library } = await setup();
+      await associate(app, ana.accessToken, project.id, {
+        libraryId: library.id,
+        version: "18.3.1",
+      });
+      const category = (
+        await createCategory(app, ana.accessToken, project.id, "Infra interna")
+      ).json<{ id: string }>();
+
+      const updated = await patch(
+        app,
+        ana.accessToken,
+        project.id,
+        library.id,
+        {
+          categoryId: category.id,
+        },
+      );
+      const listed = await listProjectLibraries(
+        app,
+        ana.accessToken,
+        project.id,
+      );
+
+      expect(updated.statusCode).toBe(200);
+      expect(updated.json()).toMatchObject({
+        categoryId: category.id,
+        version: "18.3.1",
+      });
+      expect(listed.json()).toEqual([
+        expect.objectContaining({
+          id: library.id,
+          categoryId: null,
+          projectCategoryId: category.id,
+          version: "18.3.1",
+        }),
+      ]);
+
+      const cleared = await patch(
+        app,
+        ana.accessToken,
+        project.id,
+        library.id,
+        {
+          categoryId: null,
+        },
+      );
+      const afterClear = await listProjectLibraries(
+        app,
+        ana.accessToken,
+        project.id,
+      );
+
+      expect(cleared.statusCode).toBe(200);
+      expect(afterClear.json()[0].projectCategoryId).toBeNull();
+    });
+
+    it("PATCH com categoria de projeto de outro usuário responde 404 e não grava", async () => {
+      const { app, ana, project, library } = await setup();
+      await associate(app, ana.accessToken, project.id, {
+        libraryId: library.id,
+      });
+      const bia = await signUp(app, "bia@example.com", PASSWORD);
+      const biaProject = await createProject(app, bia.accessToken, "Outro");
+      const biaCategory = (
+        await createCategory(app, bia.accessToken, biaProject.id, "Da Bia")
+      ).json<{ id: string }>();
+
+      const response = await patch(
+        app,
+        ana.accessToken,
+        project.id,
+        library.id,
+        {
+          categoryId: biaCategory.id,
+        },
+      );
+
+      expect(response.statusCode).toBe(404);
+      expect(await getTestDb().select().from(projectLibraries)).toEqual([
+        expect.objectContaining({ categoryId: null }),
+      ]);
+    });
   });
 });

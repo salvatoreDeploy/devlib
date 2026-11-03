@@ -10,6 +10,7 @@ import {
 import { createProjectsRepository } from "../repositories/projects.repository";
 import { createLibrariesRepository } from "../repositories/libraries.repository";
 import { createProjectLibrariesRepository } from "../repositories/project-libraries.repository";
+import { createCategoriesRepository } from "../repositories/categories.repository";
 import { createAuthenticateMiddleware } from "../middleware/authenticate";
 import type { AuthConfig } from "../config/env";
 
@@ -43,6 +44,7 @@ export const projectsLibrariesRemoveRoute: FastifyPluginAsyncZod<
         ...createProjectsRepository(db),
         ...createLibrariesRepository(db),
         ...createProjectLibrariesRepository(db),
+        ...createCategoriesRepository(db),
       };
     }
     return projectLibraryAssociationsRepository;

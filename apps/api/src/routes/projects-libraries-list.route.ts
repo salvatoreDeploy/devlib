@@ -34,6 +34,12 @@ const projectLibraryResponseSchema = z.object({
     .describe(
       "Versão usada nesse projeto, ou null quando não informada na associação.",
     ),
+  projectCategoryId: z
+    .string()
+    .nullable()
+    .describe(
+      "Categoria da biblioteca neste projeto (global ou do próprio projeto), ou null quando o projeto usa a categoria global da biblioteca (`categoryId`). Categoria efetiva = projectCategoryId ?? categoryId.",
+    ),
   createdAt: z.date().describe("Data/hora de criação da biblioteca."),
   updatedAt: z
     .date()

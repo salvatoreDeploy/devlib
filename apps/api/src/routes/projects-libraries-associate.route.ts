@@ -11,6 +11,7 @@ import {
 import { createProjectsRepository } from "../repositories/projects.repository";
 import { createLibrariesRepository } from "../repositories/libraries.repository";
 import { createProjectLibrariesRepository } from "../repositories/project-libraries.repository";
+import { createCategoriesRepository } from "../repositories/categories.repository";
 import { createAuthenticateMiddleware } from "../middleware/authenticate";
 import type { AuthConfig } from "../config/env";
 
@@ -42,6 +43,12 @@ const projectLibraryResponseSchema = z.object({
     .string()
     .nullable()
     .describe("Versão usada nesse projeto, ou null quando não informada."),
+  categoryId: z
+    .string()
+    .nullable()
+    .describe(
+      "Categoria da biblioteca neste projeto (global ou do próprio projeto), ou null quando o projeto usa a categoria global da biblioteca.",
+    ),
   createdAt: z.date().describe("Data/hora de criação da associação."),
 });
 
@@ -67,6 +74,7 @@ export const projectsLibrariesAssociateRoute: FastifyPluginAsyncZod<
         ...createProjectsRepository(db),
         ...createLibrariesRepository(db),
         ...createProjectLibrariesRepository(db),
+        ...createCategoriesRepository(db),
       };
     }
     return projectLibraryAssociationsRepository;

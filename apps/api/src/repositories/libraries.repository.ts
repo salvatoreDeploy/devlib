@@ -19,6 +19,8 @@ export type LibraryRecord = {
 
 export type ProjectLibraryRecord = LibraryRecord & {
   version: string | null;
+  // categoria da biblioteca neste projeto; categoryId continua sendo a global
+  projectCategoryId: string | null;
 };
 
 export type LibraryOverviewRecord = LibraryRecord & {
@@ -106,6 +108,7 @@ export function createLibrariesRepository(db: DbClient): LibrariesRepository {
           createdAt: libraries.createdAt,
           updatedAt: libraries.updatedAt,
           version: projectLibraries.version,
+          projectCategoryId: projectLibraries.categoryId,
         })
         .from(projectLibraries)
         .innerJoin(libraries, eq(projectLibraries.libraryId, libraries.id))

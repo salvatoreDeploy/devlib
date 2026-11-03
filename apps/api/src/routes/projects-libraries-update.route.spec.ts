@@ -34,6 +34,7 @@ const projectLibrary = {
   projectId: "project-1",
   libraryId: "library-1",
   version: "19.0.0",
+  categoryId: null,
   createdAt: new Date("2026-10-31T00:00:00Z"),
 };
 
@@ -45,7 +46,8 @@ function fakeRepository(
     findLibraryById: vi.fn().mockResolvedValue(undefined),
     findProjectLibrary: vi.fn().mockResolvedValue(undefined),
     insertProjectLibrary: vi.fn(),
-    updateProjectLibraryVersion: vi.fn().mockResolvedValue(projectLibrary),
+    updateProjectLibrary: vi.fn().mockResolvedValue(projectLibrary),
+    findCategoryById: vi.fn().mockResolvedValue(undefined),
     deleteProjectLibrary: vi.fn(),
     ...overrides,
   };
@@ -82,10 +84,10 @@ describe("PATCH /projects/:id/libraries/:libraryId", () => {
       libraryId: "library-1",
       version: "19.0.0",
     });
-    expect(repository.updateProjectLibraryVersion).toHaveBeenCalledWith(
+    expect(repository.updateProjectLibrary).toHaveBeenCalledWith(
       "project-1",
       "library-1",
-      "19.0.0",
+      { version: "19.0.0" },
     );
   });
 
@@ -94,16 +96,16 @@ describe("PATCH /projects/:id/libraries/:libraryId", () => {
 
     await update(repository, { version: "  19.0.0  " });
 
-    expect(repository.updateProjectLibraryVersion).toHaveBeenCalledWith(
+    expect(repository.updateProjectLibrary).toHaveBeenCalledWith(
       "project-1",
       "library-1",
-      "19.0.0",
+      { version: "19.0.0" },
     );
   });
 
   it("aceita version null pra limpar a versão", async () => {
     const repository = fakeRepository({
-      updateProjectLibraryVersion: vi
+      updateProjectLibrary: vi
         .fn()
         .mockResolvedValue({ ...projectLibrary, version: null }),
     });
@@ -112,10 +114,10 @@ describe("PATCH /projects/:id/libraries/:libraryId", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json().version).toBeNull();
-    expect(repository.updateProjectLibraryVersion).toHaveBeenCalledWith(
+    expect(repository.updateProjectLibrary).toHaveBeenCalledWith(
       "project-1",
       "library-1",
-      null,
+      { version: null },
     );
   });
 
@@ -127,7 +129,7 @@ describe("PATCH /projects/:id/libraries/:libraryId", () => {
     const response = await update(repository, { version: "19.0.0" });
 
     expect(response.statusCode).toBe(404);
-    expect(repository.updateProjectLibraryVersion).not.toHaveBeenCalled();
+    expect(repository.updateProjectLibrary).not.toHaveBeenCalled();
   });
 
   it("retorna 404 quando o projeto é de outro usuário", async () => {
@@ -140,12 +142,12 @@ describe("PATCH /projects/:id/libraries/:libraryId", () => {
     );
 
     expect(response.statusCode).toBe(404);
-    expect(repository.updateProjectLibraryVersion).not.toHaveBeenCalled();
+    expect(repository.updateProjectLibrary).not.toHaveBeenCalled();
   });
 
   it("retorna 404 quando a biblioteca não está associada ao projeto", async () => {
     const repository = fakeRepository({
-      updateProjectLibraryVersion: vi.fn().mockResolvedValue(undefined),
+      updateProjectLibrary: vi.fn().mockResolvedValue(undefined),
     });
 
     const response = await update(repository, { version: "19.0.0" });
@@ -160,7 +162,7 @@ describe("PATCH /projects/:id/libraries/:libraryId", () => {
     const response = await update(repository, {});
 
     expect(response.statusCode).toBe(400);
-    expect(repository.updateProjectLibraryVersion).not.toHaveBeenCalled();
+    expect(repository.updateProjectLibrary).not.toHaveBeenCalled();
   });
 
   it("retorna 400 quando version é vazia ou só espaços", async () => {
@@ -171,7 +173,7 @@ describe("PATCH /projects/:id/libraries/:libraryId", () => {
 
     expect(empty.statusCode).toBe(400);
     expect(blank.statusCode).toBe(400);
-    expect(repository.updateProjectLibraryVersion).not.toHaveBeenCalled();
+    expect(repository.updateProjectLibrary).not.toHaveBeenCalled();
   });
 
   it("retorna 400 quando version passa de 100 caracteres", async () => {
@@ -180,7 +182,7 @@ describe("PATCH /projects/:id/libraries/:libraryId", () => {
     const response = await update(repository, { version: "1".repeat(101) });
 
     expect(response.statusCode).toBe(400);
-    expect(repository.updateProjectLibraryVersion).not.toHaveBeenCalled();
+    expect(repository.updateProjectLibrary).not.toHaveBeenCalled();
   });
 
   it("retorna 401 quando não há token de acesso", async () => {
@@ -189,6 +191,59 @@ describe("PATCH /projects/:id/libraries/:libraryId", () => {
     const response = await update(repository, { version: "19.0.0" }, {});
 
     expect(response.statusCode).toBe(401);
-    expect(repository.updateProjectLibraryVersion).not.toHaveBeenCalled();
+    expect(repository.updateProjectLibrary).not.toHaveBeenCalled();
+  });
+
+  it("retorna 200 com a categoria da associação quando categoryId é do próprio projeto", async () => {
+    const repository = fakeRepository({
+      findCategoryById: vi.fn().mockResolvedValue({
+        id: "category-own",
+        projectId: "project-1",
+        name: "Infra interna",
+        createdAt: new Date("2026-10-31T00:00:00Z"),
+      }),
+      updateProjectLibrary: vi
+        .fn()
+        .mockResolvedValue({ ...projectLibrary, categoryId: "category-own" }),
+    });
+
+    const response = await update(repository, { categoryId: "category-own" });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().categoryId).toBe("category-own");
+    expect(repository.updateProjectLibrary).toHaveBeenCalledWith(
+      "project-1",
+      "library-1",
+      { categoryId: "category-own" },
+    );
+  });
+
+  it("aceita categoryId null pra voltar ao padrão da biblioteca", async () => {
+    const repository = fakeRepository();
+
+    const response = await update(repository, { categoryId: null });
+
+    expect(response.statusCode).toBe(200);
+    expect(repository.updateProjectLibrary).toHaveBeenCalledWith(
+      "project-1",
+      "library-1",
+      { categoryId: null },
+    );
+  });
+
+  it("retorna 404 quando categoryId é de outro projeto ou não existe", async () => {
+    const repository = fakeRepository({
+      findCategoryById: vi.fn().mockResolvedValue({
+        id: "category-other",
+        projectId: "project-9",
+        name: "Outro",
+        createdAt: new Date("2026-10-31T00:00:00Z"),
+      }),
+    });
+
+    const response = await update(repository, { categoryId: "category-other" });
+
+    expect(response.statusCode).toBe(404);
+    expect(repository.updateProjectLibrary).not.toHaveBeenCalled();
   });
 });
