@@ -66,7 +66,12 @@ const projectCategory = {
   createdAt: "2026-09-03T00:00:00.000Z",
 };
 
-function library(overrides: Partial<{ categoryId: string | null }> = {}) {
+function library(
+  overrides: Partial<{
+    categoryId: string | null;
+    projectCategoryId: string | null;
+  }> = {},
+) {
   return {
     id: "library-1",
     name: "drizzle-orm",
@@ -130,6 +135,34 @@ describe("ProjectCategoriesPage", () => {
     expect(screen.getByText("Infra interna")).not.toBeNull();
     expect(screen.getByText("2 bibliotecas")).not.toBeNull();
     expect(screen.getByText("1 biblioteca")).not.toBeNull();
+  });
+
+  it("conta pela categoria efetiva: a do projeto sobrescreve a global da biblioteca", async () => {
+    vi.mocked(getProject).mockResolvedValue(project);
+    vi.mocked(getProjectCategories).mockResolvedValue([
+      globalCategory,
+      projectCategory,
+    ]);
+    vi.mocked(getProjectLibraries).mockResolvedValue([
+      // global Frontend, mas neste projeto está em Infra interna
+      library({ categoryId: "category-1", projectCategoryId: "category-2" }),
+      library({ categoryId: "category-1", projectCategoryId: "category-2" }),
+      library({ categoryId: "category-1" }),
+    ]);
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("2 bibliotecas")).not.toBeNull();
+    });
+    const rows = screen.getAllByRole("row");
+    const infraRow = rows.find((row) =>
+      row.textContent?.includes("Infra interna"),
+    );
+    const frontendRow = rows.find((row) =>
+      row.textContent?.includes("Frontend"),
+    );
+    expect(infraRow?.textContent).toMatch(/2 bibliotecas/);
+    expect(frontendRow?.textContent).toMatch(/1 biblioteca(?!s)/);
   });
 
   it("mostra 0 bibliotecas quando nenhuma biblioteca do projeto usa a categoria", async () => {

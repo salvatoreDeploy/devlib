@@ -93,10 +93,12 @@ export default function ProjectCategoriesPage() {
   const librariesCountByCategoryId = useMemo(() => {
     const counts = new Map<string, number>();
     for (const library of librariesQuery.data ?? []) {
-      if (!library.categoryId) {
+      // categoria efetiva: a do projeto sobrescreve a global da biblioteca
+      const categoryId = library.projectCategoryId ?? library.categoryId;
+      if (!categoryId) {
         continue;
       }
-      counts.set(library.categoryId, (counts.get(library.categoryId) ?? 0) + 1);
+      counts.set(categoryId, (counts.get(categoryId) ?? 0) + 1);
     }
     return counts;
   }, [librariesQuery.data]);

@@ -27,7 +27,7 @@ import {
   GetProjectLibrariesError,
   type ProjectLibrary,
 } from "../../../lib/api/projects";
-import { getCategories } from "../../../lib/api/categories";
+import { getProjectCategories } from "../../../lib/api/categories";
 import { useRequireAuth } from "../../../lib/use-require-auth";
 
 export default function ProjectDetailPage() {
@@ -52,9 +52,10 @@ export default function ProjectDetailPage() {
     retry: false,
   });
 
+  // globais + do projeto — a categoria efetiva de uma lib pode ser do projeto
   const categoriesQuery = useQuery({
-    queryKey: ["categories"],
-    queryFn: () => getCategories(),
+    queryKey: ["project-categories", id],
+    queryFn: () => getProjectCategories(id),
     enabled: isAuthenticated,
   });
 
@@ -100,6 +101,14 @@ export default function ProjectDetailPage() {
       category.name,
     ]),
   );
+
+  function effectiveCategoryName(library: ProjectLibrary) {
+    const categoryId = library.projectCategoryId ?? library.categoryId;
+    if (!categoryId) {
+      return "Sem categoria";
+    }
+    return categoryNameById.get(categoryId) ?? "Categoria";
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -157,10 +166,7 @@ export default function ProjectDetailPage() {
                     </TableCell>
                     <TableCell>
                       <span className="rounded-[6px] border border-input bg-secondary px-[9px] py-[3px] text-[12px] text-muted-foreground">
-                        {library.categoryId
-                          ? (categoryNameById.get(library.categoryId) ??
-                            "Categoria")
-                          : "Sem categoria"}
+                        {effectiveCategoryName(library)}
                       </span>
                     </TableCell>
                     <TableCell className="font-mono text-muted-foreground">
