@@ -9,10 +9,7 @@ import {
   getProjectLibraries,
   GetProjectLibrariesError,
 } from "../../../lib/api/projects";
-import {
-  getCategories,
-  getProjectCategories,
-} from "../../../lib/api/categories";
+import { getProjectCategories } from "../../../lib/api/categories";
 import { clearTokens, saveTokens } from "../../../lib/auth-storage";
 
 const pushMock = vi.fn();
@@ -34,7 +31,7 @@ vi.mock("../../../lib/api/categories", async () => {
   const actual = await vi.importActual<
     typeof import("../../../lib/api/categories")
   >("../../../lib/api/categories");
-  return { ...actual, getCategories: vi.fn(), getProjectCategories: vi.fn() };
+  return { ...actual, getProjectCategories: vi.fn() };
 });
 
 const project = {
@@ -53,6 +50,13 @@ const category = {
   createdAt: "2026-09-03T00:00:00.000Z",
 };
 
+const projectCategory = {
+  id: "category-own",
+  projectId: "project-1",
+  name: "Infra interna",
+  createdAt: "2026-09-03T00:00:00.000Z",
+};
+
 function renderProjectDetailPage() {
   const queryClient = new QueryClient();
   return render(
@@ -67,10 +71,11 @@ describe("ProjectDetailPage", () => {
     pushMock.mockClear();
     vi.mocked(getProject).mockReset();
     vi.mocked(getProjectLibraries).mockReset();
-    vi.mocked(getCategories).mockReset();
-    vi.mocked(getCategories).mockResolvedValue([category]);
     vi.mocked(getProjectCategories).mockReset();
-    vi.mocked(getProjectCategories).mockResolvedValue([category]);
+    vi.mocked(getProjectCategories).mockResolvedValue([
+      category,
+      projectCategory,
+    ]);
     clearTokens();
     saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
   });
@@ -207,5 +212,43 @@ describe("ProjectDetailPage", () => {
 
     expect(await screen.findByRole("dialog")).not.toBeNull();
     expect(screen.getByText(/drizzle-orm em DevLib/)).not.toBeNull();
+  });
+
+  it("o chip mostra a categoria efetiva: a do projeto quando definida, senão a global", async () => {
+    vi.mocked(getProject).mockResolvedValue(project);
+    vi.mocked(getProjectLibraries).mockResolvedValue([
+      {
+        id: "library-1",
+        name: "drizzle-orm",
+        categoryId: "category-1",
+        notes: null,
+        version: "1.2.3",
+        projectCategoryId: "category-own",
+        createdAt: "2026-09-03T00:00:00.000Z",
+        updatedAt: "2026-09-03T00:00:00.000Z",
+      },
+      {
+        id: "library-2",
+        name: "zod",
+        categoryId: "category-1",
+        notes: null,
+        version: null,
+        projectCategoryId: null,
+        createdAt: "2026-09-03T00:00:00.000Z",
+        updatedAt: "2026-09-03T00:00:00.000Z",
+      },
+    ]);
+    renderProjectDetailPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("Infra interna")).not.toBeNull();
+    });
+    const rows = screen.getAllByRole("row");
+    expect(
+      rows.find((row) => row.textContent?.includes("drizzle-orm"))?.textContent,
+    ).toMatch(/Infra interna/);
+    expect(
+      rows.find((row) => row.textContent?.includes("zod"))?.textContent,
+    ).toMatch(/ORM/);
   });
 });
