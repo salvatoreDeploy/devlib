@@ -6,6 +6,8 @@ import {
   CreateProjectError,
   removeLibraryFromProject,
   RemoveLibraryFromProjectError,
+  updateProjectLibrary,
+  UpdateProjectLibraryError,
   deleteProject,
   DeleteProjectError,
   getProject,
@@ -253,6 +255,7 @@ describe("getProjectLibraries", () => {
         categoryId: "category-1",
         notes: null,
         version: "1.2.3",
+        projectCategoryId: null,
         createdAt: "2026-09-03T00:00:00.000Z",
         updatedAt: "2026-09-03T00:00:00.000Z",
       },
@@ -349,6 +352,7 @@ describe("associateLibraryToProject", () => {
     projectId: "project-1",
     libraryId: "library-1",
     version: "18.3.1",
+    categoryId: null,
     createdAt: "2026-10-31T00:00:00.000Z",
   };
 
@@ -443,5 +447,55 @@ describe("removeLibraryFromProject", () => {
     await expect(
       removeLibraryFromProject("project-1", "library-1"),
     ).rejects.toBeInstanceOf(RemoveLibraryFromProjectError);
+  });
+});
+
+describe("updateProjectLibrary", () => {
+  afterEach(() => {
+    vi.mocked(authenticatedFetch).mockReset();
+  });
+
+  const association = {
+    id: "project-library-1",
+    projectId: "project-1",
+    libraryId: "library-1",
+    version: "19.0.0",
+    categoryId: "category-own",
+    createdAt: "2026-10-31T00:00:00.000Z",
+  };
+
+  it("envia PATCH só com os campos informados e retorna a associação", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(association),
+    } as Response);
+
+    const result = await updateProjectLibrary("project-1", "library-1", {
+      categoryId: "category-own",
+    });
+
+    expect(result).toEqual(association);
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/projects/project-1/libraries/library-1",
+      expect.objectContaining({
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categoryId: "category-own" }),
+      }),
+    );
+  });
+
+  it("lança UpdateProjectLibraryError com a mensagem da API quando falha", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ error: "Categoria não encontrada" }),
+    } as Response);
+
+    await expect(
+      updateProjectLibrary("project-1", "library-1", { version: null }),
+    ).rejects.toThrow("Categoria não encontrada");
+    await expect(
+      updateProjectLibrary("project-1", "library-1", { version: null }),
+    ).rejects.toBeInstanceOf(UpdateProjectLibraryError);
   });
 });

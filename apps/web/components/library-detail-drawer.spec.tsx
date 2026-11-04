@@ -259,6 +259,7 @@ describe("LibraryDetailDrawer", () => {
       projectId: "project-2",
       libraryId: "library-1",
       version: "18.3.1",
+      categoryId: null,
       createdAt: "2026-10-31T00:00:00.000Z",
     };
 
