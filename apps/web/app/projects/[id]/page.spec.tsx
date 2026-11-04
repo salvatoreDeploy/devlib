@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ProjectDetailPage from "./page";
 import {
@@ -8,7 +9,10 @@ import {
   getProjectLibraries,
   GetProjectLibrariesError,
 } from "../../../lib/api/projects";
-import { getCategories } from "../../../lib/api/categories";
+import {
+  getCategories,
+  getProjectCategories,
+} from "../../../lib/api/categories";
 import { clearTokens, saveTokens } from "../../../lib/auth-storage";
 
 const pushMock = vi.fn();
@@ -30,7 +34,7 @@ vi.mock("../../../lib/api/categories", async () => {
   const actual = await vi.importActual<
     typeof import("../../../lib/api/categories")
   >("../../../lib/api/categories");
-  return { ...actual, getCategories: vi.fn() };
+  return { ...actual, getCategories: vi.fn(), getProjectCategories: vi.fn() };
 });
 
 const project = {
@@ -65,6 +69,8 @@ describe("ProjectDetailPage", () => {
     vi.mocked(getProjectLibraries).mockReset();
     vi.mocked(getCategories).mockReset();
     vi.mocked(getCategories).mockResolvedValue([category]);
+    vi.mocked(getProjectCategories).mockReset();
+    vi.mocked(getProjectCategories).mockResolvedValue([category]);
     clearTokens();
     saveTokens({ accessToken: "access-token", refreshToken: "refresh-token" });
   });
@@ -110,6 +116,7 @@ describe("ProjectDetailPage", () => {
         categoryId: "category-1",
         notes: null,
         version: "1.2.3",
+        projectCategoryId: null,
         createdAt: "2026-09-03T00:00:00.000Z",
         updatedAt: "2026-09-03T00:00:00.000Z",
       },
@@ -132,6 +139,7 @@ describe("ProjectDetailPage", () => {
         categoryId: null,
         notes: null,
         version: null,
+        projectCategoryId: null,
         createdAt: "2026-09-03T00:00:00.000Z",
         updatedAt: "2026-09-03T00:00:00.000Z",
       },
@@ -173,5 +181,31 @@ describe("ProjectDetailPage", () => {
 
     const tab = await screen.findByRole("link", { name: /bibliotecas/i });
     expect(tab.getAttribute("href")).toBe("/projects/project-1");
+  });
+
+  it("o menu ··· de cada biblioteca abre o drawer Editar no projeto", async () => {
+    const user = userEvent.setup();
+    vi.mocked(getProject).mockResolvedValue(project);
+    vi.mocked(getProjectLibraries).mockResolvedValue([
+      {
+        id: "library-1",
+        name: "drizzle-orm",
+        categoryId: "category-1",
+        notes: null,
+        version: "1.2.3",
+        projectCategoryId: null,
+        createdAt: "2026-09-03T00:00:00.000Z",
+        updatedAt: "2026-09-03T00:00:00.000Z",
+      },
+    ]);
+    renderProjectDetailPage();
+
+    await user.click(
+      await screen.findByRole("button", { name: "Ações de drizzle-orm" }),
+    );
+    await user.click(await screen.findByText("Editar no projeto"));
+
+    expect(await screen.findByRole("dialog")).not.toBeNull();
+    expect(screen.getByText(/drizzle-orm em DevLib/)).not.toBeNull();
   });
 });

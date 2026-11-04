@@ -159,7 +159,7 @@ Fica para depois do MVP (v1.1+):
   - [x] API: `POST/PATCH /libraries` só aceitam categoria global em `categoryId` — categoria de projeto responde 404 como inexistente (fecha vazamento entre projetos/usuários e o 500 ao excluir projeto); teste de integração do cenário
   - [x] `packages/db`: `project_libraries.category_id` nulável (FK → `categories`, `onDelete: set null`) + migration
   - [x] API: `PATCH /projects/:id/libraries/:libraryId` aceita `categoryId` (global ou do próprio projeto, senão 404; `null` volta ao padrão da biblioteca) além de `version`; `GET /projects/:id/libraries` devolve `projectCategoryId`
-  - [ ] Web: ação "Editar" por linha na aba Bibliotecas do projeto, abrindo drawer "Editar no projeto" (categoria — padrão da biblioteca, globais e do projeto — + versão), desenhado antes no `.pen`
+  - [x] Web: ação "Editar" por linha na aba Bibliotecas do projeto, abrindo drawer "Editar no projeto" (categoria — padrão da biblioteca, globais e do projeto — + versão), desenhado antes no `.pen`
   - [ ] Web: abas Bibliotecas e Categorias do projeto usam a categoria efetiva (do projeto, senão a global) no chip e na contagem
 - [ ] Adicionar biblioteca a projeto (a partir da tela do projeto)
   - [ ] Web: botão "Adicionar biblioteca" na aba Bibliotecas do projeto, abrindo o `CreateLibraryDrawer` estendido com busca de biblioteca existente no catálogo (associa direto) além da criação de uma nova (associa ao salvar)

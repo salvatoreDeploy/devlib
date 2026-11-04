@@ -1,9 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/header";
 import { ProjectTabs } from "@/components/project-tabs";
+import { EditProjectLibraryDrawer } from "@/components/edit-project-library-drawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -17,6 +25,7 @@ import {
   GetProjectError,
   getProjectLibraries,
   GetProjectLibrariesError,
+  type ProjectLibrary,
 } from "../../../lib/api/projects";
 import { getCategories } from "../../../lib/api/categories";
 import { useRequireAuth } from "../../../lib/use-require-auth";
@@ -25,6 +34,9 @@ export default function ProjectDetailPage() {
   const isAuthenticated = useRequireAuth();
   const params = useParams<{ id: string }>();
   const id = params.id;
+  const [libraryToEdit, setLibraryToEdit] = useState<ProjectLibrary | null>(
+    null,
+  );
 
   const projectQuery = useQuery({
     queryKey: ["project", id],
@@ -134,6 +146,7 @@ export default function ProjectDetailPage() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Categoria</TableHead>
                   <TableHead>Versão</TableHead>
+                  <TableHead className="w-[52px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -153,6 +166,23 @@ export default function ProjectDetailPage() {
                     <TableCell className="font-mono text-muted-foreground">
                       {library.version ?? "—"}
                     </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          aria-label={`Ações de ${library.name}`}
+                          className="flex size-[28px] items-center justify-center rounded-[7px] border border-input text-text-fainter"
+                        >
+                          ···
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem
+                            onSelect={() => setLibraryToEdit(library)}
+                          >
+                            Editar no projeto
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -160,6 +190,17 @@ export default function ProjectDetailPage() {
           </div>
         )}
       </main>
+
+      <EditProjectLibraryDrawer
+        projectId={id}
+        projectName={project.name}
+        library={libraryToEdit}
+        onOpenChange={(open) => {
+          if (!open) {
+            setLibraryToEdit(null);
+          }
+        }}
+      />
     </div>
   );
 }

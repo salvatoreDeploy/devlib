@@ -313,6 +313,10 @@ Painel 432px, título "Criar categoria" + descrição "Categorias agrupam biblio
 
 **Adaptação pro nosso escopo**: só **Nome** — `categories` não tem `slug` no schema (nem é gerado a partir do nome hoje). Ações: Outline Button "Cancelar" + Primary Button "Salvar" (ícone `Check`).
 
+### Drawer "Editar no projeto" (Sprint 5)
+
+Tela `Drawer Edit Project Library Screen` do `.pen` (desenhada no Sprint 5, copiada do drawer "Criar categoria"): painel 432px, título "Editar no projeto" + descrição "<biblioteca> em <projeto> — categoria e versão valem só para este projeto."; campo **"Categoria neste projeto"** (select com chevron — opções: "Padrão da biblioteca (<categoria global>)", as categorias globais e as do projeto — e hint em `text-faint` 12px: "Lista o padrão da biblioteca, as categorias globais e as deste projeto. Não altera a biblioteca no catálogo."); campo **"Versão"** (input mono); ações Outline "Cancelar" + Primary "Salvar" (ícone `Check`). Aberto pelo "···" de cada linha da tabela da aba Bibliotecas do projeto (ícone isolado 28×28, mesmo padrão do "···" da aba Categorias), item "Editar no projeto" de um `DropdownMenu`. "Salvar" fica desabilitado enquanto nada mudou.
+
 ### Profile Dropdown (Sprint 4)
 
 Painel 360px, `surface-drawer`, raio 11px, padding 14px, gap 14px, abre a partir do avatar do header.

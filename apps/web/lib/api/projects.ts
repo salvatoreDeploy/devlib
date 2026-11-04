@@ -25,6 +25,8 @@ export type ProjectLibrary = {
   categoryId: string | null;
   notes: string | null;
   version: string | null;
+  // categoria da biblioteca neste projeto; categoryId continua sendo a global
+  projectCategoryId: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -39,7 +41,13 @@ export type ProjectLibraryAssociation = {
   projectId: string;
   libraryId: string;
   version: string | null;
+  categoryId: string | null;
   createdAt: string;
+};
+
+export type UpdateProjectLibraryInput = {
+  version?: string | null;
+  categoryId?: string | null;
 };
 
 export type ProjectOverview = Project & {
@@ -56,6 +64,7 @@ export class GetProjectLibrariesError extends Error {}
 export class GetProjectsOverviewError extends Error {}
 export class AssociateLibraryToProjectError extends Error {}
 export class RemoveLibraryFromProjectError extends Error {}
+export class UpdateProjectLibraryError extends Error {}
 
 export async function createProject(
   input: CreateProjectInput,
@@ -208,4 +217,29 @@ export async function removeLibraryFromProject(
       body.error ?? "Não foi possível remover a biblioteca do projeto",
     );
   }
+}
+
+export async function updateProjectLibrary(
+  projectId: string,
+  libraryId: string,
+  input: UpdateProjectLibraryInput,
+): Promise<ProjectLibraryAssociation> {
+  const response = await authenticatedFetch(
+    `/projects/${projectId}/libraries/${libraryId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
+
+  const body = await response.json();
+
+  if (!response.ok) {
+    throw new UpdateProjectLibraryError(
+      body.error ?? "Não foi possível atualizar a biblioteca no projeto",
+    );
+  }
+
+  return body;
 }
