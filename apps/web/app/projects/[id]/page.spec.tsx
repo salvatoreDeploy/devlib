@@ -27,6 +27,13 @@ vi.mock("../../../lib/api/projects", async () => {
   return { ...actual, getProject: vi.fn(), getProjectLibraries: vi.fn() };
 });
 
+vi.mock("../../../lib/api/libraries", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../lib/api/libraries")
+  >("../../../lib/api/libraries");
+  return { ...actual, getLibrariesOverview: vi.fn().mockResolvedValue([]) };
+});
+
 vi.mock("../../../lib/api/categories", async () => {
   const actual = await vi.importActual<
     typeof import("../../../lib/api/categories")
@@ -250,5 +257,23 @@ describe("ProjectDetailPage", () => {
     expect(
       rows.find((row) => row.textContent?.includes("zod"))?.textContent,
     ).toMatch(/ORM/);
+  });
+
+  it("o botão Adicionar biblioteca abre o drawer de adicionar ao projeto", async () => {
+    const user = userEvent.setup();
+    vi.mocked(getProject).mockResolvedValue(project);
+    vi.mocked(getProjectLibraries).mockResolvedValue([]);
+    renderProjectDetailPage();
+
+    await user.click(
+      await screen.findByRole("button", { name: /adicionar biblioteca/i }),
+    );
+
+    expect(await screen.findByRole("dialog")).not.toBeNull();
+    expect(
+      screen.getByText(
+        /busque no catálogo ou crie uma nova biblioteca para DevLib/i,
+      ),
+    ).not.toBeNull();
   });
 });
