@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { Header } from "@/components/header";
+import { Button } from "@/components/ui/button";
+import { CreateLibraryDrawer } from "@/components/create-library-drawer";
 import { ProjectTabs } from "@/components/project-tabs";
 import { EditProjectLibraryDrawer } from "@/components/edit-project-library-drawer";
 import {
@@ -37,6 +40,7 @@ export default function ProjectDetailPage() {
   const [libraryToEdit, setLibraryToEdit] = useState<ProjectLibrary | null>(
     null,
   );
+  const [isAddLibraryOpen, setIsAddLibraryOpen] = useState(false);
 
   const projectQuery = useQuery({
     queryKey: ["project", id],
@@ -125,9 +129,15 @@ export default function ProjectDetailPage() {
           </p>
         )}
 
-        <h3 className="mt-8 mb-3 text-[15px] font-semibold text-foreground">
-          Bibliotecas
-        </h3>
+        <div className="mt-8 mb-3 flex items-center gap-3.5">
+          <h3 className="text-[15px] font-semibold text-foreground">
+            Bibliotecas
+          </h3>
+          <Button onClick={() => setIsAddLibraryOpen(true)}>
+            <Plus aria-hidden="true" />
+            Adicionar biblioteca
+          </Button>
+        </div>
 
         {librariesQuery.isLoading && (
           <p className="text-[13px] text-muted-foreground">carregando...</p>
@@ -196,6 +206,13 @@ export default function ProjectDetailPage() {
           </div>
         )}
       </main>
+
+      <CreateLibraryDrawer
+        open={isAddLibraryOpen}
+        onOpenChange={setIsAddLibraryOpen}
+        onCreated={() => setIsAddLibraryOpen(false)}
+        project={{ id, name: project.name }}
+      />
 
       <EditProjectLibraryDrawer
         projectId={id}
