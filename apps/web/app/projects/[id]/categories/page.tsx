@@ -228,10 +228,7 @@ export default function ProjectCategoriesPage() {
                             <DropdownMenuContent>
                               <DropdownMenuItem
                                 variant="destructive"
-                                onSelect={(event) => {
-                                  event.preventDefault();
-                                  setCategoryToDelete(category);
-                                }}
+                                onSelect={() => setCategoryToDelete(category)}
                               >
                                 Excluir
                               </DropdownMenuItem>

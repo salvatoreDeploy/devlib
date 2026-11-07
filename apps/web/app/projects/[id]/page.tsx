@@ -2,13 +2,22 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { CreateLibraryDrawer } from "@/components/create-library-drawer";
 import { ProjectTabs } from "@/components/project-tabs";
 import { EditProjectLibraryDrawer } from "@/components/edit-project-library-drawer";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +37,8 @@ import {
   GetProjectError,
   getProjectLibraries,
   GetProjectLibrariesError,
+  removeLibraryFromProject,
+  RemoveLibraryFromProjectError,
   type ProjectLibrary,
 } from "../../../lib/api/projects";
 import { getProjectCategories } from "../../../lib/api/categories";
@@ -41,6 +52,10 @@ export default function ProjectDetailPage() {
     null,
   );
   const [isAddLibraryOpen, setIsAddLibraryOpen] = useState(false);
+  const [libraryToRemove, setLibraryToRemove] = useState<ProjectLibrary | null>(
+    null,
+  );
+  const queryClient = useQueryClient();
 
   const projectQuery = useQuery({
     queryKey: ["project", id],
@@ -61,6 +76,22 @@ export default function ProjectDetailPage() {
     queryKey: ["project-categories", id],
     queryFn: () => getProjectCategories(id),
     enabled: isAuthenticated,
+  });
+
+  // só fecha no sucesso — na falha a confirmação fica aberta com o erro
+  const removeMutation = useMutation({
+    mutationFn: (libraryId: string) => removeLibraryFromProject(id, libraryId),
+    onSuccess: (_, libraryId) => {
+      queryClient.invalidateQueries({ queryKey: ["project-libraries", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["library-projects", libraryId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
+      queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
+      // a contagem da aba Categorias usa a categoria efetiva da associação
+      queryClient.invalidateQueries({ queryKey: ["project-categories", id] });
+      setLibraryToRemove(null);
+    },
   });
 
   if (!isAuthenticated) {
@@ -196,6 +227,15 @@ export default function ProjectDetailPage() {
                           >
                             Editar no projeto
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => {
+                              removeMutation.reset();
+                              setLibraryToRemove(library);
+                            }}
+                          >
+                            Remover do projeto
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -213,6 +253,46 @@ export default function ProjectDetailPage() {
         onCreated={() => setIsAddLibraryOpen(false)}
         project={{ id, name: project.name }}
       />
+
+      <AlertDialog
+        open={libraryToRemove !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setLibraryToRemove(null);
+            removeMutation.reset();
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>Remover do projeto</AlertDialogTitle>
+          <AlertDialogDescription>
+            Remover &quot;{libraryToRemove?.name}&quot; de &quot;
+            {project.name}&quot;? A versão e a categoria registradas neste
+            projeto serão perdidas — a biblioteca continua no catálogo.
+          </AlertDialogDescription>
+          {removeMutation.isError && (
+            <p role="alert" className="text-xs text-destructive">
+              {removeMutation.error instanceof RemoveLibraryFromProjectError
+                ? removeMutation.error.message
+                : "Não foi possível remover a biblioteca do projeto. Tente novamente."}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={removeMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                if (libraryToRemove) {
+                  removeMutation.mutate(libraryToRemove.id);
+                }
+              }}
+            >
+              {removeMutation.isPending ? "removendo..." : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <EditProjectLibraryDrawer
         projectId={id}

@@ -282,6 +282,28 @@ describe("ProjectCategoriesPage", () => {
     });
   });
 
+  it("depois de cancelar a exclusão, o menu de ações volta a ser clicável", async () => {
+    vi.mocked(getProject).mockResolvedValue(project);
+    vi.mocked(getProjectCategories).mockResolvedValue([projectCategory]);
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("Infra interna")).not.toBeNull();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "···" }));
+    await userEvent.click(await screen.findByText("Excluir"));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Cancelar" }),
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole("alertdialog")).toBeNull();
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "···" }));
+    expect(await screen.findByText("Excluir")).not.toBeNull();
+    expect(deleteProjectCategory).not.toHaveBeenCalled();
+  });
+
   it("abre o drawer 'Criar categoria' ao clicar no botão", async () => {
     vi.mocked(getProject).mockResolvedValue(project);
     vi.mocked(getProjectCategories).mockResolvedValue([]);

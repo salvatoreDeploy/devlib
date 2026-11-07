@@ -120,6 +120,21 @@ describe("ProjectCard", () => {
     expect(onDelete).not.toHaveBeenCalled();
   });
 
+  it("depois de cancelar a exclusão, o menu '···' volta a ser clicável", async () => {
+    const user = userEvent.setup();
+    render(<ProjectCard project={project} onDelete={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "···" }));
+    await user.click(screen.getByRole("menuitem", { name: /excluir/i }));
+    const dialog = await screen.findByRole("alertdialog");
+    await user.click(within(dialog).getByRole("button", { name: /cancelar/i }));
+
+    await user.click(await screen.findByRole("button", { name: "···" }));
+    expect(
+      await screen.findByRole("menuitem", { name: /excluir/i }),
+    ).not.toBeNull();
+  });
+
   it("mostra 'excluindo...' e desabilita a confirmação quando isDeleting é true", async () => {
     const user = userEvent.setup();
     render(<ProjectCard project={project} onDelete={vi.fn()} isDeleting />);
