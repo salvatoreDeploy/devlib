@@ -54,7 +54,25 @@ export type AssociateLibraryInput = {
   projectId: string;
   libraryId: string;
   version?: string | null;
+  categoryId?: string;
 };
+
+// só global ou do próprio projeto — de outro projeto é tratada como
+// inexistente, pra não confirmar categoria de outro usuário
+async function assertCategoryUsableInProject(
+  repository: ProjectLibrariesRepository,
+  categoryId: string,
+  projectId: string,
+) {
+  const category = await repository.findCategoryById(categoryId);
+
+  if (
+    !category ||
+    (category.projectId !== null && category.projectId !== projectId)
+  ) {
+    throw new CategoryNotFoundError();
+  }
+}
 
 export async function associateLibraryToProject(
   repository: ProjectLibrariesRepository,
@@ -78,17 +96,31 @@ export async function associateLibraryToProject(
     throw new ProjectLibraryAlreadyExistsError();
   }
 
+  if (input.categoryId) {
+    await assertCategoryUsableInProject(
+      repository,
+      input.categoryId,
+      input.projectId,
+    );
+  }
+
   try {
     return await repository.insertProjectLibrary({
       projectId: input.projectId,
       libraryId: input.libraryId,
       version: input.version ?? null,
+      categoryId: input.categoryId ?? null,
     });
   } catch (error) {
     // corrida: outra requisição associou o mesmo par entre a checagem acima e
     // o insert — o unique(project_id, library_id) do banco barra e vira o mesmo 409
     if (pgErrorCode(error) === PG_UNIQUE_VIOLATION) {
       throw new ProjectLibraryAlreadyExistsError();
+    }
+    // corrida: a categoria foi excluída entre a checagem acima e o insert —
+    // sem categoryId o 23503 só pode vir de library_id/project_id, segue como estava
+    if (input.categoryId && pgErrorCode(error) === PG_FOREIGN_KEY_VIOLATION) {
+      throw new CategoryNotFoundError();
     }
     throw error;
   }
@@ -128,16 +160,11 @@ export async function updateProjectLibrary(
   await assertProjectOwnedByUser(repository, userId, projectId);
 
   if (changes.categoryId) {
-    // só global ou do próprio projeto — de outro projeto é tratada como
-    // inexistente, pra não confirmar categoria de outro usuário
-    const category = await repository.findCategoryById(changes.categoryId);
-
-    if (
-      !category ||
-      (category.projectId !== null && category.projectId !== projectId)
-    ) {
-      throw new CategoryNotFoundError();
-    }
+    await assertCategoryUsableInProject(
+      repository,
+      changes.categoryId,
+      projectId,
+    );
   }
 
   // só as chaves presentes no input vão pro SET — omitida não mexe no campo

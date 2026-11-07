@@ -100,6 +100,7 @@ describe("POST /projects/:id/libraries", () => {
       projectId: "project-1",
       libraryId: "library-1",
       version: "18.3.1",
+      categoryId: null,
     });
   });
 
@@ -118,7 +119,77 @@ describe("POST /projects/:id/libraries", () => {
       projectId: "project-1",
       libraryId: "library-1",
       version: null,
+      categoryId: null,
     });
+  });
+
+  it("retorna 201 com a categoria da associação quando categoryId é enviado", async () => {
+    const repository = fakeRepository({
+      findCategoryById: vi.fn().mockResolvedValue({
+        id: "category-own",
+        projectId: "project-1",
+        name: "Infra interna",
+        createdAt: new Date("2026-10-31T00:00:00Z"),
+      }),
+      insertProjectLibrary: vi
+        .fn()
+        .mockResolvedValue({ ...projectLibrary, categoryId: "category-own" }),
+    });
+
+    const response = await associate(repository, {
+      libraryId: "library-1",
+      categoryId: "category-own",
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json().categoryId).toBe("category-own");
+    expect(repository.insertProjectLibrary).toHaveBeenCalledWith(
+      expect.objectContaining({ categoryId: "category-own" }),
+    );
+  });
+
+  it("retorna 404 quando a categoria não existe ou é de outro projeto", async () => {
+    const missing = fakeRepository();
+    const otherProject = fakeRepository({
+      findCategoryById: vi.fn().mockResolvedValue({
+        id: "category-other",
+        projectId: "project-9",
+        name: "Infra de outro projeto",
+        createdAt: new Date("2026-10-31T00:00:00Z"),
+      }),
+    });
+
+    const missingResponse = await associate(missing, {
+      libraryId: "library-1",
+      categoryId: "category-missing",
+    });
+    const otherResponse = await associate(otherProject, {
+      libraryId: "library-1",
+      categoryId: "category-other",
+    });
+
+    expect(missingResponse.statusCode).toBe(404);
+    expect(otherResponse.statusCode).toBe(404);
+    expect(missingResponse.json().error).toEqual(otherResponse.json().error);
+    expect(missing.insertProjectLibrary).not.toHaveBeenCalled();
+    expect(otherProject.insertProjectLibrary).not.toHaveBeenCalled();
+  });
+
+  it("retorna 400 quando categoryId é vazio ou null", async () => {
+    const repository = fakeRepository();
+
+    const empty = await associate(repository, {
+      libraryId: "library-1",
+      categoryId: "",
+    });
+    const nullCategory = await associate(repository, {
+      libraryId: "library-1",
+      categoryId: null,
+    });
+
+    expect(empty.statusCode).toBe(400);
+    expect(nullCategory.statusCode).toBe(400);
+    expect(repository.insertProjectLibrary).not.toHaveBeenCalled();
   });
 
   it("remove espaços nas pontas da version", async () => {

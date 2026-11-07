@@ -21,6 +21,7 @@ export type ProjectLibrariesRepository = {
     projectId: string;
     libraryId: string;
     version: string | null;
+    categoryId: string | null;
   }): Promise<ProjectLibraryRecord>;
   updateProjectLibrary(
     projectId: string,
@@ -51,10 +52,10 @@ export function createProjectLibrariesRepository(
       return rows[0];
     },
 
-    async insertProjectLibrary({ projectId, libraryId, version }) {
+    async insertProjectLibrary({ projectId, libraryId, version, categoryId }) {
       const rows = await db
         .insert(projectLibraries)
-        .values({ projectId, libraryId, version })
+        .values({ projectId, libraryId, version, categoryId })
         .returning();
 
       return rows[0];
