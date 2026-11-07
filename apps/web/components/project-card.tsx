@@ -81,10 +81,7 @@ export function ProjectCard({
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
-                onSelect={(event) => {
-                  event.preventDefault();
-                  setConfirmOpen(true);
-                }}
+                onSelect={() => setConfirmOpen(true)}
               >
                 Excluir
               </DropdownMenuItem>

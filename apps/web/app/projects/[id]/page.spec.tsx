@@ -8,6 +8,8 @@ import {
   GetProjectError,
   getProjectLibraries,
   GetProjectLibrariesError,
+  removeLibraryFromProject,
+  RemoveLibraryFromProjectError,
 } from "../../../lib/api/projects";
 import { getProjectCategories } from "../../../lib/api/categories";
 import { clearTokens, saveTokens } from "../../../lib/auth-storage";
@@ -24,7 +26,12 @@ vi.mock("../../../lib/api/projects", async () => {
   const actual = await vi.importActual<
     typeof import("../../../lib/api/projects")
   >("../../../lib/api/projects");
-  return { ...actual, getProject: vi.fn(), getProjectLibraries: vi.fn() };
+  return {
+    ...actual,
+    getProject: vi.fn(),
+    getProjectLibraries: vi.fn(),
+    removeLibraryFromProject: vi.fn(),
+  };
 });
 
 vi.mock("../../../lib/api/libraries", async () => {
@@ -64,8 +71,7 @@ const projectCategory = {
   createdAt: "2026-09-03T00:00:00.000Z",
 };
 
-function renderProjectDetailPage() {
-  const queryClient = new QueryClient();
+function renderProjectDetailPage(queryClient = new QueryClient()) {
   return render(
     <QueryClientProvider client={queryClient}>
       <ProjectDetailPage />
@@ -79,6 +85,7 @@ describe("ProjectDetailPage", () => {
     vi.mocked(getProject).mockReset();
     vi.mocked(getProjectLibraries).mockReset();
     vi.mocked(getProjectCategories).mockReset();
+    vi.mocked(removeLibraryFromProject).mockReset();
     vi.mocked(getProjectCategories).mockResolvedValue([
       category,
       projectCategory,
@@ -275,5 +282,123 @@ describe("ProjectDetailPage", () => {
         /busque no catálogo ou crie uma nova biblioteca para DevLib/i,
       ),
     ).not.toBeNull();
+  });
+
+  describe("Remover do projeto", () => {
+    const drizzle = {
+      id: "library-1",
+      name: "drizzle-orm",
+      categoryId: "category-1",
+      notes: null,
+      version: "1.2.3",
+      projectCategoryId: null,
+      createdAt: "2026-09-03T00:00:00.000Z",
+      updatedAt: "2026-09-03T00:00:00.000Z",
+    };
+
+    async function openRemoveDialog(queryClient?: QueryClient) {
+      const user = userEvent.setup();
+      vi.mocked(getProject).mockResolvedValue(project);
+      vi.mocked(getProjectLibraries).mockResolvedValue([drizzle]);
+      renderProjectDetailPage(queryClient);
+
+      await user.click(
+        await screen.findByRole("button", { name: "Ações de drizzle-orm" }),
+      );
+      await user.click(
+        await screen.findByRole("menuitem", { name: "Remover do projeto" }),
+      );
+      const dialog = await screen.findByRole("alertdialog");
+      return { user, dialog };
+    }
+
+    it("o menu ··· abre a confirmação com o nome da biblioteca e do projeto", async () => {
+      const { dialog } = await openRemoveDialog();
+
+      expect(dialog.textContent).toMatch(/Remover do projeto/);
+      expect(dialog.textContent).toMatch(/"drizzle-orm" de "DevLib"/);
+      expect(dialog.textContent).toMatch(
+        /versão e a categoria registradas neste projeto serão perdidas/,
+      );
+      expect(dialog.textContent).toMatch(/continua no catálogo/);
+    });
+
+    it("Cancelar fecha a confirmação sem chamar a API", async () => {
+      const { user } = await openRemoveDialog();
+
+      await user.click(screen.getByRole("button", { name: "Cancelar" }));
+
+      await waitFor(() => {
+        expect(screen.queryByRole("alertdialog")).toBeNull();
+      });
+      expect(removeLibraryFromProject).not.toHaveBeenCalled();
+    });
+
+    it("Remover chama o DELETE, fecha a confirmação e invalida as queries afetadas", async () => {
+      vi.mocked(removeLibraryFromProject).mockResolvedValue(undefined);
+      const queryClient = new QueryClient();
+      const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+      const { user } = await openRemoveDialog(queryClient);
+
+      await user.click(screen.getByRole("button", { name: "Remover" }));
+
+      await waitFor(() => {
+        expect(removeLibraryFromProject).toHaveBeenCalledWith(
+          "project-1",
+          "library-1",
+        );
+      });
+      await waitFor(() => {
+        expect(screen.queryByRole("alertdialog")).toBeNull();
+      });
+      for (const queryKey of [
+        ["project-libraries", "project-1"],
+        ["library-projects", "library-1"],
+        ["libraries-overview"],
+        ["projects-overview"],
+        ["project-categories", "project-1"],
+      ]) {
+        expect(invalidateSpy).toHaveBeenCalledWith({ queryKey });
+      }
+    });
+
+    it("quando o DELETE falha, mantém a confirmação aberta com a mensagem da API", async () => {
+      vi.mocked(removeLibraryFromProject).mockRejectedValue(
+        new RemoveLibraryFromProjectError(
+          "Biblioteca não está associada a este projeto",
+        ),
+      );
+      const { user, dialog } = await openRemoveDialog();
+
+      await user.click(screen.getByRole("button", { name: "Remover" }));
+
+      expect((await screen.findByRole("alert")).textContent).toBe(
+        "Biblioteca não está associada a este projeto",
+      );
+      expect(screen.getByRole("alertdialog")).toBe(dialog);
+    });
+
+    it("ao reabrir depois de uma falha, a confirmação não mostra o erro anterior", async () => {
+      vi.mocked(removeLibraryFromProject).mockRejectedValue(
+        new RemoveLibraryFromProjectError("erro qualquer"),
+      );
+      const { user } = await openRemoveDialog();
+      await user.click(screen.getByRole("button", { name: "Remover" }));
+      await screen.findByRole("alert");
+
+      await user.click(screen.getByRole("button", { name: "Cancelar" }));
+      await waitFor(() => {
+        expect(screen.queryByRole("alertdialog")).toBeNull();
+      });
+      await user.click(
+        await screen.findByRole("button", { name: "Ações de drizzle-orm" }),
+      );
+      await user.click(
+        await screen.findByRole("menuitem", { name: "Remover do projeto" }),
+      );
+
+      await screen.findByRole("alertdialog");
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
   });
 });
