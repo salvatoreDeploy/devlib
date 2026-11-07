@@ -12,13 +12,13 @@
 - [ ] Rotas novas têm validação de entrada (zod) e tratamento de erro
 - [ ] Nenhum segredo ou chave commitado
 - [ ] Mudança de schema (Drizzle) vem com migration incluída neste PR
-- [ ] Mudança de UI vem com print ou gif da tela abaixo
+- [ ] Mudança de UI indica abaixo a tela correspondente no `devlib_design.pen`
 - [ ] Nenhum breaking change em rota existente sem aviso explícito abaixo
 
 ## Breaking changes
 
 <!-- Se houver, descreva aqui. Se não houver, escreva "nenhum". -->
 
-## Screenshots / gif (se houver mudança de UI)
+## Referência visual (se houver mudança de UI)
 
-<!-- cole aqui -->
+<!-- Nome da tela/nó no `devlib_design.pen` (ex: "Drawer Add Library To Project Screen"). Print ou gif do app é opcional. -->

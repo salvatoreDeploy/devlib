@@ -32,7 +32,7 @@ Este repositório é desenvolvido com apoio de agentes de IA (Claude Code), com 
 - [ ] Nenhum segredo ou chave commitado
 - [ ] Mudança de schema vem com migration incluída
 - [ ] Descrição do PR explica o quê e por quê, não só o quê
-- [ ] Mudança de UI vem com print ou gif da tela
+- [ ] Mudança de UI indica a tela correspondente no `devlib_design.pen` (print/gif do app é opcional — não exige subir a stack Docker só pra isso)
 - [ ] Nenhum breaking change em rota existente sem aviso explícito na descrição do PR
 
 Um PR só é aprovado quando todos os itens acima estão marcados. Se algum item falhar, o PR volta para ajuste antes de nova revisão.
