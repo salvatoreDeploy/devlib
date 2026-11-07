@@ -16,7 +16,7 @@ Antes de sugerir abrir um Pull Request, faça o seguinte — nesta ordem:
    - Mudança de schema tem migration?
    - Nenhum breaking change silencioso em rota existente?
 3. Se qualquer item for "não", corrija antes de prosseguir. Não abra o PR com pendência conhecida — isso só transfere trabalho de revisão para o humano que poderia ter sido feito agora.
-4. Escreva a descrição do PR já no formato do template (`.github/PULL_REQUEST_TEMPLATE.md`): o quê, por quê, breaking changes (ou "nenhum" explícito), e print/gif se houve mudança de UI.
+4. Escreva a descrição do PR já no formato do template (`.github/PULL_REQUEST_TEMPLATE.md`): o quê, por quê, breaking changes (ou "nenhum" explícito), e, se houve mudança de UI, a tela correspondente no `devlib_design.pen` — print/gif do app é opcional, nunca subir a stack Docker só pra tirá-lo.
 5. Só então informe que está pronto para abrir o PR, ou rode `gh pr create` se tiver permissão para isso.
 
 Nunca pule o passo 2 achando que "já sei que está tudo certo" — o valor desta skill é justamente forçar a checagem explícita, item por item.
