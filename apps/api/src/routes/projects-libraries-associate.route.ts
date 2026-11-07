@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createDb, getDatabaseUrl } from "@devlib/db";
 import {
   associateLibraryToProject,
+  CategoryNotFoundError,
   LibraryNotFoundError,
   ProjectLibraryAlreadyExistsError,
   ProjectNotFoundError,
@@ -32,6 +33,13 @@ const associateLibraryBodySchema = z.object({
     .optional()
     .describe(
       "Versão usada nesse projeto (ex: `18.3.1`). Opcional — omitir grava null. Espaços nas pontas são removidos; vazia ou só espaços é rejeitada.",
+    ),
+  categoryId: z
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      "Categoria da biblioteca neste projeto (global ou do próprio projeto). Opcional — omitir usa a categoria global da biblioteca como padrão. Categoria inexistente ou de outro projeto responde 404.",
     ),
 });
 
@@ -88,7 +96,7 @@ export const projectsLibrariesAssociateRoute: FastifyPluginAsyncZod<
         tags: ["Projects"],
         summary: "Associa uma biblioteca a um projeto",
         description:
-          "Associa uma biblioteca do catálogo global ao projeto, com a versão usada nele (opcional). Responde 404 se o projeto não existir ou não pertencer ao usuário autenticado, também 404 se a biblioteca não existir, e 409 se a biblioteca já estiver associada a esse projeto — a versão existente não é alterada.",
+          "Associa uma biblioteca do catálogo global ao projeto, com a versão usada nele e a categoria da biblioteca nesse projeto (ambas opcionais). Responde 404 se o projeto não existir ou não pertencer ao usuário autenticado, também 404 se a biblioteca não existir ou se a categoria não existir/for de outro projeto, e 409 se a biblioteca já estiver associada a esse projeto — a versão existente não é alterada.",
         security: [{ bearerAuth: [] }],
         params: projectParamsSchema,
         body: associateLibraryBodySchema,
@@ -97,7 +105,7 @@ export const projectsLibrariesAssociateRoute: FastifyPluginAsyncZod<
             "Associação criada com sucesso.",
           ),
           404: errorResponseSchema.describe(
-            "Projeto não encontrado/de outro usuário, ou biblioteca não encontrada.",
+            "Projeto não encontrado/de outro usuário, biblioteca não encontrada, ou categoria inexistente/de outro projeto.",
           ),
           409: errorResponseSchema.describe(
             "A biblioteca já está associada a esse projeto.",
@@ -114,6 +122,7 @@ export const projectsLibrariesAssociateRoute: FastifyPluginAsyncZod<
             projectId: request.params.id,
             libraryId: request.body.libraryId,
             version: request.body.version,
+            categoryId: request.body.categoryId,
           },
         );
         return reply.status(201).send(projectLibrary);
@@ -122,6 +131,9 @@ export const projectsLibrariesAssociateRoute: FastifyPluginAsyncZod<
           return reply.status(404).send({ error: error.message });
         }
         if (error instanceof LibraryNotFoundError) {
+          return reply.status(404).send({ error: error.message });
+        }
+        if (error instanceof CategoryNotFoundError) {
           return reply.status(404).send({ error: error.message });
         }
         if (error instanceof ProjectLibraryAlreadyExistsError) {

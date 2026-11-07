@@ -16,7 +16,7 @@ function associate(
   app: App,
   token: string,
   projectId: string,
-  payload: { libraryId: string; version?: string },
+  payload: { libraryId: string; version?: string; categoryId?: string },
 ) {
   return app.inject({
     method: "POST",
@@ -356,6 +356,52 @@ describe("associação biblioteca ↔ projeto (Postgres real)", () => {
       expect(await getTestDb().select().from(projectLibraries)).toEqual([
         expect.objectContaining({ categoryId: null }),
       ]);
+    });
+
+    it("POST com categoria do projeto já nasce com projectCategoryId no GET", async () => {
+      const { app, ana, project, library } = await setup();
+      const category = (
+        await createCategory(app, ana.accessToken, project.id, "Infra interna")
+      ).json<{ id: string }>();
+
+      const created = await associate(app, ana.accessToken, project.id, {
+        libraryId: library.id,
+        version: "18.3.1",
+        categoryId: category.id,
+      });
+      const listed = await listProjectLibraries(
+        app,
+        ana.accessToken,
+        project.id,
+      );
+
+      expect(created.statusCode).toBe(201);
+      expect(created.json()).toMatchObject({ categoryId: category.id });
+      expect(listed.json()).toEqual([
+        expect.objectContaining({
+          id: library.id,
+          categoryId: null,
+          projectCategoryId: category.id,
+          version: "18.3.1",
+        }),
+      ]);
+    });
+
+    it("POST com categoria de projeto de outro usuário responde 404 e não grava a associação", async () => {
+      const { app, ana, project, library } = await setup();
+      const bia = await signUp(app, "bia@example.com", PASSWORD);
+      const biaProject = await createProject(app, bia.accessToken, "Outro");
+      const biaCategory = (
+        await createCategory(app, bia.accessToken, biaProject.id, "Da Bia")
+      ).json<{ id: string }>();
+
+      const response = await associate(app, ana.accessToken, project.id, {
+        libraryId: library.id,
+        categoryId: biaCategory.id,
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(await getTestDb().select().from(projectLibraries)).toEqual([]);
     });
   });
 });
