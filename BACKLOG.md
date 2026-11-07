@@ -163,7 +163,7 @@ Fica para depois do MVP (v1.1+):
   - [x] Web: abas Bibliotecas e Categorias do projeto usam a categoria efetiva (do projeto, senão a global) no chip e na contagem
 - [ ] Adicionar biblioteca a projeto (a partir da tela do projeto)
   - [x] Web: botão "Adicionar biblioteca" na aba Bibliotecas do projeto, abrindo o `CreateLibraryDrawer` estendido com busca de biblioteca existente no catálogo (associa direto) além da criação de uma nova (associa ao salvar)
-  - [ ] API: `POST /projects/:id/libraries` aceita `categoryId` opcional (global ou do próprio projeto, senão 404 — mesma regra do PATCH), pra associação já nascer com a categoria no projeto
+  - [x] API: `POST /projects/:id/libraries` aceita `categoryId` opcional (global ou do próprio projeto, senão 404 — mesma regra do PATCH), pra associação já nascer com a categoria no projeto
   - [ ] Web: `CreateLibraryDrawer`, quando aberto de dentro de um projeto, oferece a categoria **da associação** (globais+do projeto, via `GET /projects/:id/categories`) gravada em `project_libraries.category_id` — a categoria da biblioteca nova em si continua só global
   - [ ] Web: ação "Remover" na tabela de bibliotecas do projeto
 - [ ] Importar bibliotecas de um `package.json` para o projeto (api + web)

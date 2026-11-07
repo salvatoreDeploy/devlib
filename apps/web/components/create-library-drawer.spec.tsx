@@ -8,7 +8,7 @@ import {
   CreateLibraryError,
   getLibrariesOverview,
 } from "../lib/api/libraries";
-import { getCategories } from "../lib/api/categories";
+import { getCategories, getProjectCategories } from "../lib/api/categories";
 import {
   associateLibraryToProject,
   AssociateLibraryToProjectError,
@@ -26,7 +26,7 @@ vi.mock("../lib/api/categories", async () => {
   const actual = await vi.importActual<typeof import("../lib/api/categories")>(
     "../lib/api/categories",
   );
-  return { ...actual, getCategories: vi.fn() };
+  return { ...actual, getCategories: vi.fn(), getProjectCategories: vi.fn() };
 });
 
 vi.mock("../lib/api/projects", async () => {
@@ -232,6 +232,13 @@ describe("CreateLibraryDrawer", () => {
       };
     }
 
+    const projectCategory = {
+      id: "category-own",
+      projectId: "project-1",
+      name: "Infra interna",
+      createdAt: "2026-09-03T00:00:00.000Z",
+    };
+
     const association = {
       id: "association-1",
       projectId: "project-1",
@@ -267,6 +274,11 @@ describe("CreateLibraryDrawer", () => {
         catalogLibrary("library-3", "zod"),
       ]);
       vi.mocked(getProjectLibraries).mockResolvedValue([]);
+      vi.mocked(getProjectCategories).mockReset();
+      vi.mocked(getProjectCategories).mockResolvedValue([
+        category,
+        projectCategory,
+      ]);
     });
 
     it("mostra título, descrição com o nome do projeto e botão Criar e associar", () => {
@@ -391,6 +403,44 @@ describe("CreateLibraryDrawer", () => {
       });
       expect(invalidateSpy).toHaveBeenCalledWith({
         queryKey: ["library-projects", "library-1"],
+      });
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ["project-categories", "project-1"],
+      });
+    });
+
+    it("a lib selecionada na busca oferece a categoria neste projeto, com o padrão mostrando a global dela", async () => {
+      vi.mocked(associateLibraryToProject).mockResolvedValue({
+        ...association,
+        categoryId: "category-own",
+      });
+      const user = userEvent.setup();
+      renderProjectDrawer();
+
+      fireEvent.change(screen.getByLabelText(/buscar no catálogo/i), {
+        target: { value: "drizzle-orm" },
+      });
+      fireEvent.click(
+        await screen.findByRole("option", { name: /drizzle-orm/ }),
+      );
+      const select = screen.getByRole("combobox", {
+        name: "Categoria de drizzle-orm neste projeto",
+      });
+      await waitFor(() => {
+        expect(select.textContent).toMatch(/Padrão da biblioteca \(ORM\)/);
+      });
+
+      await user.click(select);
+      await user.click(
+        await screen.findByRole("option", { name: "Infra interna" }),
+      );
+      await user.click(screen.getByRole("button", { name: /^associar$/i }));
+
+      await waitFor(() => {
+        expect(associateLibraryToProject).toHaveBeenCalledWith("project-1", {
+          libraryId: "library-1",
+          categoryId: "category-own",
+        });
       });
     });
 
@@ -530,6 +580,84 @@ describe("CreateLibraryDrawer", () => {
       expect(associateLibraryToProject).toHaveBeenCalledWith("project-1", {
         libraryId: "library-new",
         version: "10.1.0",
+      });
+    });
+
+    it("no formulário de criação, separa 'Categoria no catálogo' de 'Categoria neste projeto' com dica", async () => {
+      renderProjectDrawer();
+
+      expect(
+        screen.getByRole("combobox", { name: "Categoria no catálogo" }),
+      ).not.toBeNull();
+      expect(
+        await screen.findByRole("combobox", {
+          name: "Categoria neste projeto",
+        }),
+      ).not.toBeNull();
+      expect(
+        screen.getByText(
+          /vale só para este projeto — não altera a biblioteca no catálogo/i,
+        ),
+      ).not.toBeNull();
+    });
+
+    it("o padrão de 'Categoria neste projeto' acompanha a 'Categoria no catálogo' escolhida", async () => {
+      const user = userEvent.setup();
+      renderProjectDrawer();
+      const projectSelect = await screen.findByRole("combobox", {
+        name: "Categoria neste projeto",
+      });
+      expect(projectSelect.textContent).toMatch(
+        /Padrão da biblioteca \(sem categoria\)/,
+      );
+
+      await user.click(
+        screen.getByRole("combobox", { name: "Categoria no catálogo" }),
+      );
+      await user.click(await screen.findByRole("option", { name: "ORM" }));
+
+      expect(projectSelect.textContent).toMatch(/Padrão da biblioteca \(ORM\)/);
+    });
+
+    it("Criar e associar grava a categoria do projeto só na associação", async () => {
+      vi.mocked(createLibrary).mockResolvedValue({
+        id: "library-new",
+        name: "pg-boss",
+        categoryId: null,
+        notes: null,
+        createdAt: "2026-09-03T00:00:00.000Z",
+        updatedAt: "2026-09-03T00:00:00.000Z",
+      });
+      vi.mocked(associateLibraryToProject).mockResolvedValue({
+        ...association,
+        libraryId: "library-new",
+        categoryId: "category-own",
+      });
+      const user = userEvent.setup();
+      const { onCreated } = renderProjectDrawer();
+
+      fireEvent.change(screen.getByLabelText(/nome da biblioteca/i), {
+        target: { value: "pg-boss" },
+      });
+      await user.click(
+        await screen.findByRole("combobox", {
+          name: "Categoria neste projeto",
+        }),
+      );
+      await user.click(
+        await screen.findByRole("option", { name: "Infra interna" }),
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: /criar e associar/i }),
+      );
+
+      await waitFor(() => expect(onCreated).toHaveBeenCalled());
+      expect(vi.mocked(createLibrary).mock.calls[0]).toEqual([
+        { name: "pg-boss" },
+      ]);
+      expect(associateLibraryToProject).toHaveBeenCalledWith("project-1", {
+        libraryId: "library-new",
+        categoryId: "category-own",
       });
     });
 

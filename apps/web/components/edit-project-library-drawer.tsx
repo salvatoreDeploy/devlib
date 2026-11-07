@@ -9,12 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  LIBRARY_DEFAULT,
+  ProjectCategorySelect,
+  toAssociationCategoryId,
+} from "@/components/project-category-select";
 import {
   Sheet,
   SheetClose,
@@ -31,10 +29,6 @@ import {
   type UpdateProjectLibraryInput,
 } from "../lib/api/projects";
 import { getProjectCategories } from "../lib/api/categories";
-
-// Radix Select não aceita item com value "" — o padrão da biblioteca
-// (categoryId null na associação) vira esse valor só dentro do form
-const LIBRARY_DEFAULT = "library-default";
 
 const editProjectLibraryFormSchema = z.object({
   categoryId: z.string(),
@@ -118,8 +112,7 @@ function EditProjectLibraryForm({
     values: EditProjectLibraryFormValues,
   ): UpdateProjectLibraryInput {
     const changes: UpdateProjectLibraryInput = {};
-    const categoryId =
-      values.categoryId === LIBRARY_DEFAULT ? null : values.categoryId;
+    const categoryId = toAssociationCategoryId(values.categoryId);
     const version = values.version.trim() || null;
 
     if (categoryId !== library.projectCategoryId) {
@@ -150,7 +143,7 @@ function EditProjectLibraryForm({
   const categories = categoriesQuery.data ?? [];
   const libraryCategoryName = library.categoryId
     ? categories.find((category) => category.id === library.categoryId)?.name
-    : "sem categoria";
+    : null;
   const hasChanges =
     Object.keys(
       changesFrom({
@@ -184,29 +177,15 @@ function EditProjectLibraryForm({
           control={control}
           name="categoryId"
           render={({ field }) => (
-            <Select
+            <ProjectCategorySelect
+              id="edit-project-library-category"
+              aria-label="Categoria neste projeto"
               value={field.value}
               onValueChange={field.onChange}
+              categories={categories}
+              libraryCategoryName={libraryCategoryName}
               disabled={categoriesQuery.isLoading}
-            >
-              <SelectTrigger
-                id="edit-project-library-category"
-                aria-label="Categoria neste projeto"
-                className="h-10 rounded-lg border-input bg-surface-input px-3 text-[13.5px] text-foreground"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={LIBRARY_DEFAULT}>
-                  Padrão da biblioteca ({libraryCategoryName ?? "Categoria"})
-                </SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           )}
         />
         <p className="text-xs text-text-faint">
