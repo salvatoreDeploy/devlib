@@ -34,6 +34,8 @@ export type ProjectLibrary = {
 export type AssociateLibraryToProjectInput = {
   libraryId: string;
   version?: string;
+  // categoria da biblioteca neste projeto; omitida = padrão da biblioteca
+  categoryId?: string;
 };
 
 export type ProjectLibraryAssociation = {

@@ -32,7 +32,12 @@ import {
   getLibrariesOverview,
   Library,
 } from "../lib/api/libraries";
-import { getCategories } from "../lib/api/categories";
+import {
+  LIBRARY_DEFAULT,
+  ProjectCategorySelect,
+  toAssociationCategoryId,
+} from "@/components/project-category-select";
+import { getCategories, getProjectCategories } from "../lib/api/categories";
 import {
   associateLibraryToProject,
   AssociateLibraryToProjectError,
@@ -44,6 +49,8 @@ const createLibraryFormSchema = z.object({
   categoryId: z.string().optional(),
   notes: z.string().optional(),
   version: z.string().optional(),
+  // categoria da associação — só usada quando o drawer é aberto num projeto
+  projectCategoryId: z.string(),
 });
 
 type CreateLibraryFormValues = z.infer<typeof createLibraryFormSchema>;
@@ -72,10 +79,13 @@ export function CreateLibraryDrawer({
   const [search, setSearch] = useState("");
   const [selectedLibrary, setSelectedLibrary] = useState<Library | null>(null);
   const [associateVersion, setAssociateVersion] = useState("");
+  const [associateCategoryId, setAssociateCategoryId] =
+    useState(LIBRARY_DEFAULT);
   const searchIds = {
     listbox: useId(),
     hint: useId(),
     version: useId(),
+    category: useId(),
   };
 
   const categoriesQuery = useQuery({
@@ -90,6 +100,13 @@ export function CreateLibraryDrawer({
     enabled: open && project !== undefined,
   });
 
+  // globais + do projeto — a categoria da associação pode ser do projeto
+  const projectCategoriesQuery = useQuery({
+    queryKey: ["project-categories", project?.id],
+    queryFn: () => getProjectCategories(project!.id),
+    enabled: open && project !== undefined,
+  });
+
   const projectLibrariesQuery = useQuery({
     queryKey: ["project-libraries", project?.id],
     queryFn: () => getProjectLibraries(project!.id),
@@ -101,10 +118,17 @@ export function CreateLibraryDrawer({
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<CreateLibraryFormValues>({
     resolver: zodResolver(createLibraryFormSchema),
-    defaultValues: { name: "", categoryId: "", notes: "", version: "" },
+    defaultValues: {
+      name: "",
+      categoryId: "",
+      notes: "",
+      version: "",
+      projectCategoryId: LIBRARY_DEFAULT,
+    },
   });
 
   function invalidateAfterAssociation(projectId: string, libraryId: string) {
@@ -116,12 +140,24 @@ export function CreateLibraryDrawer({
     queryClient.invalidateQueries({
       queryKey: ["library-projects", libraryId],
     });
+    // a contagem da aba Categorias usa a categoria efetiva da associação
+    queryClient.invalidateQueries({
+      queryKey: ["project-categories", projectId],
+    });
   }
 
   function resetSearch() {
     setSearch("");
     setSelectedLibrary(null);
     setAssociateVersion("");
+    setAssociateCategoryId(LIBRARY_DEFAULT);
+  }
+
+  function selectLibrary(library: Library) {
+    if (selectedLibrary?.id !== library.id) {
+      setAssociateCategoryId(LIBRARY_DEFAULT);
+    }
+    setSelectedLibrary(library);
   }
 
   const mutation = useMutation({
@@ -135,10 +171,12 @@ export function CreateLibraryDrawer({
         return library;
       }
       const version = data.version?.trim();
+      const categoryId = toAssociationCategoryId(data.projectCategoryId);
       try {
         await associateLibraryToProject(project.id, {
           libraryId: library.id,
           ...(version ? { version } : {}),
+          ...(categoryId ? { categoryId } : {}),
         });
       } catch {
         throw new LibraryCreatedButNotAssociatedError();
@@ -161,10 +199,19 @@ export function CreateLibraryDrawer({
   });
 
   const associateMutation = useMutation({
-    mutationFn: ({ library, version }: { library: Library; version: string }) =>
+    mutationFn: ({
+      library,
+      version,
+      categoryId,
+    }: {
+      library: Library;
+      version: string;
+      categoryId: string | null;
+    }) =>
       associateLibraryToProject(project!.id, {
         libraryId: library.id,
         ...(version ? { version } : {}),
+        ...(categoryId ? { categoryId } : {}),
       }),
     onSuccess: (_association, { library }) => {
       invalidateAfterAssociation(project!.id, library.id);
@@ -180,6 +227,11 @@ export function CreateLibraryDrawer({
       category.name,
     ]),
   );
+  function globalCategoryName(categoryId: string | null | undefined) {
+    // null: sem categoria; undefined: nome ainda não carregado
+    return categoryId ? categoryNameById.get(categoryId) : null;
+  }
+  const projectCategories = projectCategoriesQuery.data ?? [];
   const projectLibraryIds = new Set(
     (projectLibrariesQuery.data ?? []).map((library) => library.id),
   );
@@ -199,6 +251,7 @@ export function CreateLibraryDrawer({
       associateMutation.mutate({
         library: selectedLibrary,
         version: associateVersion.trim(),
+        categoryId: toAssociationCategoryId(associateCategoryId),
       });
     }
   }
@@ -227,7 +280,7 @@ export function CreateLibraryDrawer({
   ) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      setSelectedLibrary(library);
+      selectLibrary(library);
     } else if (event.key === "ArrowDown") {
       event.preventDefault();
       focusSibling(event, 1);
@@ -335,7 +388,7 @@ export function CreateLibraryDrawer({
                             role="option"
                             aria-selected={isSelected}
                             tabIndex={0}
-                            onClick={() => setSelectedLibrary(library)}
+                            onClick={() => selectLibrary(library)}
                             onKeyDown={(event) =>
                               handleOptionKeyDown(event, library)
                             }
@@ -374,29 +427,44 @@ export function CreateLibraryDrawer({
                   )}
 
                   {selectedLibrary && (
-                    <div className="flex items-center gap-2 border-t border-border-faint bg-surface-raised px-3 py-2.5">
-                      <label htmlFor={searchIds.version} className="sr-only">
-                        Versão no projeto
-                      </label>
-                      <Input
-                        id={searchIds.version}
-                        type="text"
-                        autoComplete="off"
-                        placeholder="versão (opcional)"
-                        className="h-[34px] font-mono text-[13px]"
-                        value={associateVersion}
-                        onChange={(event) =>
-                          setAssociateVersion(event.target.value)
-                        }
-                        onKeyDown={(event) => {
-                          preventFormSubmit(event);
-                          if (event.key === "Enter") {
-                            associateSelected();
+                    <div className="flex flex-col gap-2 border-t border-border-faint bg-surface-raised px-3 py-2.5">
+                      <div className="flex gap-2">
+                        <ProjectCategorySelect
+                          id={searchIds.category}
+                          aria-label={`Categoria de ${selectedLibrary.name} neste projeto`}
+                          value={associateCategoryId}
+                          onValueChange={setAssociateCategoryId}
+                          categories={projectCategories}
+                          libraryCategoryName={globalCategoryName(
+                            selectedLibrary.categoryId,
+                          )}
+                          disabled={projectCategoriesQuery.isLoading}
+                          className="h-[34px] min-w-0 flex-1 text-[13px]"
+                        />
+                        <label htmlFor={searchIds.version} className="sr-only">
+                          Versão no projeto
+                        </label>
+                        <Input
+                          id={searchIds.version}
+                          type="text"
+                          autoComplete="off"
+                          placeholder="versão (opcional)"
+                          className="h-[34px] w-[120px] font-mono text-[13px]"
+                          value={associateVersion}
+                          onChange={(event) =>
+                            setAssociateVersion(event.target.value)
                           }
-                        }}
-                      />
+                          onKeyDown={(event) => {
+                            preventFormSubmit(event);
+                            if (event.key === "Enter") {
+                              associateSelected();
+                            }
+                          }}
+                        />
+                      </div>
                       <Button
                         type="button"
+                        className="self-end"
                         aria-describedby={searchIds.hint}
                         disabled={associateMutation.isPending}
                         onClick={associateSelected}
@@ -422,7 +490,7 @@ export function CreateLibraryDrawer({
 
               <p id={searchIds.hint} className="text-xs text-muted-foreground">
                 {selectedLibrary
-                  ? `${selectedLibrary.name} selecionada — informe a versão, se quiser, e associe.`
+                  ? `${selectedLibrary.name} selecionada — escolha a categoria e a versão neste projeto, se quiser, e associe.`
                   : "Bibliotecas que já estão neste projeto não aparecem na busca."}
               </p>
             </div>
@@ -495,7 +563,7 @@ export function CreateLibraryDrawer({
               htmlFor="create-library-categoryId"
               className="text-[12.5px] font-medium text-secondary-foreground"
             >
-              Categoria
+              {project ? "Categoria no catálogo" : "Categoria"}
             </Label>
             <Controller
               name="categoryId"
@@ -508,7 +576,7 @@ export function CreateLibraryDrawer({
                 >
                   <SelectTrigger
                     id="create-library-categoryId"
-                    aria-label="Categoria"
+                    aria-label={project ? "Categoria no catálogo" : "Categoria"}
                     className="h-10 rounded-lg border-input bg-surface-input px-3 text-[13.5px] text-foreground"
                   >
                     <SelectValue placeholder="Sem categoria" />
@@ -524,6 +592,38 @@ export function CreateLibraryDrawer({
               )}
             />
           </div>
+
+          {project && (
+            <div className="flex flex-col gap-[7px]">
+              <Label
+                htmlFor="create-library-project-category"
+                className="text-[12.5px] font-medium text-secondary-foreground"
+              >
+                Categoria neste projeto
+              </Label>
+              <Controller
+                name="projectCategoryId"
+                control={control}
+                render={({ field }) => (
+                  <ProjectCategorySelect
+                    id="create-library-project-category"
+                    aria-label="Categoria neste projeto"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    categories={projectCategories}
+                    libraryCategoryName={globalCategoryName(
+                      watch("categoryId") || null,
+                    )}
+                    disabled={projectCategoriesQuery.isLoading}
+                  />
+                )}
+              />
+              <p className="text-xs text-text-faint">
+                Lista as categorias globais e as deste projeto. Vale só para
+                este projeto — não altera a biblioteca no catálogo.
+              </p>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <Label className="text-[12.5px] font-medium text-secondary-foreground">

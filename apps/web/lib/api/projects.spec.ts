@@ -394,6 +394,29 @@ describe("associateLibraryToProject", () => {
     );
   });
 
+  it("envia a categoria da associação quando categoryId é informado", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ ...association, categoryId: "category-own" }),
+    } as Response);
+
+    await associateLibraryToProject("project-1", {
+      libraryId: "library-1",
+      categoryId: "category-own",
+    });
+
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/projects/project-1/libraries",
+      expect.objectContaining({
+        body: JSON.stringify({
+          libraryId: "library-1",
+          categoryId: "category-own",
+        }),
+      }),
+    );
+  });
+
   it("lança AssociateLibraryToProjectError com a mensagem da API quando a associação falha", async () => {
     vi.mocked(authenticatedFetch).mockResolvedValue({
       ok: false,
