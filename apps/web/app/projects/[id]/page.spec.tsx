@@ -284,6 +284,24 @@ describe("ProjectDetailPage", () => {
     ).not.toBeNull();
   });
 
+  it("o botão Importar package.json abre o drawer de importação", async () => {
+    const user = userEvent.setup();
+    vi.mocked(getProject).mockResolvedValue(project);
+    vi.mocked(getProjectLibraries).mockResolvedValue([]);
+    renderProjectDetailPage();
+
+    await user.click(
+      await screen.findByRole("button", { name: /importar package\.json/i }),
+    );
+
+    expect(await screen.findByRole("dialog")).not.toBeNull();
+    expect(
+      screen.getByText(
+        /traga para DevLib as dependências de um package\.json/i,
+      ),
+    ).not.toBeNull();
+  });
+
   describe("Remover do projeto", () => {
     const drizzle = {
       id: "library-1",
