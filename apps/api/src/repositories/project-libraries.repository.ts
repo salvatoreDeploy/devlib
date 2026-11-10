@@ -1,7 +1,11 @@
 import { and, eq } from "drizzle-orm";
-import { projectLibraries, type createDb } from "@devlib/db";
+import { projectLibraries } from "@devlib/db";
+import type { PgDatabase } from "drizzle-orm/pg-core";
+import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
 
-export type DbClient = ReturnType<typeof createDb>;
+// supertipo comum do client (createDb) e da transação do drizzle (db.transaction):
+// o mesmo repositório roda dentro ou fora de uma transação
+export type DbClient = PgDatabase<NodePgQueryResultHKT>;
 
 export type ProjectLibraryRecord = {
   id: string;
