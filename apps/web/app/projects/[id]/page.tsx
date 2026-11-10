@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { CreateLibraryDrawer } from "@/components/create-library-drawer";
 import { ProjectTabs } from "@/components/project-tabs";
 import { EditProjectLibraryDrawer } from "@/components/edit-project-library-drawer";
+import { ImportPackageJsonDrawer } from "@/components/import-package-json-drawer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,6 +53,7 @@ export default function ProjectDetailPage() {
     null,
   );
   const [isAddLibraryOpen, setIsAddLibraryOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [libraryToRemove, setLibraryToRemove] = useState<ProjectLibrary | null>(
     null,
   );
@@ -168,6 +170,10 @@ export default function ProjectDetailPage() {
             <Plus aria-hidden="true" />
             Adicionar biblioteca
           </Button>
+          <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+            <Upload aria-hidden="true" />
+            Importar package.json
+          </Button>
         </div>
 
         {librariesQuery.isLoading && (
@@ -252,6 +258,13 @@ export default function ProjectDetailPage() {
         onOpenChange={setIsAddLibraryOpen}
         onCreated={() => setIsAddLibraryOpen(false)}
         project={{ id, name: project.name }}
+      />
+
+      <ImportPackageJsonDrawer
+        projectId={id}
+        projectName={project.name}
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
       />
 
       <AlertDialog

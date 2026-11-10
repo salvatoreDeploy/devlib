@@ -8,6 +8,8 @@ import {
   RemoveLibraryFromProjectError,
   updateProjectLibrary,
   UpdateProjectLibraryError,
+  importProjectLibraries,
+  ImportProjectLibrariesError,
   deleteProject,
   DeleteProjectError,
   getProject,
@@ -522,3 +524,80 @@ describe("updateProjectLibrary", () => {
     ).rejects.toBeInstanceOf(UpdateProjectLibraryError);
   });
 });
+
+describe("importProjectLibraries", () => {
+  afterEach(() => {
+    vi.mocked(authenticatedFetch).mockReset();
+  });
+
+  const report = {
+    dryRun: true,
+    summary: { create: 1, associate: 0, updateVersion: 0, unchanged: 0 },
+    items: [
+      {
+        name: "fastify",
+        version: "^5.0.0",
+        action: "create",
+        libraryId: null,
+        previousVersion: null,
+      },
+    ],
+  };
+
+  it("envia POST com items e dryRun e retorna o relatório", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(report),
+    } as Response);
+
+    const result = await importProjectLibraries("project-1", {
+      items: [{ name: "fastify", version: "^5.0.0" }, { name: "react" }],
+      dryRun: true,
+    });
+
+    expect(result).toEqual(report);
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/projects/project-1/libraries/import",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [{ name: "fastify", version: "^5.0.0" }, { name: "react" }],
+          dryRun: true,
+        }),
+      }),
+    );
+  });
+
+  it("lança ImportProjectLibrariesError com a mensagem da API quando falha", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      json: () =>
+        Promise.resolve({
+          error:
+            "O catálogo ou o projeto mudou durante a importação — nada foi gravado, tente de novo",
+        }),
+    } as Response);
+
+    const call = () =>
+      importProjectLibraries("project-1", {
+        items: [{ name: "fastify" }],
+        dryRun: false,
+      });
+
+    await expect(call()).rejects.toThrow(/tente de novo/);
+    await expect(call()).rejects.toBeInstanceOf(ImportProjectLibrariesError);
+  });
+
+  it("usa mensagem padrão quando a API não devolve error", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({}),
+    } as Response);
+
+    await expect(
+      importProjectLibraries("project-1", { items: [{ name: "x" }] }),
+    ).rejects.toThrow("Não foi possível importar as bibliotecas");
+  });
+});
+

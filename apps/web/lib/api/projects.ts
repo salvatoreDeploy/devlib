@@ -67,6 +67,7 @@ export class GetProjectsOverviewError extends Error {}
 export class AssociateLibraryToProjectError extends Error {}
 export class RemoveLibraryFromProjectError extends Error {}
 export class UpdateProjectLibraryError extends Error {}
+export class ImportProjectLibrariesError extends Error {}
 
 export async function createProject(
   input: CreateProjectInput,
@@ -240,6 +241,56 @@ export async function updateProjectLibrary(
   if (!response.ok) {
     throw new UpdateProjectLibraryError(
       body.error ?? "Não foi possível atualizar a biblioteca no projeto",
+    );
+  }
+
+  return body;
+}
+
+export type ImportAction = "create" | "associate" | "updateVersion" | "unchanged";
+
+export type ImportItemInput = { name: string; version?: string };
+
+export type ImportProjectLibrariesInput = {
+  items: ImportItemInput[];
+  dryRun?: boolean;
+};
+
+export type ImportReportItem = {
+  name: string;
+  // versão informada no item (null quando omitida)
+  version: string | null;
+  action: ImportAction;
+  // null só em "create" no dryRun (a biblioteca ainda não existe)
+  libraryId: string | null;
+  // versão atual no projeto antes da importação
+  previousVersion: string | null;
+};
+
+export type ImportReport = {
+  dryRun: boolean;
+  summary: Record<ImportAction, number>;
+  items: ImportReportItem[];
+};
+
+export async function importProjectLibraries(
+  projectId: string,
+  input: ImportProjectLibrariesInput,
+): Promise<ImportReport> {
+  const response = await authenticatedFetch(
+    `/projects/${projectId}/libraries/import`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
+
+  const body = await response.json();
+
+  if (!response.ok) {
+    throw new ImportProjectLibrariesError(
+      body.error ?? "Não foi possível importar as bibliotecas",
     );
   }
 
