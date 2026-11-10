@@ -186,6 +186,40 @@ describe("createLibrariesRepository", () => {
     });
   });
 
+  describe("findLibrariesByNames", () => {
+    function fakeDbForSelectWhere(rows: unknown[]) {
+      const where = vi.fn().mockResolvedValue(rows);
+      const from = vi.fn().mockReturnValue({ where });
+      const select = vi.fn().mockReturnValue({ from });
+
+      return { db: { select } as unknown as DbClient, select, where };
+    }
+
+    it("retorna as bibliotecas do catálogo com os nomes informados numa query só", async () => {
+      const { db, select, where } = fakeDbForSelectWhere([library]);
+
+      const repository = createLibrariesRepository(db);
+      const result = await repository.findLibrariesByNames([
+        "drizzle-orm",
+        "inexistente",
+      ]);
+
+      expect(result).toEqual([library]);
+      expect(select).toHaveBeenCalledOnce();
+      expect(where).toHaveBeenCalledOnce();
+    });
+
+    it("com lista vazia devolve [] sem consultar o banco", async () => {
+      const { db, select } = fakeDbForSelectWhere([]);
+
+      const repository = createLibrariesRepository(db);
+      const result = await repository.findLibrariesByNames([]);
+
+      expect(result).toEqual([]);
+      expect(select).not.toHaveBeenCalled();
+    });
+  });
+
   describe("updateLibrary", () => {
     it("atualiza os campos informados e retorna a biblioteca atualizada", async () => {
       const updated = { ...library, notes: "nota atualizada" };

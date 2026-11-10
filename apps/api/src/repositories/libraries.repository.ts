@@ -1,12 +1,15 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import {
   libraries,
   projectLibraries,
   projects,
-  type createDb,
 } from "@devlib/db";
+import type { PgDatabase } from "drizzle-orm/pg-core";
+import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
 
-export type DbClient = ReturnType<typeof createDb>;
+// supertipo comum do client (createDb) e da transação do drizzle (db.transaction):
+// o mesmo repositório roda dentro ou fora de uma transação
+export type DbClient = PgDatabase<NodePgQueryResultHKT>;
 
 export type LibraryRecord = {
   id: string;
@@ -36,6 +39,7 @@ export type LibrariesRepository = {
   findLibraries(): Promise<LibraryRecord[]>;
   findLibraryById(id: string): Promise<LibraryRecord | undefined>;
   findLibraryByName(name: string): Promise<LibraryRecord | undefined>;
+  findLibrariesByNames(names: string[]): Promise<LibraryRecord[]>;
   updateLibrary(
     id: string,
     data: { name?: string; categoryId?: string | null; notes?: string | null },
@@ -82,6 +86,16 @@ export function createLibrariesRepository(db: DbClient): LibrariesRepository {
         .limit(1);
 
       return rows[0];
+    },
+
+    // uma query só pra importação em lote (até 500 nomes); nome é comparado
+    // de forma exata, como no unique da coluna
+    async findLibrariesByNames(names) {
+      if (names.length === 0) {
+        return [];
+      }
+
+      return db.select().from(libraries).where(inArray(libraries.name, names));
     },
 
     async updateLibrary(id, data) {

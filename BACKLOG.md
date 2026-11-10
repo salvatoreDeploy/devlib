@@ -161,14 +161,14 @@ Fica para depois do MVP (v1.1+):
   - [x] API: `PATCH /projects/:id/libraries/:libraryId` aceita `categoryId` (global ou do próprio projeto, senão 404; `null` volta ao padrão da biblioteca) além de `version`; `GET /projects/:id/libraries` devolve `projectCategoryId`
   - [x] Web: ação "Editar" por linha na aba Bibliotecas do projeto, abrindo drawer "Editar no projeto" (categoria — padrão da biblioteca, globais e do projeto — + versão), desenhado antes no `.pen`
   - [x] Web: abas Bibliotecas e Categorias do projeto usam a categoria efetiva (do projeto, senão a global) no chip e na contagem
-- [ ] Adicionar biblioteca a projeto (a partir da tela do projeto)
+- [x] Adicionar biblioteca a projeto (a partir da tela do projeto)
   - [x] Web: botão "Adicionar biblioteca" na aba Bibliotecas do projeto, abrindo o `CreateLibraryDrawer` estendido com busca de biblioteca existente no catálogo (associa direto) além da criação de uma nova (associa ao salvar)
   - [x] API: `POST /projects/:id/libraries` aceita `categoryId` opcional (global ou do próprio projeto, senão 404 — mesma regra do PATCH), pra associação já nascer com a categoria no projeto
   - [x] Web: `CreateLibraryDrawer`, quando aberto de dentro de um projeto, oferece a categoria **da associação** (globais+do projeto, via `GET /projects/:id/categories`) gravada em `project_libraries.category_id` — a categoria da biblioteca nova em si continua só global
-  - [ ] Web: ação "Remover" na tabela de bibliotecas do projeto
+  - [x] Web: ação "Remover" na tabela de bibliotecas do projeto
 - [ ] Importar bibliotecas de um `package.json` para o projeto (api + web)
   > Adicionado em 2026-11-04 a partir do uso real: cadastrar e associar as libs de um projeto uma a uma é cansativo, e o `package.json` já tem a lista. Decisão: o parse do `package.json` (arquivo ou texto colado, mesmo parser) fica no web e gera `{ name, version }[]`; a API recebe essa lista genérica (não acoplada ao formato npm) numa rota com `dryRun` pra prévia. Biblioteca inexistente no catálogo é criada sem categoria; já existente é reaproveitada; já associada ao projeto tem a `version` atualizada. Fora de escopo: `requirements.txt`/lockfiles/workspaces, importar só para o catálogo (sem projeto), definir categoria na importação, guardar se a dependência é dev ou prod, autopreenchimento via npm (Sprint 6).
-  - [ ] API: `POST /projects/:id/libraries/import` com validação zod (`items: { name, version? }[]`, limite de itens, `dryRun`) — `dryRun` devolve a classificação por item (nova no catálogo / associar / atualizar versão / sem mudança); sem `dryRun`, aplica tudo numa transação e devolve o relatório; 404 se o projeto não for do usuário
+  - [x] API: `POST /projects/:id/libraries/import` com validação zod (`items: { name, version? }[]`, limite de itens, `dryRun`) — `dryRun` devolve a classificação por item (nova no catálogo / associar / atualizar versão / sem mudança); sem `dryRun`, aplica tudo numa transação e devolve o relatório; 404 se o projeto não for do usuário
   - [ ] Web: parser de `package.json` (`dependencies` + `devDependencies` → `{ name, version, dev }[]`, erro legível pra JSON inválido ou sem dependências), puro e coberto por spec
   - [ ] Web: drawer "Importar package.json" na aba Bibliotecas do projeto — abas "Arquivo" (upload `.json`) e "Colar JSON" (textarea), prévia via `dryRun` com checkbox por linha (devDependencies agrupadas e desmarcáveis), confirmar e mostrar o relatório final; desenhado antes no `.pen`
 - [ ] Home reflete a categoria efetiva das bibliotecas nos projetos (api + web)
