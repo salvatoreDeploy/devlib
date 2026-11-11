@@ -1,15 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { useParams } from "next/navigation";
+import {
+  useParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Upload } from "lucide-react";
+import { Plus, SearchX, Upload } from "lucide-react";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { CreateLibraryDrawer } from "@/components/create-library-drawer";
 import { ProjectTabs } from "@/components/project-tabs";
 import { EditProjectLibraryDrawer } from "@/components/edit-project-library-drawer";
 import { ImportPackageJsonDrawer } from "@/components/import-package-json-drawer";
+import { ListPagination } from "@/components/list-pagination";
+import { ProjectLibrariesToolbar } from "@/components/project-libraries-toolbar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +51,14 @@ import {
 } from "../../../lib/api/projects";
 import { getProjectCategories } from "../../../lib/api/categories";
 import { useRequireAuth } from "../../../lib/use-require-auth";
+import {
+  applyFilters,
+  categoryOptions,
+  DEFAULT_FILTERS,
+  parseFilters,
+  toSearchString,
+  type ProjectLibrariesFilters,
+} from "../../../lib/project-libraries-filters";
 
 export default function ProjectDetailPage() {
   const isAuthenticated = useRequireAuth();
@@ -58,6 +73,19 @@ export default function ProjectDetailPage() {
     null,
   );
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // busca/filtros/página vivem na URL — recarregar ou compartilhar mantém
+  const filters = parseFilters(searchParams);
+
+  function navigate(next: ProjectLibrariesFilters, mode: "push" | "replace") {
+    const search = toSearchString(next);
+    const url = search ? `${pathname}?${search}` : pathname;
+    // push só na troca de página (Voltar volta à página anterior); digitar e
+    // filtrar usa replace pra não criar uma entrada de histórico por tecla
+    router[mode](url, { scroll: false });
+  }
 
   const projectQuery = useQuery({
     queryKey: ["project", id],
@@ -139,6 +167,10 @@ export default function ProjectDetailPage() {
     ]),
   );
 
+  const result = librariesQuery.data
+    ? applyFilters(librariesQuery.data, filters)
+    : null;
+
   function effectiveCategoryName(library: ProjectLibrary) {
     const categoryId = library.projectCategoryId ?? library.categoryId;
     if (!categoryId) {
@@ -194,61 +226,115 @@ export default function ProjectDetailPage() {
           </p>
         )}
 
-        {librariesQuery.data && librariesQuery.data.length > 0 && (
-          <div className="rounded-[11px] border border-border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Versão</TableHead>
-                  <TableHead className="w-[52px]" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {librariesQuery.data.map((library) => (
-                  <TableRow key={library.id}>
-                    <TableCell className="font-medium">
-                      {library.name}
-                    </TableCell>
-                    <TableCell>
-                      <span className="rounded-[6px] border border-input bg-secondary px-[9px] py-[3px] text-[12px] text-muted-foreground">
-                        {effectiveCategoryName(library)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="font-mono text-muted-foreground">
-                      {library.version ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          aria-label={`Ações de ${library.name}`}
-                          className="flex size-[28px] items-center justify-center rounded-[7px] border border-input text-text-fainter"
-                        >
-                          ···
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem
-                            onSelect={() => setLibraryToEdit(library)}
-                          >
-                            Editar no projeto
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onSelect={() => {
-                              removeMutation.reset();
-                              setLibraryToRemove(library);
-                            }}
-                          >
-                            Remover do projeto
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+        {librariesQuery.data && librariesQuery.data.length > 0 && result && (
+          <div className="mb-3">
+            <ProjectLibrariesToolbar
+              filters={filters}
+              categoryOptions={categoryOptions(
+                librariesQuery.data,
+                categoryNameById,
+              )}
+              onChange={(changes) =>
+                navigate({ ...filters, ...changes, page: 1 }, "replace")
+              }
+              onClear={() => navigate(DEFAULT_FILTERS, "replace")}
+            />
+          </div>
+        )}
+
+        {librariesQuery.data && librariesQuery.data.length > 0 && result && (
+          <div className="overflow-hidden rounded-[11px] border border-border bg-card">
+            {result.total === 0 ? (
+              <div className="flex flex-col items-center gap-3 px-[18px] py-12 text-center">
+                <SearchX
+                  className="size-[22px] text-text-fainter"
+                  aria-hidden="true"
+                />
+                <p className="text-[13.5px] font-medium text-secondary-foreground">
+                  Nenhuma biblioteca com esses filtros.
+                </p>
+                <p className="text-[12.5px] text-text-faint">
+                  {librariesQuery.data.length === 1
+                    ? "1 biblioteca no projeto"
+                    : `${librariesQuery.data.length} bibliotecas no projeto`}{" "}
+                  — ajuste a busca ou limpe os filtros.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(DEFAULT_FILTERS, "replace")}
+                >
+                  Limpar filtros
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>Versão</TableHead>
+                      <TableHead className="w-[52px]" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {result.items.map((library) => (
+                      <TableRow key={library.id}>
+                        <TableCell className="font-medium">
+                          {library.name}
+                        </TableCell>
+                        <TableCell>
+                          <span className="rounded-[6px] border border-input bg-secondary px-[9px] py-[3px] text-[12px] text-muted-foreground">
+                            {effectiveCategoryName(library)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="font-mono text-muted-foreground">
+                          {library.version ?? "—"}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              aria-label={`Ações de ${library.name}`}
+                              className="flex size-[28px] items-center justify-center rounded-[7px] border border-input text-text-fainter"
+                            >
+                              ···
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem
+                                onSelect={() => setLibraryToEdit(library)}
+                              >
+                                Editar no projeto
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => {
+                                  removeMutation.reset();
+                                  setLibraryToRemove(library);
+                                }}
+                              >
+                                Remover do projeto
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <ListPagination
+                  page={result.page}
+                  pageCount={result.pageCount}
+                  start={result.start}
+                  end={result.end}
+                  total={result.total}
+                  itemLabel="bibliotecas"
+                  itemLabelSingular="biblioteca"
+                  onPageChange={(page) =>
+                    navigate({ ...filters, page }, "push")
+                  }
+                />
+              </>
+            )}
           </div>
         )}
       </main>

@@ -14,13 +14,44 @@ import {
 import { getProjectCategories } from "../../../lib/api/categories";
 import { clearTokens, saveTokens } from "../../../lib/auth-storage";
 
-const pushMock = vi.fn();
+// URL "reativa": replace/push atualizam a query string e re-renderizam quem
+// lê useSearchParams, como no Next de verdade
+const navigation = vi.hoisted(() => {
+  let search = "";
+  const listeners = new Set<() => void>();
+  const setSearch = (url: string) => {
+    search = url.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
+    listeners.forEach((listener) => listener());
+  };
+  return {
+    pushMock: vi.fn(setSearch),
+    replaceMock: vi.fn(setSearch),
+    getSearch: () => search,
+    setSearch,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+});
+const pushMock = navigation.pushMock;
+const replaceMock = navigation.replaceMock;
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock }),
-  useParams: () => ({ id: "project-1" }),
-  usePathname: () => "/projects/project-1",
-}));
+vi.mock("next/navigation", async () => {
+  const { useSyncExternalStore } = await import("react");
+  return {
+    useRouter: () => ({
+      push: navigation.pushMock,
+      replace: navigation.replaceMock,
+    }),
+    useParams: () => ({ id: "project-1" }),
+    usePathname: () => "/projects/project-1",
+    useSearchParams: () =>
+      new URLSearchParams(
+        useSyncExternalStore(navigation.subscribe, navigation.getSearch),
+      ),
+  };
+});
 
 vi.mock("../../../lib/api/projects", async () => {
   const actual = await vi.importActual<
@@ -82,6 +113,8 @@ function renderProjectDetailPage(queryClient = new QueryClient()) {
 describe("ProjectDetailPage", () => {
   beforeEach(() => {
     pushMock.mockClear();
+    replaceMock.mockClear();
+    navigation.setSearch("");
     vi.mocked(getProject).mockReset();
     vi.mocked(getProjectLibraries).mockReset();
     vi.mocked(getProjectCategories).mockReset();
@@ -417,6 +450,223 @@ describe("ProjectDetailPage", () => {
 
       await screen.findByRole("alertdialog");
       expect(screen.queryByRole("alert")).toBeNull();
+    });
+  });
+
+  describe("busca, filtros e paginação", () => {
+    function libraryNamed(
+      name: string,
+      extra: Partial<{
+        categoryId: string | null;
+        projectCategoryId: string | null;
+        version: string | null;
+      }> = {},
+    ) {
+      return {
+        id: `library-${name}`,
+        name,
+        categoryId: null,
+        notes: null,
+        version: "1.0.0",
+        projectCategoryId: null,
+        createdAt: "2026-09-03T00:00:00.000Z",
+        updatedAt: "2026-09-03T00:00:00.000Z",
+        ...extra,
+      };
+    }
+
+    // 12 libs: lib-01..lib-11 + "zustand" (categoria do projeto, sem versão)
+    const twelve = [
+      ...Array.from({ length: 11 }, (_, i) =>
+        libraryNamed(`lib-${String(i + 1).padStart(2, "0")}`, {
+          categoryId: i < 3 ? "category-1" : null,
+        }),
+      ),
+      libraryNamed("zustand", {
+        projectCategoryId: "category-own",
+        version: null,
+      }),
+    ];
+
+    function rowNames() {
+      return screen
+        .getAllByRole("row")
+        .slice(1)
+        .map((row) => row.querySelector("td")?.textContent);
+    }
+
+    async function renderWith(libraries = twelve, search = "") {
+      navigation.setSearch(`/projects/project-1?${search}`);
+      vi.mocked(getProject).mockResolvedValue(project);
+      vi.mocked(getProjectLibraries).mockResolvedValue(libraries);
+      renderProjectDetailPage();
+      await screen.findByRole("searchbox", { name: /buscar bibliotecas/i });
+    }
+
+    it("mostra 10 por página, por nome, com o rodapé de paginação", async () => {
+      await renderWith([...twelve].reverse());
+
+      await waitFor(() => {
+        expect(rowNames()).toHaveLength(10);
+      });
+      expect(rowNames()[0]).toBe("lib-01");
+      expect(
+        screen.getByText("Mostrando 1–10 de 12 bibliotecas"),
+      ).not.toBeNull();
+      expect(screen.getByText("Página 1 de 2")).not.toBeNull();
+    });
+
+    it("próxima página faz push na URL e mostra o restante", async () => {
+      const user = userEvent.setup();
+      await renderWith();
+
+      await user.click(
+        await screen.findByRole("button", { name: /próxima página/i }),
+      );
+
+      expect(pushMock).toHaveBeenLastCalledWith(
+        "/projects/project-1?page=2",
+        { scroll: false },
+      );
+      expect(rowNames()).toEqual(["lib-11", "zustand"]);
+      expect(
+        screen.getByText("Mostrando 11–12 de 12 bibliotecas"),
+      ).not.toBeNull();
+    });
+
+    it("lê busca, filtros e página da URL ao abrir", async () => {
+      await renderWith(twelve, "q=LIB-0&page=1");
+
+      await waitFor(() => {
+        expect(rowNames()).toHaveLength(9);
+      });
+      expect(
+        (
+          screen.getByRole("searchbox", {
+            name: /buscar bibliotecas/i,
+          }) as HTMLInputElement
+        ).value,
+      ).toBe("LIB-0");
+    });
+
+    it("buscar troca a URL com replace e volta pra página 1", async () => {
+      const user = userEvent.setup();
+      await renderWith(twelve, "page=2");
+
+      await user.type(
+        screen.getByRole("searchbox", { name: /buscar bibliotecas/i }),
+        "zus",
+      );
+
+      expect(replaceMock).toHaveBeenLastCalledWith(
+        "/projects/project-1?q=zus",
+        { scroll: false },
+      );
+      expect(rowNames()).toEqual(["zustand"]);
+      expect(pushMock).not.toHaveBeenCalled();
+    });
+
+    it("dá pra digitar uma busca com espaço (o espaço não some ao reler da URL)", async () => {
+      const user = userEvent.setup();
+      await renderWith([
+        ...twelve,
+        libraryNamed("react query"),
+        libraryNamed("react"),
+      ]);
+
+      const search = screen.getByRole("searchbox", {
+        name: /buscar bibliotecas/i,
+      });
+      await user.type(search, "react q");
+
+      expect((search as HTMLInputElement).value).toBe("react q");
+      expect(rowNames()).toEqual(["react query"]);
+    });
+
+    it("filtro de categoria oferece só as categorias presentes no projeto e filtra pela efetiva", async () => {
+      const user = userEvent.setup();
+      await renderWith();
+
+      await user.click(screen.getByRole("button", { name: /^categoria$/i }));
+      const items = await screen.findAllByRole("menuitemradio");
+      expect(items.map((item) => item.textContent)).toEqual([
+        "Todas as categorias",
+        "Infra interna",
+        "ORM",
+        "Sem categoria",
+      ]);
+
+      await user.click(
+        screen.getByRole("menuitemradio", { name: "Infra interna" }),
+      );
+
+      expect(replaceMock).toHaveBeenLastCalledWith(
+        "/projects/project-1?category=category-own",
+        { scroll: false },
+      );
+      expect(rowNames()).toEqual(["zustand"]);
+    });
+
+    it("filtro 'Sem versão' mostra só as libs sem versão", async () => {
+      const user = userEvent.setup();
+      await renderWith();
+
+      await user.click(screen.getByRole("button", { name: /^versão$/i }));
+      await user.click(
+        await screen.findByRole("menuitemradio", { name: "Sem versão" }),
+      );
+
+      expect(rowNames()).toEqual(["zustand"]);
+    });
+
+    it("sem resultado mostra o estado vazio e 'Limpar filtros' volta pra lista completa", async () => {
+      const user = userEvent.setup();
+      await renderWith(twelve, "q=inexistente");
+
+      expect(
+        await screen.findByText("Nenhuma biblioteca com esses filtros."),
+      ).not.toBeNull();
+      expect(
+        screen.getByText(
+          /12 bibliotecas no projeto — ajuste a busca ou limpe os filtros/i,
+        ),
+      ).not.toBeNull();
+      expect(screen.queryByText(/^Mostrando/)).toBeNull();
+
+      const clearButtons = screen.getAllByRole("button", {
+        name: /limpar filtros/i,
+      });
+      await user.click(clearButtons[clearButtons.length - 1]);
+
+      expect(replaceMock).toHaveBeenLastCalledWith("/projects/project-1", {
+        scroll: false,
+      });
+      expect(rowNames()).toHaveLength(10);
+    });
+
+    it("página da URL além da última mostra a última", async () => {
+      await renderWith(twelve, "page=9");
+
+      await waitFor(() => {
+        expect(screen.getByText("Página 2 de 2")).not.toBeNull();
+      });
+      expect(rowNames()).toEqual(["lib-11", "zustand"]);
+    });
+
+    it("projeto sem bibliotecas mantém a mensagem de vazio, sem barra de filtros nem rodapé", async () => {
+      vi.mocked(getProject).mockResolvedValue(project);
+      vi.mocked(getProjectLibraries).mockResolvedValue([]);
+      renderProjectDetailPage();
+
+      expect(
+        await screen.findByText(
+          "Nenhuma biblioteca associada a este projeto ainda.",
+        ),
+      ).not.toBeNull();
+      expect(
+        screen.queryByRole("searchbox", { name: /buscar bibliotecas/i }),
+      ).toBeNull();
+      expect(screen.queryByText(/^Mostrando/)).toBeNull();
     });
   });
 });

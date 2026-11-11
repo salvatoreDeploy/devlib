@@ -175,6 +175,15 @@ Corrige a versão anterior deste documento, que descrevia duas famílias visuais
 - Status como badge colorido — ver tabela de badges abaixo
 - Linha inteira clicável; link externo usa prefixo literal `↗` na cor `accent`, não ícone
 
+### Busca, filtros e paginação de listas
+
+Padrão da aba Bibliotecas do projeto (Sprint 5) e, em seguida, da seção "Bibliotecas" da Home — telas `Project Libraries Screen`, `Project Libraries Filtered Empty Screen` e `Dashboard Screen` do `.pen`.
+
+- **Barra acima da tabela** (gap 10): busca em pílula 200×34 (`surface`, borda `border-strong`, ícone `Search` em `text-fainter`, placeholder "buscar bibliotecas"/"buscar no catálogo") + filtros em pílula 34px (`components/project-libraries-toolbar.tsx`): ícone opcional + rótulo 13px `text-muted` + `ChevronDown` 13px, abrindo um `DropdownMenu` de escolha única (`DropdownMenuRadioItem`, check `accent` à esquerda do ativo, primeira opção "Todas as ..."). Pílula **ativa**: fundo `chip-alt`, borda `checkbox-border`, texto `text`, rótulo com o valor ("Categoria: ORM", "Sem versão"). Com algum filtro ativo aparece o link "× Limpar filtros" (13px `text-faint`) no fim da barra.
+- **Rodapé da tabela** (`components/list-pagination.tsx`, genérico): `padding 14px 18px`, borda superior `border-row`, 12.5px `text-faint` — "Mostrando X–Y de Z <itens>" à esquerda; "Página N de M" + botões 28×28 (raio 7, `surface`, borda `border-strong`, ícones `ChevronsLeft`/`ChevronLeft`/`ChevronRight`/`ChevronsRight` 14px) à direita, desabilitados (opacidade 40%) nas bordas. Sem seletor de itens por página: página fixa de **10**.
+- **Estado vazio de filtro** (dentro do card da tabela, sem cabeçalho nem rodapé): `SearchX` 22px `text-fainter`, "Nenhuma biblioteca com esses filtros." (13.5px/500 `text-secondary`), "N bibliotecas no projeto — ajuste a busca ou limpe os filtros." (12.5px `text-faint`) e Outline Button "Limpar filtros". Diferente do vazio "Nenhuma biblioteca associada a este projeto ainda." (sem barra nem rodapé).
+- Estado na URL (`?q=&category=&version=&page=`); filtrar volta pra página 1.
+
 ### Badges de status — paleta fixa
 
 | Status        | Fundo                 | Texto              |
@@ -276,7 +285,7 @@ Grid `1fr 340px` gap 48px, padding `34px 40px 60px`.
 
 - "Projetos" (h2) + Primary Button "Criar projeto" (ícone `Plus`) — abre o drawer "Criar projeto" (ver abaixo), não mais `/projects/new`.
 - Grid 2×2 de cards (hover `border-color: checkbox-border`), corpo com nome 16px/600 + botão "···" 28×28, meta `text-faint` 13px ("N bibliotecas · lib1 · lib2 · lib3"); rodapé `surface-subtle` com avatar + "**quem** fez o quê **quando**" — fora de escopo (depende de tabela de atividade/multiusuário que não existe).
-- Seção "Bibliotecas" (Sprint 3, seção existente) — o `.pen` mostra uma versão bem mais rica (cards de resumo Atualizadas/Desatualizadas/Depreciadas, filtros rápidos de status/categoria, coluna "Versão", footer "Mostrando X de Y" + "Abrir lista completa") do que a implementação atual. **Decisão já registrada** (`docs/DECISIONS.md`, 2026-09-09): manter o recorte atual (tabela simples com Biblioteca/Categoria/Status fixo/Usada em) até que staleness de versão (Sprint 6) e os itens de resumo/filtro virem itens de backlog próprios — não expandir esta seção como efeito colateral desta subtask de documentação.
+- Seção "Bibliotecas" (Sprint 3, seção existente) — o `.pen` mostra uma versão bem mais rica (cards de resumo Atualizadas/Desatualizadas/Depreciadas, filtros rápidos de status/categoria, coluna "Versão", footer "Mostrando X de Y" + "Abrir lista completa") do que a implementação atual. **Decisão já registrada** (`docs/DECISIONS.md`, 2026-09-09): manter o recorte atual (tabela simples com Biblioteca/Categoria/Status fixo/Usada em) até que staleness de versão (Sprint 6) e os itens de resumo/filtro virem itens de backlog próprios — não expandir esta seção como efeito colateral desta subtask de documentação. **Atualização (Sprint 5, 2026-11-11)**: o `.pen` da seção agora troca os filtros rápidos de status pela barra de busca + filtros Categoria/Uso/Tag e o rodapé "Mostrando X–Y de Z" paginado (ver "Busca, filtros e paginação de listas" acima) — implementação nas subtasks "API: `GET /libraries/catalog`" e "Web: seção "Bibliotecas" da Home usa `GET /libraries/catalog`"; os cards de resumo por status seguem dependendo da Sprint 6.
 - "Atividade de bibliotecas" (feed abaixo da seção Bibliotecas) — fora de escopo, mesma razão (sem tabela de atividade no schema).
 
 **Coluna direita ("rail")**: "Atividade recente" + card "Plano" — **fora de escopo**, sem tabela de `activity` nem billing no MVP.
