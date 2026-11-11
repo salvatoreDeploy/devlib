@@ -2,6 +2,7 @@ import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { createDb, getDatabaseUrl } from "@devlib/db";
 import {
+  getCatalogFacets,
   listLibrariesCatalog,
   type CatalogFilters,
   type LibrariesCatalogRepository,
@@ -87,6 +88,33 @@ const catalogResponseSchema = z.object({
   pageSize: z.number().int().describe("Itens por página (fixo em 10)."),
 });
 
+const facetsResponseSchema = z.object({
+  categories: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        projectId: z
+          .string()
+          .nullable()
+          .describe("Projeto da categoria, ou null pra categoria global."),
+        projectName: z
+          .string()
+          .nullable()
+          .describe("Nome do projeto (desambigua nomes repetidos), ou null."),
+      }),
+    )
+    .describe(
+      "Categorias que a coluna da Home mostra pra alguma biblioteca do catálogo (efetiva nos projetos do usuário, global nas que ele não usa): globais por nome, depois as de projeto por projeto e nome.",
+    ),
+  hasUncategorized: z
+    .boolean()
+    .describe("Se o filtro `categoryId=none` tem resultado."),
+  tags: z
+    .array(z.object({ id: z.string(), name: z.string() }))
+    .describe("Tags com ao menos uma biblioteca, por nome."),
+});
+
 export type LibrariesCatalogRouteOptions = {
   librariesCatalogRepository?: LibrariesCatalogRepository;
   authConfig?: AuthConfig;
@@ -137,6 +165,30 @@ export const librariesCatalogRoute: FastifyPluginAsyncZod<
         { filters, page },
       );
       return reply.status(200).send(result);
+    },
+  );
+
+  app.get(
+    "/libraries/catalog/facets",
+    {
+      preHandler: createAuthenticateMiddleware(opts.authConfig),
+      schema: {
+        tags: ["Libraries"],
+        summary: "Opções dos filtros do catálogo",
+        description:
+          "Categorias, 'sem categoria' e tags que dá pra usar como filtro em `GET /libraries/catalog` sem zerar o resultado — pela mesma regra do filtro de categoria. Categorias de projetos de outros usuários nunca aparecem.",
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: facetsResponseSchema.describe("Opções de filtro."),
+        },
+      },
+    },
+    async (request, reply) => {
+      const facets = await getCatalogFacets(
+        getLibrariesCatalogRepository(),
+        request.user.id,
+      );
+      return reply.status(200).send(facets);
     },
   );
 };

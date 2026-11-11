@@ -50,6 +50,18 @@ function fakeRepository(
         projectName: "DevLib",
       },
     ]),
+    findCatalogFacets: vi.fn().mockResolvedValue({
+      categories: [
+        {
+          id: "cat-front",
+          name: "Frontend",
+          projectId: null,
+          projectName: null,
+        },
+      ],
+      hasUncategorized: true,
+      tags: [{ id: "tag-ui", name: "ui" }],
+    }),
     ...overrides,
   };
 }
@@ -178,5 +190,52 @@ describe("GET /libraries/catalog", () => {
 
     expect(response.statusCode).toBe(401);
     expect(repository.findLibrariesCatalog).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /libraries/catalog/facets", () => {
+  function getFacets(
+    repository: LibrariesCatalogRepository,
+    headers: Record<string, string> = { authorization: authHeader() },
+  ) {
+    const app = buildServer({
+      librariesCatalogRepository: repository,
+      authConfig: fakeAuthConfig,
+    });
+    return app.inject({
+      method: "GET",
+      url: "/libraries/catalog/facets",
+      headers,
+    });
+  }
+
+  it("responde 200 com as opções de filtro do usuário autenticado", async () => {
+    const repository = fakeRepository();
+
+    const response = await getFacets(repository);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      categories: [
+        {
+          id: "cat-front",
+          name: "Frontend",
+          projectId: null,
+          projectName: null,
+        },
+      ],
+      hasUncategorized: true,
+      tags: [{ id: "tag-ui", name: "ui" }],
+    });
+    expect(repository.findCatalogFacets).toHaveBeenCalledWith("user-1");
+  });
+
+  it("responde 401 sem token", async () => {
+    const repository = fakeRepository();
+
+    const response = await getFacets(repository, {});
+
+    expect(response.statusCode).toBe(401);
+    expect(repository.findCatalogFacets).not.toHaveBeenCalled();
   });
 });

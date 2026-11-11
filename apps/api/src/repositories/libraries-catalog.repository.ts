@@ -5,6 +5,7 @@ import {
   libraryTags,
   projectLibraries,
   projects,
+  tags,
 } from "@devlib/db";
 import type { DbClient, LibraryOverviewRecord } from "./libraries.repository";
 
@@ -38,6 +39,21 @@ export type LibrariesCatalogDataRepository = {
     userId: string,
     libraryIds: string[],
   ): Promise<EffectiveCategoryRow[]>;
+  findCatalogFacets(userId: string): Promise<CatalogFacets>;
+};
+
+export type CatalogFacetCategory = {
+  id: string;
+  name: string;
+  // categoria de projeto: o projeto (do usuário) a que pertence
+  projectId: string | null;
+  projectName: string | null;
+};
+
+export type CatalogFacets = {
+  categories: CatalogFacetCategory[];
+  hasUncategorized: boolean;
+  tags: { id: string; name: string }[];
 };
 
 export const NO_CATEGORY = "none";
@@ -173,6 +189,61 @@ export function createLibrariesCatalogRepository(
         .innerJoin(libraries, eq(libraries.id, projectLibraries.libraryId))
         .leftJoin(categories, eq(categories.id, effectiveCategoryId))
         .where(inArray(projectLibraries.libraryId, libraryIds));
+    },
+
+    // opções dos filtros da Home, pela mesma regra do filtro de categoria:
+    // efetiva nas associações do usuário; global pras libs que ele não usa —
+    // assim nenhuma opção oferecida dá zero resultados
+    async findCatalogFacets(userId) {
+      const shownCategoryIds = sql`(
+        select coalesce(pl3.category_id, l3.category_id)
+        from ${projectLibraries} as pl3
+        inner join ${projects} as p3
+          on p3.id = pl3.project_id and p3.user_id = ${userId}
+        inner join ${libraries} as l3 on l3.id = pl3.library_id
+        union
+        select ${libraries.categoryId} from ${libraries}
+        where not ${userAssociations(userId)}
+      )`;
+
+      const categoryRows = await db
+        .select({
+          id: categories.id,
+          name: categories.name,
+          projectId: categories.projectId,
+          projectName: projects.name,
+        })
+        .from(categories)
+        .leftJoin(projects, eq(projects.id, categories.projectId))
+        .where(sql`${categories.id} in ${shownCategoryIds}`);
+
+      const uncategorized = await db.execute<{ value: boolean }>(sql`
+        select (
+          exists (
+            select 1 from ${projectLibraries} as pl3
+            inner join ${projects} as p3
+              on p3.id = pl3.project_id and p3.user_id = ${userId}
+            inner join ${libraries} as l3 on l3.id = pl3.library_id
+            where coalesce(pl3.category_id, l3.category_id) is null
+          )
+          or exists (
+            select 1 from ${libraries}
+            where ${libraries.categoryId} is null
+              and not ${userAssociations(userId)}
+          )
+        ) as value
+      `);
+
+      const tagRows = await db
+        .selectDistinct({ id: tags.id, name: tags.name })
+        .from(tags)
+        .innerJoin(libraryTags, eq(libraryTags.tagId, tags.id));
+
+      return {
+        categories: categoryRows,
+        hasUncategorized: Boolean(uncategorized.rows[0]?.value),
+        tags: tagRows,
+      };
     },
   };
 }
