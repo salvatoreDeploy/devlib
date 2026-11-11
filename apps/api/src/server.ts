@@ -126,6 +126,10 @@ import {
   type LibrariesOverviewRouteOptions,
 } from "./routes/libraries-overview.route";
 import {
+  librariesCatalogRoute,
+  type LibrariesCatalogRouteOptions,
+} from "./routes/libraries-catalog.route";
+import {
   usersMeGetRoute,
   type UsersMeGetRouteOptions,
 } from "./routes/users-me-get.route";
@@ -166,6 +170,7 @@ export type BuildServerDeps = RegisterRouteOptions &
   ProjectsLibrariesImportRouteOptions &
   LibrariesProjectsListRouteOptions &
   LibrariesOverviewRouteOptions &
+  LibrariesCatalogRouteOptions &
   UsersMeGetRouteOptions &
   UsersMeUpdateRouteOptions &
   UsersMePhotoRouteOptions & {
@@ -291,6 +296,7 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(librariesCreateRoute, deps);
   app.register(librariesListRoute, deps);
   app.register(librariesOverviewRoute, deps);
+  app.register(librariesCatalogRoute, deps);
   app.register(librariesGetRoute, deps);
   app.register(librariesUpdateRoute, deps);
   app.register(librariesDeleteRoute, deps);
