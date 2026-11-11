@@ -184,6 +184,10 @@ Padrão da aba Bibliotecas do projeto (Sprint 5) e, em seguida, da seção "Bibl
 - **Estado vazio de filtro** (dentro do card da tabela, sem cabeçalho nem rodapé): `SearchX` 22px `text-fainter`, "Nenhuma biblioteca com esses filtros." (13.5px/500 `text-secondary`), "N bibliotecas no projeto — ajuste a busca ou limpe os filtros." (12.5px `text-faint`) e Outline Button "Limpar filtros". Diferente do vazio "Nenhuma biblioteca associada a este projeto ainda." (sem barra nem rodapé).
 - Estado na URL (`?q=&category=&version=&page=`); filtrar volta pra página 1.
 
+**Na Home** (servidor): barra com busca "buscar no catálogo" (debounce de 300ms — o campo é estado local e só a URL/requisição esperam) + pílulas Categoria (`Tag`), Uso (sem ícone, rótulo do valor quando ativa: "Usadas nos meus projetos"/"Não usadas") e Tag (`Hash`); categoria de projeto aparece como "Nome · Projeto" no filtro. Peças compartilhadas em `components/filter-pills.tsx` (`SearchPill`, `FilterPill`, `ClearFiltersButton`), usadas pelas duas barras. Estado vazio da Home com filtro: "Nenhuma biblioteca com esses filtros." + "Ajuste a busca ou limpe os filtros." (sem total — a busca é no servidor).
+
+**Chips de categoria efetiva** (coluna Categoria da Home, `components/effective-category-chips.tsx`, tela `Dashboard Screen` do `.pen`): chip neutro (`chip`, borda `border-strong`, raio 6, 12px `text-muted`); até **2** chips + um chip "+N" em `text-faint`; cada chip (e o "+N") com **tooltip** (`components/ui/tooltip.tsx`, Radix: fundo `chip-alt`, borda `checkbox-border`, raio 7, 12px `text-secondary`) "Categoria — projeto A, projeto B". Sem uso nos projetos do usuário: um chip com a categoria global (ou "Sem categoria"), sem tooltip. A linha continua inteira clicável.
+
 ### Badges de status — paleta fixa
 
 | Status        | Fundo                 | Texto              |
