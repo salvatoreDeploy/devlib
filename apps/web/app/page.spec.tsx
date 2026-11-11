@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Home from "./page";
@@ -13,18 +13,54 @@ import {
 } from "../lib/api/projects";
 import {
   createLibrary,
+  getCatalogFacets,
+  getLibrariesCatalog,
+  GetLibrariesCatalogError,
   getLibrariesOverview,
   getLibrary,
   getLibraryProjects,
+  type LibraryCatalogItem,
 } from "../lib/api/libraries";
 import { getCategories } from "../lib/api/categories";
 import { listLibraryTags } from "../lib/api/tags";
 
-const pushMock = vi.fn();
+// URL "reativa": replace/push atualizam a query string e re-renderizam quem
+// lê useSearchParams, como no Next de verdade
+const navigation = vi.hoisted(() => {
+  let search = "";
+  const listeners = new Set<() => void>();
+  const setSearch = (url: string) => {
+    search = url.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
+    listeners.forEach((listener) => listener());
+  };
+  return {
+    pushMock: vi.fn(setSearch),
+    replaceMock: vi.fn(setSearch),
+    getSearch: () => search,
+    setSearch,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+});
+const pushMock = navigation.pushMock;
+const replaceMock = navigation.replaceMock;
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock }),
-}));
+vi.mock("next/navigation", async () => {
+  const { useSyncExternalStore } = await import("react");
+  return {
+    useRouter: () => ({
+      push: navigation.pushMock,
+      replace: navigation.replaceMock,
+    }),
+    usePathname: () => "/",
+    useSearchParams: () =>
+      new URLSearchParams(
+        useSyncExternalStore(navigation.subscribe, navigation.getSearch),
+      ),
+  };
+});
 
 vi.mock("../lib/api/projects", async () => {
   const actual = await vi.importActual<typeof import("../lib/api/projects")>(
@@ -45,6 +81,8 @@ vi.mock("../lib/api/libraries", async () => {
   return {
     ...actual,
     getLibrariesOverview: vi.fn(),
+    getLibrariesCatalog: vi.fn(),
+    getCatalogFacets: vi.fn(),
     createLibrary: vi.fn(),
     getLibrary: vi.fn(),
     getLibraryProjects: vi.fn(),
@@ -86,6 +124,39 @@ const projectC = { ...projectA, id: "project-3", name: "Projeto C" };
 const projectD = { ...projectA, id: "project-4", name: "Projeto D" };
 const projectE = { ...projectA, id: "project-5", name: "Projeto E" };
 
+function catalogItem(
+  name: string,
+  extra: Partial<LibraryCatalogItem> = {},
+): LibraryCatalogItem {
+  return {
+    id: `library-${name}`,
+    name,
+    categoryId: null,
+    notes: null,
+    createdAt: "2026-09-03T00:00:00.000Z",
+    updatedAt: "2026-09-03T00:00:00.000Z",
+    projectsCount: 0,
+    effectiveCategories: [],
+    ...extra,
+  };
+}
+
+function catalogPage(
+  items: LibraryCatalogItem[],
+  extra: Partial<{ total: number; page: number }> = {},
+) {
+  return { items, total: items.length, page: 1, pageSize: 10, ...extra };
+}
+
+const facets = {
+  categories: [
+    { id: "category-1", name: "ORM", projectId: null, projectName: null },
+    { id: "c-estado", name: "Estado", projectId: "p-1", projectName: "Alfa" },
+  ],
+  hasUncategorized: true,
+  tags: [{ id: "t-ui", name: "ui" }],
+};
+
 function renderHome() {
   const queryClient = new QueryClient();
   return render(
@@ -102,6 +173,8 @@ function login() {
 describe("Home page", () => {
   beforeEach(() => {
     pushMock.mockClear();
+    replaceMock.mockClear();
+    navigation.setSearch("");
     clearTokens();
     vi.mocked(getProjectsOverview).mockReset();
     vi.mocked(deleteProject).mockReset();
@@ -114,6 +187,10 @@ describe("Home page", () => {
     vi.mocked(getCategories).mockReset();
     vi.mocked(getProjectsOverview).mockResolvedValue([]);
     vi.mocked(getLibrariesOverview).mockResolvedValue([]);
+    vi.mocked(getLibrariesCatalog).mockReset();
+    vi.mocked(getCatalogFacets).mockReset();
+    vi.mocked(getLibrariesCatalog).mockResolvedValue(catalogPage([]));
+    vi.mocked(getCatalogFacets).mockResolvedValue(facets);
     vi.mocked(getCategories).mockResolvedValue([category]);
     vi.mocked(listLibraryTags).mockResolvedValue([]);
   });
@@ -294,21 +371,11 @@ describe("Home page", () => {
   it("cria uma biblioteca pelo drawer, fecha e atualiza a seção Bibliotecas", async () => {
     const user = userEvent.setup();
     login();
-    vi.mocked(getLibrariesOverview)
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        {
-          id: "library-1",
-          name: "drizzle-orm",
-          categoryId: null,
-          notes: null,
-          createdAt: "2026-09-03T00:00:00.000Z",
-          updatedAt: "2026-09-03T00:00:00.000Z",
-          projectsCount: 0,
-        },
-      ]);
+    vi.mocked(getLibrariesCatalog)
+      .mockResolvedValueOnce(catalogPage([]))
+      .mockResolvedValue(catalogPage([catalogItem("drizzle-orm")]));
     vi.mocked(createLibrary).mockResolvedValue({
-      id: "library-1",
+      id: "library-drizzle-orm",
       name: "drizzle-orm",
       categoryId: null,
       notes: null,
@@ -334,114 +401,100 @@ describe("Home page", () => {
     expect(await screen.findByText("drizzle-orm")).not.toBeNull();
   });
 
-  it("mostra a tabela com nome, categoria resolvida, status e quantidade de projetos", async () => {
+  it("mostra a tabela com nome, categoria global (lib não usada), status e quantidade de projetos", async () => {
     login();
-    vi.mocked(getLibrariesOverview).mockResolvedValue([
-      {
-        id: "library-1",
-        name: "drizzle-orm",
-        categoryId: "category-1",
-        notes: null,
-        createdAt: "2026-09-03T00:00:00.000Z",
-        updatedAt: "2026-09-03T00:00:00.000Z",
-        projectsCount: 2,
-      },
-    ]);
+    vi.mocked(getLibrariesCatalog).mockResolvedValue(
+      catalogPage([
+        catalogItem("drizzle-orm", { categoryId: "category-1", projectsCount: 2 }),
+      ]),
+    );
     renderHome();
 
-    await waitFor(() => {
-      expect(screen.getByText("drizzle-orm")).not.toBeNull();
-    });
-    expect(screen.getByText("ORM")).not.toBeNull();
+    await screen.findByText("drizzle-orm");
+    expect(await screen.findByText("ORM")).not.toBeNull();
     expect(screen.getByText("2 projetos")).not.toBeNull();
   });
 
-  it("mostra 'Sem categoria' quando a biblioteca não tem categoryId", async () => {
+  it("lib usada mostra os chips das categorias efetivas no lugar da global", async () => {
     login();
-    vi.mocked(getLibrariesOverview).mockResolvedValue([
-      {
-        id: "library-1",
-        name: "drizzle-orm",
-        categoryId: null,
-        notes: null,
-        createdAt: "2026-09-03T00:00:00.000Z",
-        updatedAt: "2026-09-03T00:00:00.000Z",
-        projectsCount: 0,
-      },
-    ]);
+    vi.mocked(getLibrariesCatalog).mockResolvedValue(
+      catalogPage([
+        catalogItem("react", {
+          categoryId: "category-1",
+          projectsCount: 2,
+          effectiveCategories: [
+            {
+              id: "c-estado",
+              name: "Estado",
+              projects: [{ id: "p-1", name: "Alfa" }],
+            },
+            { id: null, name: null, projects: [{ id: "p-2", name: "Beta" }] },
+          ],
+        }),
+      ]),
+    );
     renderHome();
 
-    await waitFor(() => {
-      expect(screen.getByText("drizzle-orm")).not.toBeNull();
-    });
+    const row = (await screen.findByText("react")).closest("tr") as HTMLElement;
+    expect(within(row).getByText("Estado")).not.toBeNull();
+    expect(within(row).getByText("Sem categoria")).not.toBeNull();
+    expect(within(row).queryByText("ORM")).toBeNull();
+  });
+
+  it("mostra 'Sem categoria' e 'Nenhum projeto' pra lib sem categoria e sem uso", async () => {
+    login();
+    vi.mocked(getLibrariesCatalog).mockResolvedValue(
+      catalogPage([catalogItem("drizzle-orm")]),
+    );
+    renderHome();
+
+    await screen.findByText("drizzle-orm");
     expect(screen.getByText("Sem categoria")).not.toBeNull();
     expect(screen.getByText("Nenhum projeto")).not.toBeNull();
   });
 
   it("mostra '1 projeto' no singular quando projectsCount é 1", async () => {
     login();
-    vi.mocked(getLibrariesOverview).mockResolvedValue([
-      {
-        id: "library-1",
-        name: "drizzle-orm",
-        categoryId: null,
-        notes: null,
-        createdAt: "2026-09-03T00:00:00.000Z",
-        updatedAt: "2026-09-03T00:00:00.000Z",
-        projectsCount: 1,
-      },
-    ]);
+    vi.mocked(getLibrariesCatalog).mockResolvedValue(
+      catalogPage([catalogItem("drizzle-orm", { projectsCount: 1 })]),
+    );
     renderHome();
 
-    await waitFor(() => {
-      expect(screen.getByText("1 projeto")).not.toBeNull();
-    });
+    expect(await screen.findByText("1 projeto")).not.toBeNull();
   });
 
-  it("mostra mensagem de estado vazio quando o catálogo não tem bibliotecas", async () => {
+  it("catálogo vazio (sem filtros) mostra a mensagem de vazio, sem barra nem rodapé", async () => {
     login();
-    vi.mocked(getLibrariesOverview).mockResolvedValue([]);
     renderHome();
 
-    await waitFor(() => {
-      expect(
-        screen.getByText(/nenhuma biblioteca no catálogo/i),
-      ).not.toBeNull();
-    });
+    expect(
+      await screen.findByText(/nenhuma biblioteca no catálogo/i),
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole("searchbox", { name: /buscar no catálogo/i }),
+    ).toBeNull();
+    expect(screen.queryByText(/^Mostrando/)).toBeNull();
   });
 
   it("mostra mensagem de erro quando a busca do catálogo falha", async () => {
     login();
-    const { GetLibrariesOverviewError } = await vi.importActual<
-      typeof import("../lib/api/libraries")
-    >("../lib/api/libraries");
-    vi.mocked(getLibrariesOverview).mockRejectedValue(
-      new GetLibrariesOverviewError("Não foi possível buscar as bibliotecas"),
+    vi.mocked(getLibrariesCatalog).mockRejectedValue(
+      new GetLibrariesCatalogError("Não foi possível buscar as bibliotecas"),
     );
     renderHome();
 
-    await waitFor(() => {
-      expect(
-        screen.getByText("Não foi possível buscar as bibliotecas"),
-      ).not.toBeNull();
-    });
+    expect(
+      await screen.findByText("Não foi possível buscar as bibliotecas"),
+    ).not.toBeNull();
   });
 
   it("abre o drawer de detalhe da biblioteca ao clicar na linha", async () => {
     login();
-    vi.mocked(getLibrariesOverview).mockResolvedValue([
-      {
-        id: "library-1",
-        name: "drizzle-orm",
-        categoryId: null,
-        notes: "ORM leve",
-        createdAt: "2026-09-03T00:00:00.000Z",
-        updatedAt: "2026-09-03T00:00:00.000Z",
-        projectsCount: 0,
-      },
-    ]);
+    vi.mocked(getLibrariesCatalog).mockResolvedValue(
+      catalogPage([catalogItem("drizzle-orm", { notes: "ORM leve" })]),
+    );
     vi.mocked(getLibrary).mockResolvedValue({
-      id: "library-1",
+      id: "library-drizzle-orm",
       name: "drizzle-orm",
       categoryId: null,
       notes: "ORM leve",
@@ -460,5 +513,128 @@ describe("Home page", () => {
       expect(screen.getByText("ORM leve")).not.toBeNull();
     });
     expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  describe("busca, filtros e paginação do catálogo (servidor)", () => {
+    const twelve = Array.from({ length: 10 }, (_, i) =>
+      catalogItem(`lib-${String(i + 1).padStart(2, "0")}`),
+    );
+
+    it("pede a página à API com os filtros da URL e mostra o rodapé com o total", async () => {
+      login();
+      navigation.setSearch("/?q=lib&usage=unused&tag=t-ui&page=2");
+      vi.mocked(getLibrariesCatalog).mockResolvedValue(
+        catalogPage(twelve, { total: 23, page: 2 }),
+      );
+      renderHome();
+
+      expect(
+        await screen.findByText("Mostrando 11–20 de 23 bibliotecas"),
+      ).not.toBeNull();
+      expect(screen.getByText("Página 2 de 3")).not.toBeNull();
+      expect(getLibrariesCatalog).toHaveBeenCalledWith({
+        q: "lib",
+        usage: "unused",
+        tagId: "t-ui",
+        page: 2,
+      });
+      expect(
+        (
+          screen.getByRole("searchbox", {
+            name: /buscar no catálogo/i,
+          }) as HTMLInputElement
+        ).value,
+      ).toBe("lib");
+    });
+
+    it("próxima página faz push na URL e pede a página seguinte", async () => {
+      const user = userEvent.setup();
+      login();
+      vi.mocked(getLibrariesCatalog).mockResolvedValue(
+        catalogPage(twelve, { total: 23 }),
+      );
+      renderHome();
+
+      await user.click(
+        await screen.findByRole("button", { name: /próxima página/i }),
+      );
+
+      expect(pushMock).toHaveBeenLastCalledWith("/?page=2", { scroll: false });
+      await waitFor(() => {
+        expect(getLibrariesCatalog).toHaveBeenLastCalledWith({ page: 2 });
+      });
+    });
+
+    it("buscar faz replace na URL (depois do debounce) e volta pra página 1", async () => {
+      const user = userEvent.setup();
+      login();
+      navigation.setSearch("/?page=2");
+      vi.mocked(getLibrariesCatalog).mockResolvedValue(
+        catalogPage(twelve, { total: 23, page: 2 }),
+      );
+      renderHome();
+
+      await user.type(
+        await screen.findByRole("searchbox", { name: /buscar no catálogo/i }),
+        "zod",
+      );
+
+      await waitFor(() => {
+        expect(replaceMock).toHaveBeenLastCalledWith("/?q=zod", {
+          scroll: false,
+        });
+      });
+      await waitFor(() => {
+        expect(getLibrariesCatalog).toHaveBeenLastCalledWith({
+          q: "zod",
+          page: 1,
+        });
+      });
+      expect(pushMock).not.toHaveBeenCalled();
+    });
+
+    it("filtrar por categoria de projeto usa as facetas e grava na URL", async () => {
+      const user = userEvent.setup();
+      login();
+      vi.mocked(getLibrariesCatalog).mockResolvedValue(catalogPage(twelve));
+      renderHome();
+
+      await user.click(
+        await screen.findByRole("button", { name: /^categoria$/i }),
+      );
+      await user.click(
+        await screen.findByRole("menuitemradio", { name: "Estado · Alfa" }),
+      );
+
+      expect(replaceMock).toHaveBeenLastCalledWith("/?category=c-estado", {
+        scroll: false,
+      });
+      await waitFor(() => {
+        expect(getLibrariesCatalog).toHaveBeenLastCalledWith({
+          categoryId: "c-estado",
+          page: 1,
+        });
+      });
+    });
+
+    it("com filtro e nenhum resultado mostra o estado vazio de filtro e 'Limpar filtros' volta pra '/'", async () => {
+      const user = userEvent.setup();
+      login();
+      navigation.setSearch("/?q=inexistente");
+      vi.mocked(getLibrariesCatalog).mockResolvedValue(catalogPage([]));
+      renderHome();
+
+      expect(
+        await screen.findByText("Nenhuma biblioteca com esses filtros."),
+      ).not.toBeNull();
+      expect(screen.queryByText(/^Mostrando/)).toBeNull();
+
+      const clearButtons = screen.getAllByRole("button", {
+        name: /limpar filtros/i,
+      });
+      await user.click(clearButtons[clearButtons.length - 1]);
+
+      expect(replaceMock).toHaveBeenLastCalledWith("/", { scroll: false });
+    });
   });
 });

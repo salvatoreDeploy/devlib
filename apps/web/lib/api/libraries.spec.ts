@@ -7,6 +7,10 @@ import {
   getLibraryProjects,
   GetLibraryProjectsError,
   getLibrariesOverview,
+  getLibrariesCatalog,
+  GetLibrariesCatalogError,
+  getCatalogFacets,
+  GetCatalogFacetsError,
   GetLibrariesOverviewError,
   updateLibrary,
   UpdateLibraryError,
@@ -277,3 +281,96 @@ describe("getLibraryProjects", () => {
     );
   });
 });
+
+describe("getLibrariesCatalog", () => {
+  afterEach(() => {
+    vi.mocked(authenticatedFetch).mockReset();
+  });
+
+  const page = {
+    items: [],
+    total: 0,
+    page: 1,
+    pageSize: 10,
+  };
+
+  it("sem parâmetros chama /libraries/catalog sem query string", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(page),
+    } as Response);
+
+    const result = await getLibrariesCatalog({});
+
+    expect(result).toEqual(page);
+    expect(authenticatedFetch).toHaveBeenCalledWith("/libraries/catalog");
+  });
+
+  it("monta a query só com os parâmetros informados", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(page),
+    } as Response);
+
+    await getLibrariesCatalog({
+      q: "react query",
+      categoryId: "none",
+      usage: "used",
+      tagId: "tag-1",
+      page: 2,
+    });
+
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/libraries/catalog?q=react+query&categoryId=none&usage=used&tagId=tag-1&page=2",
+    );
+  });
+
+  it("lança GetLibrariesCatalogError com a mensagem da API", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ error: "Erro de validação" }),
+    } as Response);
+
+    await expect(getLibrariesCatalog({})).rejects.toThrow("Erro de validação");
+    await expect(getLibrariesCatalog({})).rejects.toBeInstanceOf(
+      GetLibrariesCatalogError,
+    );
+  });
+});
+
+describe("getCatalogFacets", () => {
+  afterEach(() => {
+    vi.mocked(authenticatedFetch).mockReset();
+  });
+
+  it("busca as opções de filtro do catálogo", async () => {
+    const facets = {
+      categories: [
+        { id: "c-1", name: "Frontend", projectId: null, projectName: null },
+      ],
+      hasUncategorized: false,
+      tags: [{ id: "t-1", name: "ui" }],
+    };
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(facets),
+    } as Response);
+
+    expect(await getCatalogFacets()).toEqual(facets);
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/libraries/catalog/facets",
+    );
+  });
+
+  it("lança GetCatalogFacetsError com mensagem padrão quando a API não devolve error", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({}),
+    } as Response);
+
+    await expect(getCatalogFacets()).rejects.toBeInstanceOf(
+      GetCatalogFacetsError,
+    );
+  });
+});
+

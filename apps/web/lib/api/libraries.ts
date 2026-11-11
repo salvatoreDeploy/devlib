@@ -35,11 +35,55 @@ export type LibraryOverview = Library & {
   projectsCount: number;
 };
 
+export type EffectiveCategory = {
+  // null = projetos em que a lib não tem categoria efetiva
+  id: string | null;
+  name: string | null;
+  projects: { id: string; name: string }[];
+};
+
+export type LibraryCatalogItem = LibraryOverview & {
+  effectiveCategories: EffectiveCategory[];
+};
+
+export type LibrariesCatalogPage = {
+  items: LibraryCatalogItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type CatalogUsage = "all" | "used" | "unused";
+
+export type LibrariesCatalogParams = {
+  q?: string;
+  // UUID ou "none"
+  categoryId?: string;
+  usage?: CatalogUsage;
+  tagId?: string;
+  page?: number;
+};
+
+export type CatalogFacetCategory = {
+  id: string;
+  name: string;
+  projectId: string | null;
+  projectName: string | null;
+};
+
+export type CatalogFacets = {
+  categories: CatalogFacetCategory[];
+  hasUncategorized: boolean;
+  tags: { id: string; name: string }[];
+};
+
 export class CreateLibraryError extends Error {}
 export class GetLibraryError extends Error {}
 export class UpdateLibraryError extends Error {}
 export class GetLibraryProjectsError extends Error {}
 export class GetLibrariesOverviewError extends Error {}
+export class GetLibrariesCatalogError extends Error {}
+export class GetCatalogFacetsError extends Error {}
 
 export async function createLibrary(
   input: CreateLibraryInput,
@@ -125,3 +169,45 @@ export async function updateLibrary(
 
   return body;
 }
+
+export async function getLibrariesCatalog(
+  params: LibrariesCatalogParams,
+): Promise<LibrariesCatalogPage> {
+  const query = new URLSearchParams();
+  for (const key of ["q", "categoryId", "usage", "tagId", "page"] as const) {
+    const value = params[key];
+    if (value !== undefined && value !== "") {
+      query.set(key, String(value));
+    }
+  }
+  const search = query.toString();
+
+  const response = await authenticatedFetch(
+    search ? `/libraries/catalog?${search}` : "/libraries/catalog",
+  );
+
+  const body = await response.json();
+
+  if (!response.ok) {
+    throw new GetLibrariesCatalogError(
+      body.error ?? "Não foi possível buscar as bibliotecas",
+    );
+  }
+
+  return body;
+}
+
+export async function getCatalogFacets(): Promise<CatalogFacets> {
+  const response = await authenticatedFetch("/libraries/catalog/facets");
+
+  const body = await response.json();
+
+  if (!response.ok) {
+    throw new GetCatalogFacetsError(
+      body.error ?? "Não foi possível buscar as opções de filtro",
+    );
+  }
+
+  return body;
+}
+

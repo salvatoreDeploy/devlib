@@ -135,6 +135,7 @@ function EditProjectLibraryForm({
         queryKey: ["library-projects", library.id],
       });
       queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
+      queryClient.invalidateQueries({ queryKey: ["libraries-catalog"] });
       queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
       onSaved();
     },
