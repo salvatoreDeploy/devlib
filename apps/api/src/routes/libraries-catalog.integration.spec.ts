@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { libraries } from "@devlib/db";
+import { libraries, tags } from "@devlib/db";
 import { buildServer } from "../server";
 import {
   getTestDb,
@@ -291,5 +291,86 @@ describe("GET /libraries/catalog (Postgres real)", () => {
     expect(names(page2)).toEqual(["pkg-08", "react", "zod"]);
     expect(beyond.page).toBe(2);
     expect(names(beyond)).toEqual(names(page2));
+  });
+});
+
+type FacetsResponse = {
+  categories: {
+    id: string;
+    name: string;
+    projectId: string | null;
+    projectName: string | null;
+  }[];
+  hasUncategorized: boolean;
+  tags: { id: string; name: string }[];
+};
+
+async function facets(app: App, token: string) {
+  const response = await app.inject({
+    method: "GET",
+    url: "/libraries/catalog/facets",
+    headers: bearer(token),
+  });
+  expect(response.statusCode).toBe(200);
+  return response.json<FacetsResponse>();
+}
+
+describe("GET /libraries/catalog/facets (Postgres real)", () => {
+  it("oferece só as categorias que a coluna da Home mostra pro usuário (efetiva se usa, global se não), sem vazar as de outro usuário", async () => {
+    const { app, ana, bruno, alfa, ids } = await setup();
+    // global sem nenhuma biblioteca: nunca aparece
+    await insertGlobalCategory("Vazia");
+
+    const anaFacets = await facets(app, ana.accessToken);
+    const brunoFacets = await facets(app, bruno.accessToken);
+
+    // Ana: react (Estado em Alfa, Frontend em Beta), drizzle (ORM), lodash
+    // não usada (global Frontend); "Secreta" é do projeto do Bruno
+    expect(anaFacets.categories).toEqual([
+      {
+        id: ids.frontend.id,
+        name: "Frontend",
+        projectId: null,
+        projectName: null,
+      },
+      { id: ids.orm.id, name: "ORM", projectId: null, projectName: null },
+      {
+        id: ids.estado.id,
+        name: "Estado",
+        projectId: alfa.id,
+        projectName: "Alfa",
+      },
+    ]);
+    expect(brunoFacets.categories.map((category) => category.name)).toEqual([
+      "Frontend",
+      "ORM",
+      "Secreta",
+    ]);
+  });
+
+  it("hasUncategorized indica se 'Sem categoria' tem resultado", async () => {
+    const { app, ana } = await setup();
+
+    // zod (usada sem categoria efetiva) e moment (não usada, sem global)
+    expect((await facets(app, ana.accessToken)).hasUncategorized).toBe(true);
+  });
+
+  it("hasUncategorized é false quando toda biblioteca mostra alguma categoria", async () => {
+    const app = buildServer();
+    const ana = await signUp(app, "ana@example.com", PASSWORD);
+    const frontend = await insertGlobalCategory("Frontend");
+    const react = await insertLibrary("react");
+    await setGlobalCategory(react.id, frontend.id);
+
+    expect((await facets(app, ana.accessToken)).hasUncategorized).toBe(false);
+  });
+
+  it("lista só as tags com ao menos uma biblioteca, por nome", async () => {
+    const { app, ana } = await setup();
+    await getTestDb().insert(tags).values({ name: "orfa" });
+
+    expect(
+      (await facets(app, ana.accessToken)).tags.map((tag) => tag.name),
+    ).toEqual(["ui"]);
   });
 });

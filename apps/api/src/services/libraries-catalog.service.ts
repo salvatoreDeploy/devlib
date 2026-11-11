@@ -1,11 +1,12 @@
 import type { LibraryOverviewRecord } from "../repositories/libraries.repository";
 import type {
+  CatalogFacets,
   CatalogFilters,
   EffectiveCategoryRow,
   LibrariesCatalogDataRepository,
 } from "../repositories/libraries-catalog.repository";
 
-export type { CatalogFilters };
+export type { CatalogFacets, CatalogFilters };
 export type LibrariesCatalogRepository = LibrariesCatalogDataRepository;
 
 // página fixa (decisão do backlog: sem seletor de itens por página)
@@ -109,4 +110,27 @@ export async function listLibrariesCatalog(
     page: currentPage,
     pageSize: CATALOG_PAGE_SIZE,
   };
+}
+
+export async function getCatalogFacets(
+  repository: LibrariesCatalogRepository,
+  userId: string,
+): Promise<CatalogFacets> {
+  const facets = await repository.findCatalogFacets(userId);
+
+  // globais primeiro (por nome); depois as de projeto, por projeto e nome
+  const categories = [...facets.categories].sort((a, b) => {
+    if ((a.projectId === null) !== (b.projectId === null)) {
+      return a.projectId === null ? -1 : 1;
+    }
+    return (
+      collator.compare(a.projectName ?? "", b.projectName ?? "") ||
+      collator.compare(a.name, b.name)
+    );
+  });
+  const tags = [...facets.tags].sort((a, b) =>
+    collator.compare(a.name, b.name),
+  );
+
+  return { categories, hasUncategorized: facets.hasUncategorized, tags };
 }

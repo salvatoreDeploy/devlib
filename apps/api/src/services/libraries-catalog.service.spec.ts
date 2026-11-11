@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   CATALOG_PAGE_SIZE,
+  getCatalogFacets,
   listLibrariesCatalog,
   type LibrariesCatalogRepository,
 } from "./libraries-catalog.service";
@@ -27,6 +28,11 @@ function fakeRepository(
       .fn()
       .mockResolvedValue({ items: [library("react", 1)], total: 1 }),
     findEffectiveCategories: vi.fn().mockResolvedValue([]),
+    findCatalogFacets: vi.fn().mockResolvedValue({
+      categories: [],
+      hasUncategorized: false,
+      tags: [],
+    }),
     ...overrides,
   };
 }
@@ -179,5 +185,54 @@ describe("listLibrariesCatalog", () => {
       },
       { id: null, name: null, projects: [{ id: "p-2", name: "Beta" }] },
     ]);
+  });
+});
+
+describe("getCatalogFacets", () => {
+  it("ordena as categorias: globais por nome, depois as de projeto por projeto e nome; tags por nome", async () => {
+    const repository = fakeRepository({
+      findCatalogFacets: vi.fn().mockResolvedValue({
+        categories: [
+          {
+            id: "c-estado",
+            name: "Estado",
+            projectId: "p-b",
+            projectName: "Beta",
+          },
+          { id: "c-orm", name: "ORM", projectId: null, projectName: null },
+          {
+            id: "c-infra",
+            name: "Infra",
+            projectId: "p-a",
+            projectName: "Alfa",
+          },
+          {
+            id: "c-front",
+            name: "Frontend",
+            projectId: null,
+            projectName: null,
+          },
+          { id: "c-api", name: "API", projectId: "p-a", projectName: "Alfa" },
+        ],
+        hasUncategorized: true,
+        tags: [
+          { id: "t-ui", name: "ui" },
+          { id: "t-auth", name: "Auth" },
+        ],
+      }),
+    });
+
+    const facets = await getCatalogFacets(repository, "user-1");
+
+    expect(repository.findCatalogFacets).toHaveBeenCalledWith("user-1");
+    expect(facets.categories.map((category) => category.id)).toEqual([
+      "c-front",
+      "c-orm",
+      "c-api",
+      "c-infra",
+      "c-estado",
+    ]);
+    expect(facets.hasUncategorized).toBe(true);
+    expect(facets.tags.map((tag) => tag.name)).toEqual(["Auth", "ui"]);
   });
 });
