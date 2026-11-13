@@ -169,14 +169,3 @@ export async function listLibraryProjects(
 
   return repository.findProjectsByLibraryId(libraryId, userId);
 }
-
-export type LibrariesOverviewRepository = {
-  findLibrariesOverview(userId: string): Promise<LibraryOverviewRecord[]>;
-};
-
-export async function listLibrariesOverview(
-  repository: LibrariesOverviewRepository,
-  userId: string,
-): Promise<LibraryOverviewRecord[]> {
-  return repository.findLibrariesOverview(userId);
-}

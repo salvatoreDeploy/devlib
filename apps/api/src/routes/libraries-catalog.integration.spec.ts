@@ -374,3 +374,19 @@ describe("GET /libraries/catalog/facets (Postgres real)", () => {
     ).toEqual(["ui"]);
   });
 });
+
+describe("GET /libraries/overview (removida — substituída por /libraries/catalog)", () => {
+  it("não existe mais: cai em GET /libraries/:id e responde 404", async () => {
+    const app = buildServer();
+    const ana = await signUp(app, "ana@example.com", PASSWORD);
+    await insertLibrary("react");
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/libraries/overview",
+      headers: bearer(ana.accessToken),
+    });
+
+    expect(response.statusCode).toBe(404);
+  });
+});
