@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useState, type KeyboardEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
@@ -29,7 +29,7 @@ import {
 import {
   createLibrary,
   CreateLibraryError,
-  getLibrariesOverview,
+  getLibrariesCatalog,
   Library,
 } from "../lib/api/libraries";
 import {
@@ -56,6 +56,8 @@ const createLibraryFormSchema = z.object({
 type CreateLibraryFormValues = z.infer<typeof createLibraryFormSchema>;
 
 const MAX_SEARCH_RESULTS = 8;
+// a busca vai ao servidor (GET /libraries/catalog?q=) — espera a digitação parar
+const SEARCH_DEBOUNCE_MS = 300;
 
 // a biblioteca foi criada no catálogo (global), só a associação falhou — não
 // há rollback, ela continua válida e aparece na busca pra tentar de novo
@@ -77,6 +79,8 @@ export function CreateLibraryDrawer({
 }: CreateLibraryDrawerProps) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const term = search.trim();
+  const [debouncedTerm, setDebouncedTerm] = useState("");
   const [selectedLibrary, setSelectedLibrary] = useState<Library | null>(null);
   const [associateVersion, setAssociateVersion] = useState("");
   const [associateCategoryId, setAssociateCategoryId] =
@@ -94,10 +98,21 @@ export function CreateLibraryDrawer({
     enabled: open,
   });
 
+  useEffect(() => {
+    // campo vazio limpa na hora; texto só vira busca depois do debounce
+    if (!term) {
+      setDebouncedTerm("");
+      return;
+    }
+    const timer = setTimeout(() => setDebouncedTerm(term), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [term]);
+
+  // prefixo ["libraries-catalog"]: invalidado por toda mutação de bibliotecas
   const catalogQuery = useQuery({
-    queryKey: ["libraries-overview"],
-    queryFn: () => getLibrariesOverview(),
-    enabled: open && project !== undefined,
+    queryKey: ["libraries-catalog", "drawer-search", debouncedTerm],
+    queryFn: () => getLibrariesCatalog({ q: debouncedTerm }),
+    enabled: open && project !== undefined && debouncedTerm !== "",
   });
 
   // globais + do projeto — a categoria da associação pode ser do projeto
@@ -237,16 +252,17 @@ export function CreateLibraryDrawer({
   const projectLibraryIds = new Set(
     (projectLibrariesQuery.data ?? []).map((library) => library.id),
   );
-  const term = search.trim().toLowerCase();
-  const searchResults = term
-    ? (catalogQuery.data ?? [])
-        .filter(
-          (library) =>
-            !projectLibraryIds.has(library.id) &&
-            library.name.toLowerCase().includes(term),
-        )
-        .slice(0, MAX_SEARCH_RESULTS)
-    : [];
+  // resultado só vale pro termo já buscado; enquanto digita/carrega, "buscando..."
+  const isSearching =
+    term !== "" && (term !== debouncedTerm || catalogQuery.isLoading);
+  const searchResults =
+    !isSearching && catalogQuery.data
+      ? catalogQuery.data.items.slice(0, MAX_SEARCH_RESULTS)
+      : [];
+  const hiddenResults =
+    !isSearching && catalogQuery.data
+      ? catalogQuery.data.total - searchResults.length
+      : 0;
 
   function associateSelected() {
     if (selectedLibrary && !associateMutation.isPending) {
@@ -273,7 +289,12 @@ export function CreateLibraryDrawer({
         ?.querySelectorAll<HTMLElement>('[role="option"]') ?? [],
     );
     const index = options.indexOf(event.currentTarget);
-    options[index + offset]?.focus();
+    // pula as já associadas (não selecionáveis)
+    let next = index + offset;
+    while (options[next]?.getAttribute("aria-disabled") === "true") {
+      next += offset;
+    }
+    options[next]?.focus();
   }
 
   function handleOptionKeyDown(
@@ -298,7 +319,9 @@ export function CreateLibraryDrawer({
       event.preventDefault();
       document
         .getElementById(searchIds.listbox)
-        ?.querySelector<HTMLElement>('[role="option"]')
+        ?.querySelector<HTMLElement>(
+          '[role="option"]:not([aria-disabled="true"])',
+        )
         ?.focus();
     }
   }
@@ -376,7 +399,14 @@ export function CreateLibraryDrawer({
 
               {term && (
                 <div className="overflow-hidden rounded-lg border border-border">
-                  {searchResults.length > 0 ? (
+                  {isSearching ? (
+                    <p
+                      role="status"
+                      className="px-3 py-[9px] text-[13px] text-muted-foreground"
+                    >
+                      buscando...
+                    </p>
+                  ) : searchResults.length > 0 ? (
                     <ul
                       id={searchIds.listbox}
                       role="listbox"
@@ -384,17 +414,27 @@ export function CreateLibraryDrawer({
                     >
                       {searchResults.map((library) => {
                         const isSelected = selectedLibrary?.id === library.id;
+                        // já associada: aparece (nenhum resultado some), mas
+                        // não pode ser selecionada de novo
+                        const inProject = projectLibraryIds.has(library.id);
                         return (
                           <li
                             key={library.id}
                             role="option"
                             aria-selected={isSelected}
-                            tabIndex={0}
-                            onClick={() => selectLibrary(library)}
-                            onKeyDown={(event) =>
-                              handleOptionKeyDown(event, library)
+                            aria-disabled={inProject || undefined}
+                            tabIndex={inProject ? -1 : 0}
+                            onClick={
+                              inProject
+                                ? undefined
+                                : () => selectLibrary(library)
                             }
-                            className={`flex cursor-pointer items-center justify-between border-b border-border-faint px-3 py-[9px] outline-none last:border-b-0 hover:bg-surface-raised focus-visible:bg-surface-raised focus-visible:ring-1 focus-visible:ring-ring ${isSelected ? "bg-surface-raised" : ""}`}
+                            onKeyDown={
+                              inProject
+                                ? undefined
+                                : (event) => handleOptionKeyDown(event, library)
+                            }
+                            className={`flex items-center justify-between border-b border-border-faint px-3 py-[9px] outline-none last:border-b-0 ${inProject ? "cursor-default opacity-50" : "cursor-pointer hover:bg-surface-raised focus-visible:bg-surface-raised focus-visible:ring-1 focus-visible:ring-ring"} ${isSelected ? "bg-surface-raised" : ""}`}
                           >
                             <span className="flex items-center gap-2">
                               {isSelected && (
@@ -408,6 +448,11 @@ export function CreateLibraryDrawer({
                               >
                                 {library.name}
                               </span>
+                              {inProject && (
+                                <span className="text-[11.5px] text-text-faint">
+                                  já neste projeto
+                                </span>
+                              )}
                             </span>
                             <span className="rounded-[6px] border border-input bg-secondary px-[9px] py-[3px] text-[12px] text-muted-foreground">
                               {library.categoryId
@@ -418,6 +463,14 @@ export function CreateLibraryDrawer({
                           </li>
                         );
                       })}
+                      {hiddenResults > 0 && (
+                        <li
+                          role="presentation"
+                          className="border-t border-border-faint px-3 py-2 text-xs text-text-faint"
+                        >
+                          +{hiddenResults} resultados — refine a busca
+                        </li>
+                      )}
                     </ul>
                   ) : (
                     <p
@@ -493,7 +546,7 @@ export function CreateLibraryDrawer({
               <p id={searchIds.hint} className="text-xs text-muted-foreground">
                 {selectedLibrary
                   ? `${selectedLibrary.name} selecionada — escolha a categoria e a versão neste projeto, se quiser, e associe.`
-                  : "Bibliotecas que já estão neste projeto não aparecem na busca."}
+                  : "Bibliotecas que já estão neste projeto aparecem marcadas e não podem ser associadas de novo."}
               </p>
             </div>
           )}

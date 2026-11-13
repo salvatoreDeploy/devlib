@@ -181,7 +181,7 @@ Fica para depois do MVP (v1.1+):
   - [x] API: `GET /libraries/catalog` com validação zod de `q`, `categoryId` (efetiva nos projetos do usuário), `usage` (`all`/`used`/`unused`), `tagId` e `page` (página de 10), respondendo `{ items, total, page, pageSize }` com os mesmos campos por biblioteca do overview (inclusive categorias efetivas); mesmo filtro por usuário na condição do `JOIN`
   - [x] API: `GET /libraries/catalog/facets` com as opções dos filtros da Home — categorias pela mesma regra do filtro (efetiva nos projetos do usuário, global nas libs que ele não usa; com nome do projeto nas de projeto), `hasUncategorized` e tags com ao menos uma biblioteca (acrescentada em 2026-11-11: sem ela a Home não tinha como listar as opções de Categoria/Tag)
   - [x] Web: seção "Bibliotecas" da Home usa `GET /libraries/catalog` — busca, filtros (categoria e tag com opções de `GET /libraries/catalog/facets`, uso em projetos) e paginação no servidor, estado na URL; desenhado antes no `.pen`
-  - [ ] Web: busca de catálogo do drawer "Adicionar biblioteca" consulta `GET /libraries/catalog?q=` em vez de filtrar o overview inteiro no cliente
+  - [x] Web: busca de catálogo do drawer "Adicionar biblioteca" consulta `GET /libraries/catalog?q=` em vez de filtrar o overview inteiro no cliente
   - [ ] API: remover `GET /libraries/overview` (sem consumidores após as subtasks acima) — breaking avisado no PR
 
 ## Sprint 6 — Integrações (pós-MVP)
