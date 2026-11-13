@@ -1,7 +1,4 @@
-import Fastify, {
-  type FastifyError,
-  type FastifyServerOptions,
-} from "fastify";
+import Fastify, { type FastifyError, type FastifyServerOptions } from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
@@ -122,10 +119,6 @@ import {
   type LibrariesProjectsListRouteOptions,
 } from "./routes/libraries-projects-list.route";
 import {
-  librariesOverviewRoute,
-  type LibrariesOverviewRouteOptions,
-} from "./routes/libraries-overview.route";
-import {
   librariesCatalogRoute,
   type LibrariesCatalogRouteOptions,
 } from "./routes/libraries-catalog.route";
@@ -169,7 +162,6 @@ export type BuildServerDeps = RegisterRouteOptions &
   ProjectsLibrariesRemoveRouteOptions &
   ProjectsLibrariesImportRouteOptions &
   LibrariesProjectsListRouteOptions &
-  LibrariesOverviewRouteOptions &
   LibrariesCatalogRouteOptions &
   UsersMeGetRouteOptions &
   UsersMeUpdateRouteOptions &
@@ -295,7 +287,6 @@ export function buildServer(deps: BuildServerDeps = {}) {
   app.register(projectsDeleteRoute, deps);
   app.register(librariesCreateRoute, deps);
   app.register(librariesListRoute, deps);
-  app.register(librariesOverviewRoute, deps);
   app.register(librariesCatalogRoute, deps);
   app.register(librariesGetRoute, deps);
   app.register(librariesUpdateRoute, deps);
