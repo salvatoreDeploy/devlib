@@ -6,7 +6,8 @@ import { CreateLibraryDrawer } from "./create-library-drawer";
 import {
   createLibrary,
   CreateLibraryError,
-  getLibrariesOverview,
+  getLibrariesCatalog,
+  type LibraryCatalogItem,
 } from "../lib/api/libraries";
 import { getCategories, getProjectCategories } from "../lib/api/categories";
 import {
@@ -19,7 +20,7 @@ vi.mock("../lib/api/libraries", async () => {
   const actual = await vi.importActual<typeof import("../lib/api/libraries")>(
     "../lib/api/libraries",
   );
-  return { ...actual, createLibrary: vi.fn(), getLibrariesOverview: vi.fn() };
+  return { ...actual, createLibrary: vi.fn(), getLibrariesCatalog: vi.fn() };
 });
 
 vi.mock("../lib/api/categories", async () => {
@@ -68,7 +69,7 @@ describe("CreateLibraryDrawer", () => {
     vi.mocked(createLibrary).mockReset();
     vi.mocked(getCategories).mockReset();
     vi.mocked(getCategories).mockResolvedValue([category]);
-    vi.mocked(getLibrariesOverview).mockReset();
+    vi.mocked(getLibrariesCatalog).mockReset();
     vi.mocked(getProjectLibraries).mockReset();
     vi.mocked(associateLibraryToProject).mockReset();
   });
@@ -89,7 +90,7 @@ describe("CreateLibraryDrawer", () => {
 
     expect(screen.queryByLabelText(/buscar no catálogo/i)).toBeNull();
     expect(screen.queryByLabelText(/^versão$/i)).toBeNull();
-    expect(getLibrariesOverview).not.toHaveBeenCalled();
+    expect(getLibrariesCatalog).not.toHaveBeenCalled();
   });
 
   it("não renderiza o conteúdo quando fechado", () => {
@@ -220,7 +221,7 @@ describe("CreateLibraryDrawer", () => {
       id: string,
       name: string,
       categoryId = null as string | null,
-    ) {
+    ): LibraryCatalogItem {
       return {
         id,
         name,
@@ -229,7 +230,24 @@ describe("CreateLibraryDrawer", () => {
         createdAt: "2026-09-03T00:00:00.000Z",
         updatedAt: "2026-09-03T00:00:00.000Z",
         projectsCount: 0,
+        effectiveCategories: [],
       };
+    }
+
+    // simula o servidor: ILIKE no nome, ordem por nome, página de 10 + total
+    function serveCatalog(libraries: LibraryCatalogItem[]) {
+      vi.mocked(getLibrariesCatalog).mockImplementation(async ({ q }) => {
+        const term = (q ?? "").toLowerCase();
+        const matches = libraries
+          .filter((library) => library.name.toLowerCase().includes(term))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        return {
+          items: matches.slice(0, 10),
+          total: matches.length,
+          page: 1,
+          pageSize: 10,
+        };
+      });
     }
 
     const projectCategory = {
@@ -268,7 +286,7 @@ describe("CreateLibraryDrawer", () => {
     }
 
     beforeEach(() => {
-      vi.mocked(getLibrariesOverview).mockResolvedValue([
+      serveCatalog([
         catalogLibrary("library-1", "drizzle-orm", "category-1"),
         catalogLibrary("library-2", "drizzle-kit"),
         catalogLibrary("library-3", "zod"),
@@ -295,11 +313,28 @@ describe("CreateLibraryDrawer", () => {
       ).not.toBeNull();
     });
 
-    it("não mostra resultados antes de digitar na busca", async () => {
+    it("não consulta o catálogo nem mostra resultados antes de digitar na busca", async () => {
       renderProjectDrawer();
 
-      await waitFor(() => expect(getLibrariesOverview).toHaveBeenCalled());
+      await waitFor(() => expect(getProjectLibraries).toHaveBeenCalled());
+      expect(getLibrariesCatalog).not.toHaveBeenCalled();
       expect(screen.queryByRole("option", { name: /drizzle-orm/ })).toBeNull();
+    });
+
+    it("consulta GET /libraries/catalog com o termo só depois do debounce, uma vez só", async () => {
+      renderProjectDrawer();
+      const input = screen.getByLabelText(/buscar no catálogo/i);
+
+      fireEvent.change(input, { target: { value: "d" } });
+      fireEvent.change(input, { target: { value: "dr" } });
+      fireEvent.change(input, { target: { value: "drizz" } });
+
+      expect(getLibrariesCatalog).not.toHaveBeenCalled();
+      expect(screen.getByText("buscando...")).not.toBeNull();
+
+      await screen.findByRole("option", { name: /drizzle-orm/ });
+      expect(getLibrariesCatalog).toHaveBeenCalledTimes(1);
+      expect(getLibrariesCatalog).toHaveBeenCalledWith({ q: "drizz" });
     });
 
     it("filtra o catálogo pelo termo, sem diferenciar maiúsculas, com o chip da categoria", async () => {
@@ -317,7 +352,7 @@ describe("CreateLibraryDrawer", () => {
       expect(screen.queryByRole("option", { name: /zod/ })).toBeNull();
     });
 
-    it("não mostra bibliotecas que já estão no projeto", async () => {
+    it("mostra as bibliotecas que já estão no projeto marcadas e sem deixar selecionar", async () => {
       vi.mocked(getProjectLibraries).mockResolvedValue([
         {
           id: "library-1",
@@ -342,13 +377,30 @@ describe("CreateLibraryDrawer", () => {
       expect(
         await screen.findByRole("option", { name: /drizzle-kit/ }),
       ).not.toBeNull();
-      expect(screen.queryByRole("option", { name: /drizzle-orm/ })).toBeNull();
+      const inProject = screen.getByRole("option", { name: /drizzle-orm/ });
+      expect(inProject.getAttribute("aria-disabled")).toBe("true");
+      expect(inProject.textContent).toMatch(/já neste projeto/i);
+
+      fireEvent.click(inProject);
+
+      expect(inProject.getAttribute("aria-selected")).toBe("false");
+      expect(
+        screen.queryByRole("button", { name: /^associar$/i }),
+      ).toBeNull();
+      expect(
+        screen.getByText(
+          /já estão neste projeto aparecem marcadas e não podem ser associadas de novo/i,
+        ),
+      ).not.toBeNull();
     });
 
-    it("limita a busca a 8 resultados", async () => {
-      vi.mocked(getLibrariesOverview).mockResolvedValue(
-        Array.from({ length: 10 }, (_, index) =>
-          catalogLibrary(`library-${index}`, `lib-${index}`),
+    it("mostra até 8 resultados e avisa quantos ficaram de fora", async () => {
+      serveCatalog(
+        Array.from({ length: 23 }, (_, index) =>
+          catalogLibrary(
+            `library-${index}`,
+            `lib-${String(index).padStart(2, "0")}`,
+          ),
         ),
       );
       renderProjectDrawer();
@@ -360,6 +412,20 @@ describe("CreateLibraryDrawer", () => {
       await waitFor(() => {
         expect(screen.getAllByRole("option")).toHaveLength(8);
       });
+      expect(
+        screen.getByText("+15 resultados — refine a busca"),
+      ).not.toBeNull();
+    });
+
+    it("sem nada além dos 8, não mostra o aviso de mais resultados", async () => {
+      renderProjectDrawer();
+
+      fireEvent.change(screen.getByLabelText(/buscar no catálogo/i), {
+        target: { value: "drizz" },
+      });
+
+      await screen.findByRole("option", { name: /drizzle-orm/ });
+      expect(screen.queryByText(/refine a busca/i)).toBeNull();
     });
 
     it("selecionar um resultado e clicar em Associar associa direto com a versão informada", async () => {
@@ -396,7 +462,7 @@ describe("CreateLibraryDrawer", () => {
         queryKey: ["project-libraries", "project-1"],
       });
       expect(invalidateSpy).toHaveBeenCalledWith({
-        queryKey: ["libraries-overview"],
+        queryKey: ["libraries-catalog"],
       });
       expect(invalidateSpy).toHaveBeenCalledWith({
         queryKey: ["projects-overview"],
@@ -497,9 +563,9 @@ describe("CreateLibraryDrawer", () => {
       expect(input.getAttribute("aria-expanded")).toBe("true");
 
       fireEvent.change(input, { target: { value: "inexistente" } });
-      expect((await screen.findByRole("status")).textContent).toMatch(
-        /nenhuma biblioteca encontrada/i,
-      );
+      expect(
+        await screen.findByText(/nenhuma biblioteca encontrada/i),
+      ).not.toBeNull();
       expect(input.getAttribute("aria-expanded")).toBe("false");
     });
 
