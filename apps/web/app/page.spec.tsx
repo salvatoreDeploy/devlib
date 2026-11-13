@@ -24,43 +24,15 @@ import {
 import { getCategories } from "../lib/api/categories";
 import { listLibraryTags } from "../lib/api/tags";
 
-// URL "reativa": replace/push atualizam a query string e re-renderizam quem
-// lê useSearchParams, como no Next de verdade
-const navigation = vi.hoisted(() => {
-  let search = "";
-  const listeners = new Set<() => void>();
-  const setSearch = (url: string) => {
-    search = url.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
-    listeners.forEach((listener) => listener());
-  };
-  return {
-    pushMock: vi.fn(setSearch),
-    replaceMock: vi.fn(setSearch),
-    getSearch: () => search,
-    setSearch,
-    subscribe: (listener: () => void) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-  };
+// URL "reativa" de next/navigation — ver test/next-navigation-mock.ts
+const navigation = await vi.hoisted(async () => {
+  const { createNavigationMock } = await import("@/test/next-navigation-mock");
+  return createNavigationMock({ pathname: "/" });
 });
 const pushMock = navigation.pushMock;
 const replaceMock = navigation.replaceMock;
 
-vi.mock("next/navigation", async () => {
-  const { useSyncExternalStore } = await import("react");
-  return {
-    useRouter: () => ({
-      push: navigation.pushMock,
-      replace: navigation.replaceMock,
-    }),
-    usePathname: () => "/",
-    useSearchParams: () =>
-      new URLSearchParams(
-        useSyncExternalStore(navigation.subscribe, navigation.getSearch),
-      ),
-  };
-});
+vi.mock("next/navigation", () => navigation.factory());
 
 vi.mock("../lib/api/projects", async () => {
   const actual = await vi.importActual<typeof import("../lib/api/projects")>(
@@ -172,9 +144,7 @@ function login() {
 
 describe("Home page", () => {
   beforeEach(() => {
-    pushMock.mockClear();
-    replaceMock.mockClear();
-    navigation.setSearch("");
+    navigation.reset();
     clearTokens();
     vi.mocked(getProjectsOverview).mockReset();
     vi.mocked(deleteProject).mockReset();
@@ -405,7 +375,10 @@ describe("Home page", () => {
     login();
     vi.mocked(getLibrariesCatalog).mockResolvedValue(
       catalogPage([
-        catalogItem("drizzle-orm", { categoryId: "category-1", projectsCount: 2 }),
+        catalogItem("drizzle-orm", {
+          categoryId: "category-1",
+          projectsCount: 2,
+        }),
       ]),
     );
     renderHome();
@@ -522,7 +495,7 @@ describe("Home page", () => {
 
     it("pede a página à API com os filtros da URL e mostra o rodapé com o total", async () => {
       login();
-      navigation.setSearch("/?q=lib&usage=unused&tag=t-ui&page=2");
+      navigation.setQuery("q=lib&usage=unused&tag=t-ui&page=2");
       vi.mocked(getLibrariesCatalog).mockResolvedValue(
         catalogPage(twelve, { total: 23, page: 2 }),
       );
@@ -568,7 +541,7 @@ describe("Home page", () => {
     it("buscar faz replace na URL (depois do debounce) e volta pra página 1", async () => {
       const user = userEvent.setup();
       login();
-      navigation.setSearch("/?page=2");
+      navigation.setQuery("page=2");
       vi.mocked(getLibrariesCatalog).mockResolvedValue(
         catalogPage(twelve, { total: 23, page: 2 }),
       );
@@ -620,7 +593,7 @@ describe("Home page", () => {
     it("com filtro e nenhum resultado mostra o estado vazio de filtro e 'Limpar filtros' volta pra '/'", async () => {
       const user = userEvent.setup();
       login();
-      navigation.setSearch("/?q=inexistente");
+      navigation.setQuery("q=inexistente");
       vi.mocked(getLibrariesCatalog).mockResolvedValue(catalogPage([]));
       renderHome();
 
