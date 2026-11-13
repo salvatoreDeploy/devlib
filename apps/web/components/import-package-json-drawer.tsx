@@ -133,7 +133,6 @@ function ImportFlow({
       queryClient.invalidateQueries({
         queryKey: ["project-categories", projectId],
       });
-      queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
       queryClient.invalidateQueries({ queryKey: ["libraries-catalog"] });
       queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
       // "Usada em" de qualquer biblioteca tocada

@@ -156,7 +156,6 @@ function LibraryDetailContent({
       queryClient.invalidateQueries({
         queryKey: ["project-libraries", projectId],
       });
-      queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
       queryClient.invalidateQueries({ queryKey: ["libraries-catalog"] });
       queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
     },
@@ -387,7 +386,6 @@ function useAssociateProject(libraryId: string, usedIn?: LibraryProject[]) {
       queryClient.invalidateQueries({
         queryKey: ["project-libraries", association.projectId],
       });
-      queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
       queryClient.invalidateQueries({ queryKey: ["libraries-catalog"] });
       queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
     },

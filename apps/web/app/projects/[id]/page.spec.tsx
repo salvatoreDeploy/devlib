@@ -43,7 +43,7 @@ vi.mock("../../../lib/api/libraries", async () => {
   const actual = await vi.importActual<
     typeof import("../../../lib/api/libraries")
   >("../../../lib/api/libraries");
-  return { ...actual, getLibrariesOverview: vi.fn().mockResolvedValue([]) };
+  return actual;
 });
 
 vi.mock("../../../lib/api/categories", async () => {
@@ -377,12 +377,15 @@ describe("ProjectDetailPage", () => {
       for (const queryKey of [
         ["project-libraries", "project-1"],
         ["library-projects", "library-1"],
-        ["libraries-overview"],
+        ["libraries-catalog"],
         ["projects-overview"],
         ["project-categories", "project-1"],
       ]) {
         expect(invalidateSpy).toHaveBeenCalledWith({ queryKey });
       }
+      expect(invalidateSpy).not.toHaveBeenCalledWith({
+        queryKey: ["libraries-overview"],
+      });
     });
 
     it("quando o DELETE falha, mantém a confirmação aberta com a mensagem da API", async () => {

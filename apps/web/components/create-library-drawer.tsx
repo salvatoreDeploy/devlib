@@ -150,7 +150,6 @@ export function CreateLibraryDrawer({
     queryClient.invalidateQueries({
       queryKey: ["project-libraries", projectId],
     });
-    queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
     queryClient.invalidateQueries({ queryKey: ["libraries-catalog"] });
     queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
     queryClient.invalidateQueries({
@@ -209,7 +208,6 @@ export function CreateLibraryDrawer({
     },
     onError: (error) => {
       if (error instanceof LibraryCreatedButNotAssociatedError) {
-        queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
         queryClient.invalidateQueries({ queryKey: ["libraries-catalog"] });
       }
     },

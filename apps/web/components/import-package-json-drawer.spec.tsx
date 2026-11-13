@@ -424,12 +424,15 @@ describe("ImportPackageJsonDrawer", () => {
       for (const queryKey of [
         ["project-libraries", "project-1"],
         ["project-categories", "project-1"],
-        ["libraries-overview"],
+        ["libraries-catalog"],
         ["projects-overview"],
         ["library-projects"],
       ]) {
         expect(invalidateSpy).toHaveBeenCalledWith({ queryKey });
       }
+      expect(invalidateSpy).not.toHaveBeenCalledWith({
+        queryKey: ["libraries-overview"],
+      });
 
       await user.click(screen.getByRole("button", { name: /fechar/i }));
       expect(onOpenChange).toHaveBeenCalledWith(false);

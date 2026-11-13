@@ -384,9 +384,7 @@ describe("CreateLibraryDrawer", () => {
       fireEvent.click(inProject);
 
       expect(inProject.getAttribute("aria-selected")).toBe("false");
-      expect(
-        screen.queryByRole("button", { name: /^associar$/i }),
-      ).toBeNull();
+      expect(screen.queryByRole("button", { name: /^associar$/i })).toBeNull();
       expect(
         screen.getByText(
           /já estão neste projeto aparecem marcadas e não podem ser associadas de novo/i,
@@ -755,6 +753,9 @@ describe("CreateLibraryDrawer", () => {
       ).not.toBeNull();
       expect(onCreated).not.toHaveBeenCalled();
       expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ["libraries-catalog"],
+      });
+      expect(invalidateSpy).not.toHaveBeenCalledWith({
         queryKey: ["libraries-overview"],
       });
     });
