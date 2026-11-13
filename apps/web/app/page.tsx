@@ -358,7 +358,6 @@ function HomeContent() {
         onOpenChange={setIsCreateLibraryOpen}
         onCreated={() => {
           setIsCreateLibraryOpen(false);
-          queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
           queryClient.invalidateQueries({ queryKey: ["libraries-catalog"] });
         }}
       />

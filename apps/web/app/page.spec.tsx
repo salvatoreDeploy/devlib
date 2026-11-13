@@ -16,7 +16,6 @@ import {
   getCatalogFacets,
   getLibrariesCatalog,
   GetLibrariesCatalogError,
-  getLibrariesOverview,
   getLibrary,
   getLibraryProjects,
   type LibraryCatalogItem,
@@ -52,7 +51,6 @@ vi.mock("../lib/api/libraries", async () => {
   );
   return {
     ...actual,
-    getLibrariesOverview: vi.fn(),
     getLibrariesCatalog: vi.fn(),
     getCatalogFacets: vi.fn(),
     createLibrary: vi.fn(),
@@ -149,14 +147,12 @@ describe("Home page", () => {
     vi.mocked(getProjectsOverview).mockReset();
     vi.mocked(deleteProject).mockReset();
     vi.mocked(createProject).mockReset();
-    vi.mocked(getLibrariesOverview).mockReset();
     vi.mocked(createLibrary).mockReset();
     vi.mocked(getLibrary).mockReset();
     vi.mocked(getLibraryProjects).mockReset();
     vi.mocked(listLibraryTags).mockReset();
     vi.mocked(getCategories).mockReset();
     vi.mocked(getProjectsOverview).mockResolvedValue([]);
-    vi.mocked(getLibrariesOverview).mockResolvedValue([]);
     vi.mocked(getLibrariesCatalog).mockReset();
     vi.mocked(getCatalogFacets).mockReset();
     vi.mocked(getLibrariesCatalog).mockResolvedValue(catalogPage([]));

@@ -116,7 +116,6 @@ export default function ProjectDetailPage() {
       queryClient.invalidateQueries({
         queryKey: ["library-projects", libraryId],
       });
-      queryClient.invalidateQueries({ queryKey: ["libraries-overview"] });
       queryClient.invalidateQueries({ queryKey: ["libraries-catalog"] });
       queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
       // a contagem da aba Categorias usa a categoria efetiva da associação
