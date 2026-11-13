@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProjectCard } from "./project-card";
 
 const project = {
@@ -76,15 +77,61 @@ describe("ProjectCard", () => {
     ).not.toBeNull();
   });
 
-  it("abre o menu '···' com links de Editar e opção de Excluir", async () => {
+  it("abre o menu '···' com Editar e Excluir — Editar não leva mais pra /projects/[id]/edit", async () => {
     const user = userEvent.setup();
     render(<ProjectCard project={project} onDelete={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "···" }));
 
-    const editLink = await screen.findByRole("menuitem", { name: /editar/i });
-    expect(editLink.getAttribute("href")).toBe("/projects/project-1/edit");
+    const edit = await screen.findByRole("menuitem", { name: /editar/i });
+    expect(edit.getAttribute("href")).toBeNull();
+    expect(edit.querySelector("a")).toBeNull();
     expect(screen.getByRole("menuitem", { name: /excluir/i })).not.toBeNull();
+  });
+
+  describe("Editar", () => {
+    function renderWithQueryClient() {
+      return render(
+        <QueryClientProvider client={new QueryClient()}>
+          <ProjectCard project={project} onDelete={vi.fn()} />
+        </QueryClientProvider>,
+      );
+    }
+
+    it("abre o drawer 'Editar projeto' com o projeto pré-preenchido", async () => {
+      const user = userEvent.setup();
+      renderWithQueryClient();
+
+      await user.click(screen.getByRole("button", { name: "···" }));
+      await user.click(
+        await screen.findByRole("menuitem", { name: /editar/i }),
+      );
+
+      expect(
+        await screen.findByRole("heading", { name: "Editar projeto" }),
+      ).not.toBeNull();
+      expect(
+        (screen.getByLabelText(/nome do projeto/i) as HTMLInputElement).value,
+      ).toBe("DevLib");
+    });
+
+    it("depois de cancelar a edição, o menu '···' volta a ser clicável", async () => {
+      const user = userEvent.setup();
+      renderWithQueryClient();
+
+      await user.click(screen.getByRole("button", { name: "···" }));
+      await user.click(
+        await screen.findByRole("menuitem", { name: /editar/i }),
+      );
+      await user.click(
+        await screen.findByRole("button", { name: /cancelar/i }),
+      );
+      await user.click(screen.getByRole("button", { name: "···" }));
+
+      expect(
+        await screen.findByRole("menuitem", { name: /excluir/i }),
+      ).not.toBeNull();
+    });
   });
 
   it("pede confirmação antes de excluir e só chama onDelete ao confirmar", async () => {
