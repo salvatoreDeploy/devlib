@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EditProjectDrawer } from "@/components/edit-project-drawer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +59,7 @@ export function ProjectCard({
   isDeleting,
 }: ProjectCardProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const { action, date } = activity(project);
 
   return (
@@ -76,8 +78,10 @@ export function ProjectCard({
               ···
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem asChild>
-                <Link href={`/projects/${project.id}/edit`}>Editar</Link>
+              {/* sem preventDefault: o menu fecha e o drawer abre (ver
+                  docs/DECISIONS.md, "Remover do projeto" na tabela) */}
+              <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+                Editar
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
@@ -110,6 +114,15 @@ export function ProjectCard({
           </span>
         </p>
       </div>
+
+      <EditProjectDrawer
+        project={editOpen ? project : null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditOpen(false);
+          }
+        }}
+      />
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
