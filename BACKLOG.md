@@ -183,6 +183,10 @@ Fica para depois do MVP (v1.1+):
   - [x] Web: seção "Bibliotecas" da Home usa `GET /libraries/catalog` — busca, filtros (categoria e tag com opções de `GET /libraries/catalog/facets`, uso em projetos) e paginação no servidor, estado na URL; desenhado antes no `.pen`
   - [x] Web: busca de catálogo do drawer "Adicionar biblioteca" consulta `GET /libraries/catalog?q=` em vez de filtrar o overview inteiro no cliente
   - [x] API: remover `GET /libraries/overview` (sem consumidores após as subtasks acima) — breaking avisado no PR
+- [ ] Edição de biblioteca e de projeto em drawer, não em página (web)
+  > Adicionado em 2026-11-13 a partir do uso real: o "Editar" da biblioteca (no drawer de detalhe aberto na Home) e o do `ProjectCard` levam pra páginas próprias (`/libraries/[id]/edit`, `/projects/[id]/edit`), saindo do padrão de drawer usado em criar/detalhar/associar/importar. Decisão: reverte a convenção "criação = drawer, edição = página" (Sprint 4) — edição também vira drawer. Biblioteca: o próprio drawer de detalhe entra em modo edição (Cancelar volta pro detalhe; Salvar grava e volta pro detalhe atualizado). Projeto (sem drawer de detalhe): drawer "Editar projeto" aberto pelo "···" do `ProjectCard`. As páginas de edição são removidas (link antigo cai no 404). Fora de escopo: editar a categoria **no projeto** por aqui (é o "Editar no projeto"), drawer de detalhe de projeto, redirect das URLs antigas, campos novos (Sprint 6).
+  - [ ] Web: modo edição no drawer "Detalhe da biblioteca" (Nome, Categoria global, Tags, Notas) no lugar de `/libraries/[id]/edit` (página + spec removidas); atualizar a convenção em `CLAUDE.md`, na skill `/novo-form-web` e em `docs/DECISIONS.md`; desenhado antes no `.pen`
+  - [ ] Web: drawer "Editar projeto" (Nome, Descrição) aberto pelo "Editar" do `ProjectCard` (Home e `/projects`) no lugar de `/projects/[id]/edit` (página + spec removidas); desenhado antes no `.pen`
 
 ## Sprint 6 — Integrações (pós-MVP)
 
