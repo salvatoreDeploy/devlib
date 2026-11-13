@@ -322,6 +322,10 @@ Tabela: checkbox 26px · Categoria (nome 13.5px/500 + sub-linha mono do "Slug") 
 
 **Adaptação pro nosso escopo**: `categories` não tem campo `slug` no schema — mostrar só o nome, sem sub-linha mono. Paginação do footer fica de fora (API retorna a lista inteira); manter só a contagem "Mostrando N categorias".
 
+### Modo edição do drawer "Detalhe da biblioteca" (Sprint 5)
+
+Substitui a página `/libraries/[id]/edit` (removida). "Editar" (Outline, no rodapé do detalhe) troca o conteúdo do **mesmo** painel de 432px — não abre página nem outro drawer: título "Editar biblioteca" + descrição "Edita <biblioteca> no catálogo: vale pra todos os projetos que usam a biblioteca."; campos no padrão de "Formulários": "Nome da biblioteca" (input), "Categoria no catálogo" (select, só globais), "Notas" (textarea 76px) com a dica em `text-faint` 12px "Ainda não dá pra remover a categoria nem apagar as notas — só trocar." (limite atual da API), "Tags" (`TagInput`, pills + "+ tag", grava na hora); rodapé Outline "Cancelar" (volta pro detalhe) + Primary "Salvar" (ícone `Check`, volta pro detalhe atualizado). **Ainda não desenhado no `.pen`** (o MCP do Pencil estava bloqueado pelo limite do plano na subtask) — tela "Drawer Edit Library Screen" pendente, seguindo este texto.
+
 ### Drawer "Criar categoria" (Sprint 4)
 
 Painel 432px, título "Criar categoria" + descrição "Categorias agrupam bibliotecas com o mesmo papel no projeto.". Campos do `.pen`: Nome, Slug.

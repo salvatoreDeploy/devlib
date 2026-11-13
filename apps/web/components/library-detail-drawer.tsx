@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,6 +7,7 @@ import { Controller, useForm } from "react-hook-form";
 import { X } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { EditLibraryForm } from "@/components/edit-library-form";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
@@ -106,10 +106,10 @@ export function LibraryDetailDrawer({
           </p>
         )}
 
-        {/* key: form de associar e confirmação de remoção recomeçam do zero
-            ao trocar de biblioteca */}
+        {/* key: modo, form de associar e confirmação de remoção recomeçam do
+            zero ao trocar de biblioteca; fechar desmonta (reabre no detalhe) */}
         {library && open && (
-          <LibraryDetailContent
+          <LibraryDrawerBody
             key={library.id}
             library={library}
             categoryName={categoryName}
@@ -120,14 +120,46 @@ export function LibraryDetailDrawer({
   );
 }
 
+type LibraryDrawerBodyProps = {
+  library: Library;
+  categoryName: string;
+};
+
+// "Editar" troca o conteúdo do mesmo drawer pro formulário (não abre página
+// nem outro drawer); Cancelar/Salvar voltam pro detalhe
+function LibraryDrawerBody({ library, categoryName }: LibraryDrawerBodyProps) {
+  const [mode, setMode] = useState<"detail" | "edit">("detail");
+
+  if (mode === "edit") {
+    return (
+      <EditLibraryForm
+        library={library}
+        titleAs={SheetTitle}
+        onCancel={() => setMode("detail")}
+        onSaved={() => setMode("detail")}
+      />
+    );
+  }
+
+  return (
+    <LibraryDetailContent
+      library={library}
+      categoryName={categoryName}
+      onEdit={() => setMode("edit")}
+    />
+  );
+}
+
 type LibraryDetailContentProps = {
   library: Library;
   categoryName: string;
+  onEdit: () => void;
 };
 
 function LibraryDetailContent({
   library,
   categoryName,
+  onEdit,
 }: LibraryDetailContentProps) {
   const libraryId = library.id;
   const queryClient = useQueryClient();
@@ -299,8 +331,8 @@ function LibraryDetailContent({
             {associate.mutation.isPending ? "associando..." : "Associar"}
           </Button>
         )}
-        <Button asChild variant="outline">
-          <Link href={`/libraries/${library.id}/edit`}>Editar</Link>
+        <Button type="button" variant="outline" onClick={onEdit}>
+          Editar
         </Button>
         <SheetClose asChild>
           <Button type="button" variant="outline">

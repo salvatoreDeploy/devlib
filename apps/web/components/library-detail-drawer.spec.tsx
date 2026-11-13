@@ -8,6 +8,7 @@ import {
   GetLibraryError,
   getLibraryProjects,
   GetLibraryProjectsError,
+  updateLibrary,
 } from "../lib/api/libraries";
 import { getCategories } from "../lib/api/categories";
 import { listLibraryTags } from "../lib/api/tags";
@@ -23,7 +24,12 @@ vi.mock("../lib/api/libraries", async () => {
   const actual = await vi.importActual<typeof import("../lib/api/libraries")>(
     "../lib/api/libraries",
   );
-  return { ...actual, getLibrary: vi.fn(), getLibraryProjects: vi.fn() };
+  return {
+    ...actual,
+    getLibrary: vi.fn(),
+    getLibraryProjects: vi.fn(),
+    updateLibrary: vi.fn(),
+  };
 });
 
 vi.mock("../lib/api/categories", async () => {
@@ -95,6 +101,7 @@ describe("LibraryDetailDrawer", () => {
     vi.mocked(listProjects).mockResolvedValue([]);
     vi.mocked(associateLibraryToProject).mockReset();
     vi.mocked(removeLibraryFromProject).mockReset();
+    vi.mocked(updateLibrary).mockReset();
   });
 
   it("não renderiza o conteúdo quando libraryId é null", () => {
@@ -230,14 +237,98 @@ describe("LibraryDetailDrawer", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("mostra no rodapé o link Editar apontando pra página de edição da biblioteca", async () => {
-    vi.mocked(getLibrary).mockResolvedValue(library);
-    vi.mocked(getLibraryProjects).mockResolvedValue([]);
-    renderDrawer();
+  describe("modo edição", () => {
+    beforeEach(() => {
+      vi.mocked(getLibraryProjects).mockResolvedValue([]);
+    });
 
-    const edit = await screen.findByRole("link", { name: "Editar" });
+    it("'Editar' é um botão (não leva mais pra /libraries/[id]/edit) e troca o drawer pro formulário", async () => {
+      vi.mocked(getLibrary).mockResolvedValue(library);
+      const user = userEvent.setup();
+      renderDrawer();
 
-    expect(edit.getAttribute("href")).toBe("/libraries/library-1/edit");
+      await screen.findByText("ORM leve, migrations explícitas");
+      expect(screen.queryByRole("link", { name: "Editar" })).toBeNull();
+      await user.click(screen.getByRole("button", { name: "Editar" }));
+
+      expect(
+        await screen.findByRole("heading", { name: "Editar biblioteca" }),
+      ).not.toBeNull();
+      expect(
+        (screen.getByLabelText(/nome da biblioteca/i) as HTMLInputElement)
+          .value,
+      ).toBe("drizzle-orm");
+      // o detalhe sai de cena enquanto edita
+      expect(screen.queryByText("Usada em")).toBeNull();
+    });
+
+    it("Cancelar volta pro detalhe sem salvar", async () => {
+      vi.mocked(getLibrary).mockResolvedValue(library);
+      const user = userEvent.setup();
+      renderDrawer();
+
+      await user.click(await screen.findByRole("button", { name: "Editar" }));
+      await user.click(
+        await screen.findByRole("button", { name: /cancelar/i }),
+      );
+
+      expect(await screen.findByText("Usada em")).not.toBeNull();
+      expect(
+        screen.queryByRole("heading", { name: "Editar biblioteca" }),
+      ).toBeNull();
+      expect(updateLibrary).not.toHaveBeenCalled();
+    });
+
+    it("Salvar grava e volta pro detalhe já atualizado", async () => {
+      const updated = { ...library, name: "drizzle" };
+      vi.mocked(getLibrary)
+        .mockResolvedValueOnce(library)
+        .mockResolvedValue(updated);
+      vi.mocked(updateLibrary).mockResolvedValue(updated);
+      const user = userEvent.setup();
+      renderDrawer();
+
+      await user.click(await screen.findByRole("button", { name: "Editar" }));
+      const name = await screen.findByLabelText(/nome da biblioteca/i);
+      await user.clear(name);
+      await user.type(name, "drizzle");
+      await user.click(screen.getByRole("button", { name: /salvar/i }));
+
+      expect(await screen.findByText("Usada em")).not.toBeNull();
+      expect(
+        await screen.findByRole("heading", { name: "drizzle" }),
+      ).not.toBeNull();
+    });
+
+    it("fechar no meio da edição e reabrir volta no modo detalhe", async () => {
+      vi.mocked(getLibrary).mockResolvedValue(library);
+      const user = userEvent.setup();
+      const queryClient = new QueryClient();
+      const { rerender } = render(
+        <QueryClientProvider client={queryClient}>
+          <LibraryDetailDrawer libraryId="library-1" onOpenChange={vi.fn()} />
+        </QueryClientProvider>,
+      );
+
+      await user.click(await screen.findByRole("button", { name: "Editar" }));
+      await screen.findByRole("heading", { name: "Editar biblioteca" });
+
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <LibraryDetailDrawer libraryId={null} onOpenChange={vi.fn()} />
+        </QueryClientProvider>,
+      );
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <LibraryDetailDrawer libraryId="library-1" onOpenChange={vi.fn()} />
+        </QueryClientProvider>,
+      );
+
+      expect(await screen.findByText("Usada em")).not.toBeNull();
+      expect(
+        screen.queryByRole("heading", { name: "Editar biblioteca" }),
+      ).toBeNull();
+    });
   });
 
   describe("seção Associar a um projeto", () => {
@@ -305,7 +396,7 @@ describe("LibraryDetailDrawer", () => {
       const footer = associate.parentElement as HTMLElement;
 
       expect(
-        footer.contains(screen.getByRole("link", { name: "Editar" })),
+        footer.contains(screen.getByRole("button", { name: "Editar" })),
       ).toBe(true);
       expect(
         footer.contains(screen.getByRole("button", { name: /fechar/i })),
