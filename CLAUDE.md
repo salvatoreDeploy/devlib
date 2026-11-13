@@ -50,6 +50,7 @@ packages/
 - Mudança em `packages/db/schema.ts` sempre vem acompanhada de uma migration Drizzle no mesmo PR.
 - Nunca commitar segredos (`JWT_SECRET`, `DATABASE_URL`). Usar `.env` (gitignored) localmente e variáveis do Harness em CI/CD.
 - Senhas sempre com hash argon2, nunca texto puro nem outro algoritmo.
+- Spec de tela de `apps/web` com estado na URL (busca/filtros/página via `useSearchParams` + `router.push`/`replace`) usa o mock compartilhado `apps/web/test/next-navigation-mock.ts` (`createNavigationMock`) — nunca copiar um mock próprio de `next/navigation`. Ver `docs/DECISIONS.md`.
 - Todo arquivo novo em `apps/api/src/routes`, `apps/api/src/services` e `apps/api/src/providers` (e o equivalente em `apps/web`) tem um arquivo `.spec.ts` correspondente, co-localizado: `library.service.ts` → `library.service.spec.ts` na mesma pasta. Nunca deixar o teste para "depois" — ele nasce junto com o arquivo.
 - Branch por feature a partir de `develop`, seguindo git flow (`feature/*`, `release/*`, `hotfix/*`). Nunca commitar direto em `main`.
 

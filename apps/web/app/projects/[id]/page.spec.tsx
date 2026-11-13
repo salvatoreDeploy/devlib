@@ -14,44 +14,18 @@ import {
 import { getProjectCategories } from "../../../lib/api/categories";
 import { clearTokens, saveTokens } from "../../../lib/auth-storage";
 
-// URL "reativa": replace/push atualizam a query string e re-renderizam quem
-// lê useSearchParams, como no Next de verdade
-const navigation = vi.hoisted(() => {
-  let search = "";
-  const listeners = new Set<() => void>();
-  const setSearch = (url: string) => {
-    search = url.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
-    listeners.forEach((listener) => listener());
-  };
-  return {
-    pushMock: vi.fn(setSearch),
-    replaceMock: vi.fn(setSearch),
-    getSearch: () => search,
-    setSearch,
-    subscribe: (listener: () => void) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-  };
+// URL "reativa" de next/navigation — ver test/next-navigation-mock.ts
+const navigation = await vi.hoisted(async () => {
+  const { createNavigationMock } = await import("@/test/next-navigation-mock");
+  return createNavigationMock({
+    pathname: "/projects/project-1",
+    params: { id: "project-1" },
+  });
 });
 const pushMock = navigation.pushMock;
 const replaceMock = navigation.replaceMock;
 
-vi.mock("next/navigation", async () => {
-  const { useSyncExternalStore } = await import("react");
-  return {
-    useRouter: () => ({
-      push: navigation.pushMock,
-      replace: navigation.replaceMock,
-    }),
-    useParams: () => ({ id: "project-1" }),
-    usePathname: () => "/projects/project-1",
-    useSearchParams: () =>
-      new URLSearchParams(
-        useSyncExternalStore(navigation.subscribe, navigation.getSearch),
-      ),
-  };
-});
+vi.mock("next/navigation", () => navigation.factory());
 
 vi.mock("../../../lib/api/projects", async () => {
   const actual = await vi.importActual<
@@ -112,9 +86,7 @@ function renderProjectDetailPage(queryClient = new QueryClient()) {
 
 describe("ProjectDetailPage", () => {
   beforeEach(() => {
-    pushMock.mockClear();
-    replaceMock.mockClear();
-    navigation.setSearch("");
+    navigation.reset();
     vi.mocked(getProject).mockReset();
     vi.mocked(getProjectLibraries).mockReset();
     vi.mocked(getProjectCategories).mockReset();
@@ -496,7 +468,7 @@ describe("ProjectDetailPage", () => {
     }
 
     async function renderWith(libraries = twelve, search = "") {
-      navigation.setSearch(`/projects/project-1?${search}`);
+      navigation.setQuery(search);
       vi.mocked(getProject).mockResolvedValue(project);
       vi.mocked(getProjectLibraries).mockResolvedValue(libraries);
       renderProjectDetailPage();
@@ -524,10 +496,9 @@ describe("ProjectDetailPage", () => {
         await screen.findByRole("button", { name: /próxima página/i }),
       );
 
-      expect(pushMock).toHaveBeenLastCalledWith(
-        "/projects/project-1?page=2",
-        { scroll: false },
-      );
+      expect(pushMock).toHaveBeenLastCalledWith("/projects/project-1?page=2", {
+        scroll: false,
+      });
       expect(rowNames()).toEqual(["lib-11", "zustand"]);
       expect(
         screen.getByText("Mostrando 11–12 de 12 bibliotecas"),
